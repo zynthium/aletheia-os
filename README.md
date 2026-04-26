@@ -1,5 +1,7 @@
 # AletheiaOS
 
+[简体中文](README.zh-CN.md)
+
 **Truthful project memory for AI-assisted research and engineering.**
 
 AletheiaOS is an AI-native project operating system for long-horizon

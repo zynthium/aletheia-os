@@ -98,16 +98,200 @@
       "description": "Finalize first-time initialization and delete BOOTSTRAP.md."
     }
   },
+  "registry_review": {
+    "reviewed_at": "2026-04-26",
+    "review_type": "public_frontier_model_refresh",
+    "sources": [
+      "https://developers.openai.com/api/docs/models",
+      "https://openai.com/index/introducing-gpt-5-5/",
+      "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
+      "https://platform.claude.com/docs/en/about-claude/models/overview",
+      "https://www.anthropic.com/news/claude-opus-4-7",
+      "https://www.anthropic.com/news/claude-opus-4-6",
+      "https://artificialanalysis.ai/evaluations/gdpval-aa"
+    ],
+    "notes": "C4 is reserved for current frontier models with public leaderboard or provider-evaluation evidence at or above the GPT-5.4 / Claude Opus 4.6 baseline."
+  },
+  "c4_admission_policy": {
+    "minimum_baselines": {
+      "openai": "GPT-5.4 or newer mainline/pro frontier models only. GPT-5.4 mini/nano and older GPT-5.x models are not C4.",
+      "anthropic": "Claude Opus 4.6 or newer Opus models only. Sonnet, Haiku, and older Opus models are not C4.",
+      "cross_provider": "Other providers require current public leaderboard parity with GPT-5.4 or Claude Opus 4.6 and explicit project-owner registration."
+    },
+    "c4_not_allowed_for": [
+      "cost-optimized small variants",
+      "subagent-only variants",
+      "older frontier models below the reviewed baseline",
+      "unregistered models without explicit operator override"
+    ]
+  },
   "registered_models": {
-    "example-provider/example-high-reasoning-model": {
-      "status": "example_disabled",
+    "gpt-5.5-pro": {
+      "status": "allowed",
+      "provider": "openai",
       "tier": "C4",
-      "notes": "Replace with actual provider/model identifiers approved by the project owner."
+      "reviewed_at": "2026-04-26",
+      "aliases": [
+        "openai/gpt-5.5-pro",
+        "gpt-5.5-pro-2026-04-23"
+      ],
+      "source_urls": [
+        "https://developers.openai.com/api/docs/models/gpt-5.5-pro",
+        "https://openai.com/index/introducing-gpt-5-5/"
+      ],
+      "notes": "OpenAI's higher-compute GPT-5.5 variant; approved for C4 strategic and safety-critical task classes."
+    },
+    "gpt-5.5": {
+      "status": "allowed",
+      "provider": "openai",
+      "tier": "C4",
+      "reviewed_at": "2026-04-26",
+      "aliases": [
+        "openai/gpt-5.5",
+        "gpt-5.5-2026-04-23"
+      ],
+      "source_urls": [
+        "https://developers.openai.com/api/docs/models",
+        "https://openai.com/index/introducing-gpt-5-5/",
+        "https://artificialanalysis.ai/evaluations/gdpval-aa"
+      ],
+      "notes": "Current OpenAI flagship model; leaderboard and provider evaluations place it above the GPT-5.4 C4 baseline."
+    },
+    "gpt-5.4-pro": {
+      "status": "allowed",
+      "provider": "openai",
+      "tier": "C4",
+      "reviewed_at": "2026-04-26",
+      "aliases": [
+        "openai/gpt-5.4-pro"
+      ],
+      "source_urls": [
+        "https://openai.com/index/introducing-gpt-5-4/"
+      ],
+      "notes": "Approved as C4 because GPT-5.4 is the minimum accepted OpenAI frontier baseline and Pro is the higher-accuracy variant."
+    },
+    "gpt-5.4": {
+      "status": "allowed",
+      "provider": "openai",
+      "tier": "C4",
+      "reviewed_at": "2026-04-26",
+      "aliases": [
+        "openai/gpt-5.4",
+        "gpt-5.4-2026-03-05"
+      ],
+      "source_urls": [
+        "https://developers.openai.com/api/docs/models/gpt-5.4",
+        "https://openai.com/index/introducing-gpt-5-4/",
+        "https://artificialanalysis.ai/evaluations/gdpval-aa"
+      ],
+      "notes": "Minimum OpenAI model approved for C4. Earlier GPT-5.x models and cost-optimized GPT-5.4 variants stay below C4."
+    },
+    "gpt-5.4-mini": {
+      "status": "allowed",
+      "provider": "openai",
+      "tier": "C3",
+      "reviewed_at": "2026-04-26",
+      "aliases": [
+        "openai/gpt-5.4-mini"
+      ],
+      "source_urls": [
+        "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/"
+      ],
+      "notes": "Strong research-engineering and subagent model, but cost-optimized mini variants are not C4."
+    },
+    "gpt-5.4-nano": {
+      "status": "allowed",
+      "provider": "openai",
+      "tier": "C2",
+      "reviewed_at": "2026-04-26",
+      "aliases": [
+        "openai/gpt-5.4-nano"
+      ],
+      "source_urls": [
+        "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/"
+      ],
+      "notes": "Execution/subagent tier for simpler high-volume tasks; not eligible for C4."
+    },
+    "gpt-5.3-codex": {
+      "status": "allowed",
+      "provider": "openai",
+      "tier": "C3",
+      "reviewed_at": "2026-04-26",
+      "aliases": [
+        "openai/gpt-5.3-codex"
+      ],
+      "source_urls": [
+        "https://openai.com/index/introducing-gpt-5-4/"
+      ],
+      "notes": "Useful coding model retained below C4 because the OpenAI C4 baseline is GPT-5.4 or newer."
+    },
+    "gpt-5.2": {
+      "status": "allowed",
+      "provider": "openai",
+      "tier": "C3",
+      "reviewed_at": "2026-04-26",
+      "aliases": [
+        "openai/gpt-5.2"
+      ],
+      "source_urls": [
+        "https://openai.com/index/introducing-gpt-5-4/"
+      ],
+      "notes": "Retained for research-engineering work only; it is below the reviewed C4 baseline."
+    },
+    "claude-opus-4-7": {
+      "status": "allowed",
+      "provider": "anthropic",
+      "tier": "C4",
+      "reviewed_at": "2026-04-26",
+      "aliases": [
+        "anthropic/claude-opus-4-7"
+      ],
+      "source_urls": [
+        "https://platform.claude.com/docs/en/about-claude/models/overview",
+        "https://www.anthropic.com/news/claude-opus-4-7",
+        "https://artificialanalysis.ai/evaluations/gdpval-aa"
+      ],
+      "notes": "Current generally available Claude Opus model; direct upgrade over Opus 4.6 and approved for C4."
+    },
+    "claude-opus-4-6": {
+      "status": "allowed",
+      "provider": "anthropic",
+      "tier": "C4",
+      "reviewed_at": "2026-04-26",
+      "aliases": [
+        "anthropic/claude-opus-4-6"
+      ],
+      "source_urls": [
+        "https://www.anthropic.com/news/claude-opus-4-6"
+      ],
+      "notes": "Minimum Anthropic model approved for C4. Older Opus models and non-Opus Claude models stay below C4."
+    },
+    "claude-sonnet-4-6": {
+      "status": "allowed",
+      "provider": "anthropic",
+      "tier": "C3",
+      "reviewed_at": "2026-04-26",
+      "aliases": [
+        "anthropic/claude-sonnet-4-6"
+      ],
+      "source_urls": [
+        "https://platform.claude.com/docs/en/about-claude/models/overview"
+      ],
+      "notes": "Strong research-engineering model, but Anthropic C4 requires Opus 4.6 or newer."
+    },
+    "claude-opus-4-5": {
+      "status": "allowed",
+      "provider": "anthropic",
+      "tier": "C3",
+      "reviewed_at": "2026-04-26",
+      "aliases": [
+        "anthropic/claude-opus-4-5"
+      ],
+      "source_urls": [
+        "https://www.anthropic.com/news/claude-opus-4-6"
+      ],
+      "notes": "Kept below C4 because the Anthropic C4 baseline is Claude Opus 4.6 or newer."
     }
   },
-  "denylist": {
-    "example-provider/example-low-capability-model": {
-      "reason": "Example only. Replace with actual denied model identifiers if needed."
-    }
-  }
+  "denylist": {}
 }

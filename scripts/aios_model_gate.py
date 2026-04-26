@@ -14,6 +14,10 @@ import re
 import secrets
 import shlex
 import sys
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - compatibility for Python < 3.11
+    tomllib = None
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -24,6 +28,8 @@ RUNTIME_DIR = ROOT / ".aios_runtime"
 SESSION_MODEL_PATH = RUNTIME_DIR / "session_model.json"
 CURRENT_RUN_PATH = RUNTIME_DIR / "current_agent_run.json"
 AGENT_RUNS_DIR = ROOT / "aletheia_os/agent_runs"
+CODEX_CONFIG_PATH = Path.home() / ".codex" / "config.toml"
+CODEX_ENV_KEYS = ("CODEX_THREAD_ID", "CODEX_CI", "CODEX_SANDBOX")
 
 TIER_ORDER = {"C0": 0, "C1": 1, "C2": 2, "C3": 3, "C4": 4}
 WRITE_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
@@ -76,6 +82,45 @@ def shell_export(name: str, value: str) -> str:
     return f"export {name}={shlex.quote(value)}\n"
 
 
+def running_under_codex() -> bool:
+    return any(os.environ.get(key) for key in CODEX_ENV_KEYS)
+
+
+def infer_provider_from_model(model_id: str) -> str:
+    normalized = model_id.lower()
+    if normalized.startswith(("gpt-", "o1", "o3", "o4", "o5")):
+        return "openai"
+    if normalized.startswith("claude-"):
+        return "anthropic"
+    if normalized.startswith(("gemini-", "gemma-")):
+        return "google"
+    return "unknown"
+
+
+def detect_codex_config_model() -> dict[str, str]:
+    if tomllib is None or not running_under_codex() or not CODEX_CONFIG_PATH.exists():
+        return {}
+    try:
+        data = tomllib.loads(CODEX_CONFIG_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+    model_id = data.get("model")
+    if not model_id:
+        return {}
+
+    result = {
+        "provider": infer_provider_from_model(str(model_id)),
+        "model_id": str(model_id),
+        "agent_tool": "codex",
+        "metadata_source": "codex_config_toml",
+    }
+    reasoning_effort = data.get("model_reasoning_effort")
+    if reasoning_effort:
+        result["reasoning_effort"] = str(reasoning_effort)
+    return result
+
+
 def normalize_model_key(provider: str | None, model_id: str | None) -> list[str]:
     keys: list[str] = []
     if provider and model_id:
@@ -90,12 +135,20 @@ def detect_provider(args: argparse.Namespace, payload: dict[str, Any] | None = N
         return args.provider
     if payload and payload.get("model") and payload.get("hook_event_name") in {"SessionStart", "PreToolUse"}:
         return "anthropic"
-    return (
+    env_provider = (
         os.environ.get("AIOS_AGENT_PROVIDER")
         or os.environ.get("AIOS_PROVIDER")
         or os.environ.get("LLM_PROVIDER")
-        or "unknown"
     )
+    if env_provider:
+        return env_provider
+    codex_model = detect_codex_config_model()
+    if codex_model.get("provider"):
+        return codex_model["provider"]
+    session = load_json(SESSION_MODEL_PATH, {})
+    if session.get("provider"):
+        return str(session["provider"])
+    return "unknown"
 
 
 def detect_model(args: argparse.Namespace, payload: dict[str, Any] | None = None) -> str:
@@ -106,6 +159,9 @@ def detect_model(args: argparse.Namespace, payload: dict[str, Any] | None = None
     for key in ["AIOS_MODEL_ID", "AIOS_MODEL", "ANTHROPIC_MODEL", "CLAUDE_MODEL", "OPENAI_MODEL", "CODEX_MODEL", "LLM_MODEL", "MODEL"]:
         if os.environ.get(key):
             return os.environ[key]
+    codex_model = detect_codex_config_model()
+    if codex_model.get("model_id"):
+        return codex_model["model_id"]
     session = load_json(SESSION_MODEL_PATH, {})
     if session.get("model_id"):
         return str(session["model_id"])
@@ -117,7 +173,16 @@ def detect_tool(args: argparse.Namespace, payload: dict[str, Any] | None = None)
         return args.agent_tool
     if payload and payload.get("hook_event_name"):
         return "claude_code"
-    return os.environ.get("AIOS_AGENT_TOOL") or os.environ.get("AIOS_TOOL") or "unknown"
+    env_tool = os.environ.get("AIOS_AGENT_TOOL") or os.environ.get("AIOS_TOOL")
+    if env_tool:
+        return env_tool
+    codex_model = detect_codex_config_model()
+    if codex_model.get("agent_tool"):
+        return codex_model["agent_tool"]
+    session = load_json(SESSION_MODEL_PATH, {})
+    if session.get("agent_tool"):
+        return str(session["agent_tool"])
+    return "unknown"
 
 
 def registered_entry(registry: dict[str, Any], provider: str, model_id: str) -> tuple[str, dict[str, Any] | None]:

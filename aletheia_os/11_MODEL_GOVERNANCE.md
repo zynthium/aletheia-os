@@ -75,6 +75,12 @@ AIOS_AGENT_TOOL=codex \
 python3 scripts/aios_model_gate.py --task-class research_design --record --objective "..."
 ```
 
+When running under Codex, the gate also attempts a local best-effort
+identification from `~/.codex/config.toml`. If the Codex runtime exposes
+`CODEX_THREAD_ID`, `CODEX_CI`, or `CODEX_SANDBOX`, the gate reads the Codex
+configured `model`, infers the provider, and treats the tool as `codex`.
+This is host-provided metadata, not model self-attestation.
+
 ## Unknown model rule
 
 The default policy is:

@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "default_policy": {
+    "unknown_model_policy": "read_only",
+    "require_registered_model_for_writes": true,
+    "require_agent_run_for_checkpoint": true,
+    "allow_self_attested_tier": false,
+    "minimum_tier_for_bootstrap_finalize": "C3",
+    "minimum_tier_for_checkpoint": "C2",
+    "unclassified_write_minimum_tier": "C3"
+  },
+  "capability_tiers": {
+    "C0": {
+      "rank": 0,
+      "label": "read_only_or_untrusted",
+      "description": "Unknown, weak, or untrusted model. May orient and summarize only."
+    },
+    "C1": {
+      "rank": 1,
+      "label": "basic_helper",
+      "description": "Basic documentation and formatting tasks only."
+    },
+    "C2": {
+      "rank": 2,
+      "label": "engineering_executor",
+      "description": "Local implementation, tests, scripts, and mechanical refactors."
+    },
+    "C3": {
+      "rank": 3,
+      "label": "research_engineer",
+      "description": "Research design, architecture, evidence interpretation, cross-boundary changes."
+    },
+    "C4": {
+      "rank": 4,
+      "label": "strategic_research_lead",
+      "description": "Root theory changes, safety-critical production changes, high-stakes optimization."
+    }
+  },
+  "task_classes": {
+    "orientation": {
+      "min_tier": "C0",
+      "write_allowed": false,
+      "description": "Read-only orientation and context loading."
+    },
+    "documentation_noncritical": {
+      "min_tier": "C1",
+      "write_allowed": true,
+      "description": "Low-risk README or formatting work that does not change project decisions."
+    },
+    "mechanical_implementation": {
+      "min_tier": "C2",
+      "write_allowed": true,
+      "description": "Local implementation, tests, scripts, and mechanical changes."
+    },
+    "bugfix_local": {
+      "min_tier": "C2",
+      "write_allowed": true,
+      "description": "Localized defect repair with verification."
+    },
+    "cross_boundary_refactor": {
+      "min_tier": "C3",
+      "write_allowed": true,
+      "description": "Refactor that crosses modules, contracts, layers, or disciplines."
+    },
+    "research_design": {
+      "min_tier": "C3",
+      "write_allowed": true,
+      "description": "Design a research program, experiment, simulation, proof path, or evidence protocol."
+    },
+    "hypothesis_update": {
+      "min_tier": "C3",
+      "write_allowed": true,
+      "description": "Create or revise hypothesis, evidence interpretation, or graph confidence."
+    },
+    "architecture_decision": {
+      "min_tier": "C3",
+      "write_allowed": true,
+      "description": "Durable architecture, interface, or project-system decision."
+    },
+    "production_safety_critical": {
+      "min_tier": "C4",
+      "write_allowed": true,
+      "description": "Live trading, flight/vehicle/manufacturing safety, capital allocation, or irreversible operations."
+    },
+    "root_theory_revision": {
+      "min_tier": "C4",
+      "write_allowed": true,
+      "description": "Change mission, root theory, root objectives, or top-level optimization criteria."
+    },
+    "checkpoint": {
+      "min_tier": "C2",
+      "write_allowed": true,
+      "description": "Create a git checkpoint after validation."
+    },
+    "bootstrap_finalize": {
+      "min_tier": "C3",
+      "write_allowed": true,
+      "description": "Finalize first-time initialization and delete BOOTSTRAP.md."
+    }
+  },
+  "registered_models": {
+    "example-provider/example-high-reasoning-model": {
+      "status": "example_disabled",
+      "tier": "C4",
+      "notes": "Replace with actual provider/model identifiers approved by the project owner."
+    }
+  },
+  "denylist": {
+    "example-provider/example-low-capability-model": {
+      "reason": "Example only. Replace with actual denied model identifiers if needed."
+    }
+  }
+}

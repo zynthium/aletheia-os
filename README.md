@@ -83,6 +83,10 @@ Workflow:
 # Validate required project-state files and linkage rules
 python3 scripts/aios_validate.py
 
+# Gate the current AI assistant for a task and record attribution
+python3 scripts/aios_model_gate.py --task-class research_design --record --objective "short objective"
+
+
 # Print a compact context pack for a new AI session
 python3 scripts/aios_context_pack.py
 
@@ -99,12 +103,41 @@ python3 scripts/aios_bootstrap.py --finalize
 python3 scripts/aios_bootstrap.py --configure-hooks
 ```
 
+## Model governance and attribution
+
+This scaffold includes a capability gate for AI coding assistants. The project does not assume every model is competent enough for research-heavy work. Before durable writes, the assistant should run:
+
+```bash
+python3 scripts/aios_model_gate.py --task-class <task_class> --record --objective "<short objective>"
+```
+
+The gate checks `project_os/model_registry.json` and creates an attribution record under `project_os/agent_runs/`. Unknown models are read-only by default. For tools that do not expose a model identifier, set explicit metadata:
+
+```bash
+AIOS_AGENT_PROVIDER=openai \
+AIOS_MODEL_ID="provider-model-id" \
+AIOS_AGENT_TOOL=codex \
+python3 scripts/aios_model_gate.py --task-class research_design --record --objective "Design evidence protocol"
+```
+
+Capability tiers are practical governance tiers, not literal IQ scores:
+
+```text
+C0: unknown/read-only
+C1: basic helper/documentation
+C2: engineering executor
+C3: research-engineering model
+C4: strategic research lead / safety-critical model
+```
+
+Every non-trivial checkpoint should include agent attribution trailers in the git commit message. Configure approved models in `project_os/model_registry.json`; keep weak or unwanted models in the denylist.
+
 ## Attention model
 
 The scaffold uses a tiered attention policy rather than asking the assistant to read everything.
 
 ```text
-Tier 0: START_HERE, AGENTS, Charter, Attention Policy, Active State
+Tier 0: START_HERE, AGENTS, Charter, Attention Policy, Model Governance, Active State
 Tier 1: active system node and parent/child dependencies
 Tier 2: contracts and decision records for crossed boundaries
 Tier 3: evidence relevant to the current claim or promotion decision
@@ -156,12 +189,19 @@ A stop-event checkpoint is allowed only when:
 - validation passes;
 - git has changes;
 - no protected secret-like files are staged;
+- an allowed agent run is recorded, unless the operator explicitly overrides attribution;
 - the task has updated durable project state, such as `project_os/02_ACTIVE_STATE.md`, `project_os/evidence/`, `project_os/decisions/`, `project_os/contracts/`, or `project_os/session_notes/`.
 
-This avoids committing half-finished code-only edits without project-state synchronization. To allow code-only auto commits, set:
+This avoids committing half-finished code-only edits without project-state synchronization or model attribution. To allow code-only auto commits, set:
 
 ```bash
 export AIOS_ALLOW_CODE_ONLY_COMMIT=1
+```
+
+To deliberately bypass missing model attribution for a manual/operator commit only:
+
+```bash
+export AIOS_ALLOW_UNATTRIBUTED_CHECKPOINT=1
 ```
 
 Manual checkpointing is always possible:
@@ -192,6 +232,9 @@ python3 scripts/aios_checkpoint.py --auto --message "checkpoint: complete active
 │   ├── 08_GIT_POLICY.md
 │   ├── 09_DOMAIN_PROFILE.md
 │   ├── 10_ATTENTION_POLICY.md
+│   ├── 11_MODEL_GOVERNANCE.md
+│   ├── model_registry.json
+│   ├── agent_runs/
 │   ├── contracts/
 │   ├── decisions/
 │   ├── evidence/

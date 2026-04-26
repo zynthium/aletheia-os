@@ -27,11 +27,28 @@ Do not auto-commit when:
 - generated/heavy artifacts dominate the diff;
 - user explicitly asks not to commit.
 
+
+## Model attribution in commits
+
+Every non-trivial checkpoint should include agent attribution trailers. `scripts/aios_checkpoint.py` reads `.aios_runtime/current_agent_run.json` and appends these trailers when available:
+
+```text
+AIOS-Agent-Run: RUN-...
+AIOS-Agent-Provider: ...
+AIOS-Agent-Model: ...
+AIOS-Agent-Tier: C3
+AIOS-Task-Class: research_design
+AIOS-Gate: allowed
+```
+
+If no current agent run exists, checkpointing is blocked by default when `project_os/model_registry.json` requires attribution. Override only with explicit operator intent.
+
 ## Auto-commit controls
 
 ```bash
 export AIOS_AUTOCOMMIT=1                 # allow Claude Code stop-hook auto commits
 export AIOS_ALLOW_CODE_ONLY_COMMIT=1     # allow code-only auto commits when validation passes
+export AIOS_ALLOW_UNATTRIBUTED_CHECKPOINT=1 # operator override for missing agent attribution
 ```
 
 Manual checkpoint:

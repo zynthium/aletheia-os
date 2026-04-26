@@ -2,7 +2,7 @@
 
 This file is the stable entry point for any AI coding assistant working in this repository.
 
-The repository is the durable memory. Chat history is not durable memory. Before any non-trivial work, build a top-down view from the files below, then narrow attention to the active task.
+The repository is the durable memory. Chat history is not durable memory. Before any non-trivial work, build a top-down view from the files below, confirm model capability, then narrow attention to the active task.
 
 ## Read order
 
@@ -11,15 +11,26 @@ For any non-trivial task, read in this order:
 1. `AGENTS.md` — repository-wide operating protocol.
 2. `project_os/00_CHARTER.md` — mission, priority order, non-negotiable constraints.
 3. `project_os/10_ATTENTION_POLICY.md` — how to preserve global view under limited context.
-4. `project_os/02_ACTIVE_STATE.md` — current frontier, active nodes, blockers, next actions.
-5. Relevant node(s) in `project_os/01_SYSTEM_GRAPH.yaml` or `project_os/nodes/`.
-6. Relevant contracts, evidence, decisions, code, tests, or experiment files only after the active node is identified.
+4. `project_os/11_MODEL_GOVERNANCE.md` — model capability gate and attribution policy.
+5. `project_os/02_ACTIVE_STATE.md` — current frontier, active nodes, blockers, next actions.
+6. Relevant node(s) in `project_os/01_SYSTEM_GRAPH.yaml` or `project_os/nodes/`.
+7. Relevant contracts, evidence, decisions, code, tests, or experiment files only after the active node is identified.
 
 For a compact session preload, run:
 
 ```bash
 python3 scripts/aios_orient.py
 ```
+
+## Model capability gate
+
+Before durable writes, the assistant must be accepted for the task class:
+
+```bash
+python3 scripts/aios_model_gate.py --task-class <task_class> --record --objective "<short objective>"
+```
+
+Use `project_os/11_MODEL_GOVERNANCE.md` and `project_os/model_registry.json` to determine whether the current model is allowed. Unknown models are read-only by default.
 
 ## Global View Checksum
 
@@ -36,6 +47,8 @@ Success criteria:
 Invalidation / stop criteria:
 Likely downstream impact:
 Durable files that may need update:
+Model gate status:
+Agent run id:
 Checkpoint policy for this task:
 ```
 
@@ -62,5 +75,5 @@ A task is not complete until the durable state is coherent:
 1. requested work completed or blocked with explicit reason;
 2. verification run or inability to verify recorded;
 3. affected evidence / decision / contract / active-state files updated when applicable;
-4. session note written for substantial work;
+4. session note written for substantial work with agent attribution;
 5. checkpoint commit created or explicitly deferred with reason.

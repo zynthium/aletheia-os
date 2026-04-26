@@ -4,11 +4,15 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+CURRENT_RUN_PATH = ROOT / ".aios_runtime/current_agent_run.json"
+TIER_ORDER = {"C0": 0, "C1": 1, "C2": 2, "C3": 3, "C4": 4}
 
 POST_BOOTSTRAP_REQUIRED_NO_TBD = [
     "project_os/00_CHARTER.md",
@@ -65,7 +69,40 @@ def post_bootstrap_ready() -> int:
     return 0
 
 
+
+def bootstrap_model_gate_ready() -> int:
+    if os.environ.get("AIOS_ALLOW_UNATTRIBUTED_CHECKPOINT") == "1":
+        print("bootstrap model gate override enabled by AIOS_ALLOW_UNATTRIBUTED_CHECKPOINT=1")
+        return 0
+    if not CURRENT_RUN_PATH.exists():
+        print("bootstrap blocked: no AI model gate run recorded")
+        print("Run: python3 scripts/aios_model_gate.py --task-class bootstrap_finalize --record --objective \"Initialize AI Project OS\"")
+        return 1
+    try:
+        run_data = json.loads(CURRENT_RUN_PATH.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"bootstrap blocked: invalid current agent run record: {exc}")
+        return 1
+    if run_data.get("gate_status") != "allowed":
+        print("bootstrap blocked: current AI model was not allowed by model gate")
+        print(f"  run_id: {run_data.get('run_id')}")
+        print(f"  gate_status: {run_data.get('gate_status')}")
+        return 1
+    if TIER_ORDER.get(str(run_data.get("capability_tier")), -1) < TIER_ORDER["C3"]:
+        print("bootstrap blocked: bootstrap_finalize requires capability tier C3 or higher")
+        print(f"  tier: {run_data.get('capability_tier')}")
+        return 1
+    if run_data.get("task_class") != "bootstrap_finalize":
+        print("bootstrap blocked: current agent run is not task_class=bootstrap_finalize")
+        print(f"  task_class: {run_data.get('task_class')}")
+        return 1
+    return 0
+
 def finalize() -> int:
+    rc = bootstrap_model_gate_ready()
+    if rc != 0:
+        return rc
+
     # First validate project-state structure while BOOTSTRAP.md still exists.
     rc = validate()
     if rc != 0:

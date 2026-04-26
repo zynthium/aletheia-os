@@ -2,7 +2,7 @@
 """Print a compact context pack for an AI-agent session.
 
 The pack is intentionally top-down: entry protocol, root constraints, attention
-policy, active state, graph, and git policy. Local files should be loaded only
+policy, model governance, active state, graph, and git policy. Local files should be loaded only
 after an active node is identified.
 """
 
@@ -16,6 +16,8 @@ FILES = [
     "AGENTS.md",
     "project_os/00_CHARTER.md",
     "project_os/10_ATTENTION_POLICY.md",
+    "project_os/11_MODEL_GOVERNANCE.md",
+    "project_os/model_registry.json",
     "project_os/02_ACTIVE_STATE.md",
     "project_os/01_SYSTEM_GRAPH.yaml",
     "project_os/08_GIT_POLICY.md",

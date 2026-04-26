@@ -4,6 +4,17 @@
 
 ## Claude Code-specific workflow
 
+## Model gate and attribution
+
+Claude Code project hooks run `scripts/aios_model_gate.py` on session start and before write-capable tools. Session start records detected model metadata into the runtime environment when available. Before durable writes, explicitly gate the task:
+
+```bash
+python3 scripts/aios_model_gate.py --task-class <task_class> --record --objective "<short objective>"
+```
+
+If the gate blocks the task, stop and report the model id, task class, required tier, and allowed fallback.
+
+
 - Use planning before changing `project_os/`, core interfaces, production code, experiments, or simulations.
 - Use subagents for exploration, adversarial review, evidence curation, engineering review, and objective/portfolio review when the task is multi-step.
 - Keep the main conversation anchored on the active node and parent constraints.
@@ -43,6 +54,8 @@ Stop and reorient if:
 
 Project hooks are configured in `.claude/settings.json`.
 
+- Session start detects model metadata and reminds the assistant to gate the task.
+- Pre-tool hooks block write-capable tool calls unless an allowed agent run is recorded.
 - File writes/edits are logged to `.aios_runtime/change_log.jsonl`.
 - Stop events run `scripts/aios_stop_hook.py`.
 - Automatic commits require `AIOS_AUTOCOMMIT=1`.

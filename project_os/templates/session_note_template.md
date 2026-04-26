@@ -1,5 +1,17 @@
 # SESSION-YYYYMMDD-short-title
 
+
+## Agent attribution
+
+| Field | Value |
+|---|---|
+| Agent run id | `TBD` |
+| Provider | TBD |
+| Model id | TBD |
+| Capability tier | TBD |
+| Task class | TBD |
+| Gate status | TBD |
+
 ## Active node
 
 `TBD`

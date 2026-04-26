@@ -4,6 +4,18 @@
 
 TBD.
 
+
+## Agent attribution
+
+| Field | Value |
+|---|---|
+| Agent run id | `bootstrap-placeholder` |
+| Provider | bootstrap-placeholder |
+| Model id | bootstrap-placeholder |
+| Capability tier | bootstrap-placeholder |
+| Task class | bootstrap-placeholder |
+| Gate status | bootstrap-placeholder |
+
 ## Active node
 
 `root`

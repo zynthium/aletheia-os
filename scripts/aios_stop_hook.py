@@ -13,17 +13,37 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+CURRENT_RUN_PATH = ROOT / ".aios_runtime/current_agent_run.json"
 
 
 def run(cmd: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(cmd, cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
 
+
+def current_run_summary() -> str:
+    if not CURRENT_RUN_PATH.exists():
+        return "AIOS stop hook: no current agent run attribution recorded."
+    try:
+        run = json.loads(CURRENT_RUN_PATH.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return f"AIOS stop hook: current agent run record is invalid: {exc}"
+    return (
+        "AIOS stop hook: current agent run "
+        f"{run.get('run_id', 'unknown')} "
+        f"{run.get('provider', 'unknown')}/{run.get('model_id', 'unknown')} "
+        f"tier={run.get('capability_tier', 'unknown')} "
+        f"task={run.get('task_class', 'unknown')} "
+        f"gate={run.get('gate_status', 'unknown')}"
+    )
+
 def main() -> int:
     try:
         _payload = json.load(sys.stdin)
     except Exception:
         _payload = {}
+
+    print(current_run_summary())
 
     validate = run([sys.executable, "scripts/aios_validate.py"])
     print(validate.stdout)

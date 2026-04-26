@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import subprocess
@@ -11,6 +12,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+CURRENT_RUN_PATH = ROOT / ".aios_runtime/current_agent_run.json"
+MODEL_REGISTRY_PATH = ROOT / "project_os/model_registry.json"
 
 PROTECTED_PATTERNS = [
     re.compile(r"(^|/)\.env(\.|$)"),
@@ -31,6 +34,8 @@ STATE_PATTERNS = [
     "docs/AGENTS.md",
     "infra/AGENTS.md",
     "project_os/10_ATTENTION_POLICY.md",
+    "project_os/11_MODEL_GOVERNANCE.md",
+    "project_os/model_registry.json",
     "project_os/02_ACTIVE_STATE.md",
     "project_os/01_SYSTEM_GRAPH.yaml",
     "project_os/03_FRONTIER_BOARD.md",
@@ -45,6 +50,7 @@ STATE_PATTERNS = [
     "project_os/hypotheses/",
     "project_os/nodes/",
     "project_os/session_notes/",
+    "project_os/agent_runs/",
 ]
 
 
@@ -107,9 +113,61 @@ def has_protected(files: list[str]) -> list[str]:
     return [f for f in files if any(rx.search(f) for rx in PROTECTED_PATTERNS)]
 
 
+
+def load_json(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def require_agent_run_for_checkpoint() -> bool:
+    registry = load_json(MODEL_REGISTRY_PATH)
+    default_policy = registry.get("default_policy", {}) if isinstance(registry.get("default_policy", {}), dict) else {}
+    return bool(default_policy.get("require_agent_run_for_checkpoint", False))
+
+
+def load_current_agent_run() -> dict:
+    run_data = load_json(CURRENT_RUN_PATH)
+    if run_data:
+        return run_data
+    provider = os.environ.get("AIOS_AGENT_PROVIDER") or os.environ.get("AIOS_PROVIDER")
+    model = os.environ.get("AIOS_MODEL_ID") or os.environ.get("AIOS_MODEL")
+    tier = os.environ.get("AIOS_MODEL_TIER") or os.environ.get("AIOS_CAPABILITY_TIER")
+    task_class = os.environ.get("AIOS_TASK_CLASS")
+    if provider or model or tier or task_class:
+        return {
+            "run_id": os.environ.get("AIOS_AGENT_RUN_ID", "unrecorded-env"),
+            "provider": provider or "unknown",
+            "model_id": model or "unknown",
+            "capability_tier": tier or "unknown",
+            "task_class": task_class or "unknown",
+            "gate_status": os.environ.get("AIOS_GATE_STATUS", "unrecorded"),
+        }
+    return {}
+
+
+def attribution_trailers(run_data: dict) -> str:
+    if not run_data:
+        return ""
+    fields = [
+        ("AIOS-Agent-Run", run_data.get("run_id", "unknown")),
+        ("AIOS-Agent-Provider", run_data.get("provider", "unknown")),
+        ("AIOS-Agent-Model", run_data.get("model_id", "unknown")),
+        ("AIOS-Agent-Tier", run_data.get("capability_tier", "unknown")),
+        ("AIOS-Task-Class", run_data.get("task_class", "unknown")),
+        ("AIOS-Gate", run_data.get("gate_status", "unknown")),
+    ]
+    return "\n\n" + "\n".join(f"{k}: {v}" for k, v in fields)
+
 def infer_message(files: list[str]) -> str:
     if "BOOTSTRAP.md" in files:
         return "bootstrap: initialize AI project OS"
+    if "project_os/11_MODEL_GOVERNANCE.md" in files or "project_os/model_registry.json" in files:
+        return "governance: update model gate policy"
     if "project_os/10_ATTENTION_POLICY.md" in files or "START_HERE.md" in files:
         return "state: update orientation and attention policy"
     if any(f.startswith("project_os/evidence/") for f in files):
@@ -145,6 +203,7 @@ def main() -> int:
     parser.add_argument("--no-validate", action="store_true", help="skip AIOS validation")
     parser.add_argument("--allow-code-only", action="store_true", help="allow commit even if no durable state file changed")
     parser.add_argument("--dry-run", action="store_true", help="print intended action without committing")
+    parser.add_argument("--no-model-gate", action="store_true", help="operator override: do not require agent attribution for this checkpoint")
     args = parser.parse_args()
 
     ensure_git()
@@ -174,12 +233,28 @@ def main() -> int:
         print("Override with --allow-code-only or AIOS_ALLOW_CODE_ONLY_COMMIT=1 if intentional.")
         return 3
 
+    run_data = load_current_agent_run()
+    allow_unattributed = args.no_model_gate or os.environ.get("AIOS_ALLOW_UNATTRIBUTED_CHECKPOINT") == "1"
+    if require_agent_run_for_checkpoint() and not run_data and not allow_unattributed:
+        print("checkpoint blocked: no current AI agent run attribution found")
+        print('Run: python3 scripts/aios_model_gate.py --task-class <task_class> --record --objective "..."')
+        print("Override with --no-model-gate or AIOS_ALLOW_UNATTRIBUTED_CHECKPOINT=1 only with explicit operator intent.")
+        return 4
+    if run_data and run_data.get("gate_status") not in {"allowed", "unrecorded"} and not allow_unattributed:
+        print("checkpoint blocked: current AI agent run was not allowed by model gate")
+        print(f"  run_id: {run_data.get('run_id')}")
+        print(f"  gate_status: {run_data.get('gate_status')}")
+        return 5
+
     message = args.message or infer_message(files)
+    message_with_trailers = message + attribution_trailers(run_data)
 
     print("checkpoint candidate:")
     for f in files:
         print(f"  - {f}")
     print(f"message: {message}")
+    if run_data:
+        print(f"agent_run: {run_data.get('run_id', 'unknown')} {run_data.get('provider', 'unknown')}/{run_data.get('model_id', 'unknown')} tier={run_data.get('capability_tier', 'unknown')} task={run_data.get('task_class', 'unknown')}")
 
     if args.dry_run:
         return 0
@@ -192,7 +267,7 @@ def main() -> int:
 
     run(["git", "add", "-A"])
     try:
-        run(["git", "commit", "-m", message])
+        run(["git", "commit", "-m", message_with_trailers])
     except subprocess.CalledProcessError as exc:
         print("checkpoint failed: git commit returned non-zero status")
         print("Common cause: git user.name/user.email not configured.")

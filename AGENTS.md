@@ -7,15 +7,37 @@ This repository uses a durable project-state system. The repository is the long-
 1. `START_HERE.md`
 2. `project_os/00_CHARTER.md`
 3. `project_os/10_ATTENTION_POLICY.md`
-4. `project_os/02_ACTIVE_STATE.md`
-5. the relevant node(s) in `project_os/01_SYSTEM_GRAPH.yaml` or `project_os/nodes/`
-6. relevant `project_os/contracts/` files if changing interfaces or boundaries
-7. relevant `project_os/evidence/` and `project_os/decisions/` files if changing claims, priorities, or architecture
+4. `project_os/11_MODEL_GOVERNANCE.md`
+5. `project_os/02_ACTIVE_STATE.md`
+6. the relevant node(s) in `project_os/01_SYSTEM_GRAPH.yaml` or `project_os/nodes/`
+7. relevant `project_os/contracts/` files if changing interfaces or boundaries
+8. relevant `project_os/evidence/` and `project_os/decisions/` files if changing claims, priorities, or architecture
 
 For a compact session preload, run:
 
 ```bash
 python3 scripts/aios_orient.py
+```
+
+## Model gate before writes
+
+Before any durable write, implementation change, research update, architecture decision, or checkpoint, run or verify:
+
+```bash
+python3 scripts/aios_model_gate.py --task-class <task_class> --record --objective "<short objective>"
+```
+
+Task classes are defined in `project_os/model_registry.json`. Unknown or under-tier models are read-only by default. If the gate rejects the model, do not continue with smaller local edits; report the rejection and the required minimum tier.
+
+Include agent attribution in session notes and checkpoint commits:
+
+```text
+Agent run id:
+Provider:
+Model id:
+Capability tier:
+Task class:
+Gate status:
 ```
 
 ## Global View Checksum
@@ -35,6 +57,8 @@ Invalidation / stop criteria:
 Likely downstream impact:
 Required durable updates:
 Verification path:
+Model gate status:
+Agent run id:
 Checkpoint plan:
 ```
 
@@ -109,6 +133,9 @@ When promoting exploratory work to implementation:
 5. validate before checkpoint.
 
 ## Completion standard
+
+For non-trivial work, completion also requires model attribution: an agent run record under `project_os/agent_runs/` or an explicit reason why no model gate was required.
+
 
 A task is complete only when:
 

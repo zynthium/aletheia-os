@@ -43,6 +43,8 @@ Invalidation criteria:
 Downstream impact:
 Required durable updates:
 Verification path:
+Model gate status:
+Agent run id:
 Checkpoint plan:
 ```""")
 

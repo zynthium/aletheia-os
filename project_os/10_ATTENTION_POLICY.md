@@ -15,6 +15,8 @@ Use for every non-trivial session:
 - `project_os/00_CHARTER.md`
 - `project_os/10_ATTENTION_POLICY.md`
 - `project_os/02_ACTIVE_STATE.md`
+- `project_os/11_MODEL_GOVERNANCE.md` when durable writes are possible
+- `project_os/model_registry.json` when model gating or attribution is involved
 
 Purpose: preserve mission, constraints, current frontier, and completion rules.
 
@@ -85,6 +87,8 @@ Invalidation criteria:
 Downstream impact:
 Required durable updates:
 Verification path:
+Model gate status:
+Agent run id:
 Checkpoint plan:
 ```
 
@@ -99,7 +103,8 @@ Use this when finishing a substantial task, hitting context pressure, or switchi
 3. Update evidence, decision, contract, node, or graph files if affected.
 4. Run `python3 scripts/aios_validate.py`.
 5. Run `python3 scripts/aios_checkpoint.py --auto` when appropriate.
-6. Clear/reset the AI conversation and restart from `START_HERE.md` or `python3 scripts/aios_orient.py`.
+6. Ensure the session note and checkpoint include model attribution.
+7. Clear/reset the AI conversation and restart from `START_HERE.md` or `python3 scripts/aios_orient.py`.
 
 ## Stop signs
 
@@ -111,4 +116,5 @@ Stop local execution and reorient when any of these occur:
 - implementation feasibility changes the design space;
 - the assistant begins optimizing a proxy metric instead of the stated objective;
 - the working set expands into unrelated branches;
-- the project-state files and implementation files disagree.
+- the project-state files and implementation files disagree;
+- the current model is unknown, under-tier, or rejected for the task class.

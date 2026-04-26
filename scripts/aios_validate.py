@@ -8,6 +8,7 @@ linkage checks.
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -31,6 +32,8 @@ REQUIRED_FILES = [
     "project_os/08_GIT_POLICY.md",
     "project_os/09_DOMAIN_PROFILE.md",
     "project_os/10_ATTENTION_POLICY.md",
+    "project_os/11_MODEL_GOVERNANCE.md",
+    "project_os/model_registry.json",
     "src/AGENTS.md",
     "tests/AGENTS.md",
     "experiments/AGENTS.md",
@@ -48,6 +51,7 @@ REQUIRED_DIRS = [
     "project_os/nodes",
     "project_os/playbooks",
     "project_os/session_notes",
+    "project_os/agent_runs",
     "project_os/templates",
     "scripts",
     "src",
@@ -70,6 +74,7 @@ CRITICAL_TBD_FILES = [
     "project_os/01_SYSTEM_GRAPH.yaml",
     "project_os/02_ACTIVE_STATE.md",
     "project_os/09_DOMAIN_PROFILE.md",
+    "project_os/model_registry.json",
 ]
 
 
@@ -119,6 +124,44 @@ def extract_active_nodes(active_text: str) -> set[str]:
                 nodes.add(m.group(1))
     return nodes
 
+
+
+def validate_model_registry(errors: list[str], warnings: list[str]) -> None:
+    path = ROOT / "project_os/model_registry.json"
+    if not path.exists():
+        return
+    try:
+        registry = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        errors.append(f"model registry JSON invalid: {exc}")
+        return
+
+    for section in ["default_policy", "capability_tiers", "task_classes", "registered_models", "denylist"]:
+        if section not in registry:
+            errors.append(f"model registry missing section: {section}")
+
+    tiers = registry.get("capability_tiers", {}) or {}
+    for required in ["C0", "C1", "C2", "C3", "C4"]:
+        if required not in tiers:
+            errors.append(f"model registry missing capability tier: {required}")
+
+    task_classes = registry.get("task_classes", {}) or {}
+    for required in ["orientation", "mechanical_implementation", "research_design", "production_safety_critical", "root_theory_revision", "checkpoint", "bootstrap_finalize"]:
+        if required not in task_classes:
+            errors.append(f"model registry missing task class: {required}")
+
+    valid_tiers = set(tiers) or {"C0", "C1", "C2", "C3", "C4"}
+    for name, task in task_classes.items():
+        min_tier = str((task or {}).get("min_tier", ""))
+        if min_tier not in valid_tiers:
+            errors.append(f"task class {name} has invalid min_tier: {min_tier}")
+        if "write_allowed" not in task:
+            warnings.append(f"task class {name} missing write_allowed")
+
+    registered = registry.get("registered_models", {}) or {}
+    enabled = [k for k, v in registered.items() if str((v or {}).get("status", "allowed")) in {"allowed", "approved", "registered"}]
+    if not enabled:
+        warnings.append("model registry has no enabled registered models; non-trivial writes require operator override or registry customization")
 
 def main() -> int:
     errors: list[str] = []
@@ -180,6 +223,27 @@ def main() -> int:
         for phrase in ["START_HERE.md", "10_ATTENTION_POLICY", "Global View Checksum"]:
             if phrase not in agents_text:
                 warnings.append(f"AGENTS.md should mention {phrase}")
+
+
+    # Model governance checks.
+    model_governance = ROOT / "project_os/11_MODEL_GOVERNANCE.md"
+    if model_governance.exists():
+        mg_text = model_governance.read_text(encoding="utf-8")
+        for phrase in ["Capability tiers", "Task classes", "Attribution requirement", "aios_model_gate.py"]:
+            if phrase not in mg_text:
+                errors.append(f"model governance policy missing required guidance: {phrase}")
+    validate_model_registry(errors, warnings)
+
+    model_gate = ROOT / "scripts/aios_model_gate.py"
+    if not model_gate.exists():
+        errors.append("missing model gate script: scripts/aios_model_gate.py")
+
+    session_template = ROOT / "project_os/templates/session_note_template.md"
+    if session_template.exists():
+        st = session_template.read_text(encoding="utf-8")
+        for phrase in ["Agent attribution", "Model id", "Task class"]:
+            if phrase not in st:
+                warnings.append(f"session note template should include model attribution field: {phrase}")
 
     # Ensure evidence/decision/hypothesis files generally mention linked nodes.
     for folder in ["project_os/evidence", "project_os/decisions", "project_os/hypotheses"]:

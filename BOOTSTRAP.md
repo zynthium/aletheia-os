@@ -20,12 +20,34 @@ Read these files in order:
 4. `project_os/00_CHARTER.md`
 5. `project_os/10_ATTENTION_POLICY.md`
 6. `project_os/01_SYSTEM_GRAPH.yaml`
-7. `project_os/02_ACTIVE_STATE.md`
-8. `project_os/09_DOMAIN_PROFILE.md`
+7. `project_os/11_MODEL_GOVERNANCE.md`
+8. `project_os/model_registry.json`
+9. `project_os/02_ACTIVE_STATE.md`
+10. `project_os/09_DOMAIN_PROFILE.md`
 
 Then produce the Global View Checksum from `START_HERE.md`. If the checksum cannot be completed, mark uncertain fields as `TBD` and continue with initialization rather than inventing precision.
 
-### Step 2 — Establish project identity
+### Step 2 — Gate the initializing model
+
+Before editing durable project state, run:
+
+```bash
+python3 scripts/aios_model_gate.py --task-class bootstrap_finalize --record --objective "Initialize AI Project OS"
+```
+
+If the model is unknown, either register it in `project_os/model_registry.json` or use an explicit operator-approved override, for example:
+
+```bash
+AIOS_OPERATOR_APPROVED=1 \
+AIOS_MODEL_TIER=C3 \
+AIOS_MODEL_ID="provider-model-id" \
+AIOS_AGENT_PROVIDER="provider" \
+python3 scripts/aios_model_gate.py --task-class bootstrap_finalize --record --objective "Initialize AI Project OS"
+```
+
+Do not finalize bootstrap with an ungated model.
+
+### Step 3 — Establish project identity
 
 If the user has not provided a domain, ask for only the minimum needed:
 
@@ -35,7 +57,7 @@ What is the initial project domain, mission, and first active frontier?
 
 If the user has already provided enough information, do not ask again. Infer a provisional domain profile and mark uncertain fields as `TBD`.
 
-### Step 3 — Customize durable memory
+### Step 4 — Customize durable memory
 
 Update these files:
 
@@ -48,7 +70,7 @@ Update these files:
 
 Keep the scaffold domain-neutral unless the user explicitly asks for a domain-specific project.
 
-### Step 4 — Create initial records
+### Step 5 — Create initial records
 
 Create, at minimum:
 
@@ -57,7 +79,7 @@ Create, at minimum:
 - one initial decision record in `project_os/decisions/`
 - one first session note in `project_os/session_notes/`
 
-### Step 5 — Validate orientation and structure
+### Step 6 — Validate orientation and structure
 
 Run:
 
@@ -68,7 +90,7 @@ python3 scripts/aios_validate.py
 
 Fix validation issues before finalizing. During bootstrap, `TBD` markers are allowed as warnings. After `BOOTSTRAP.md` is removed, critical `TBD` markers become validation errors.
 
-### Step 6 — Finalize bootstrap
+### Step 7 — Finalize bootstrap
 
 Run:
 
@@ -84,7 +106,7 @@ This should:
 - remove this `BOOTSTRAP.md` file;
 - create the first git commit.
 
-### Step 7 — Report result
+### Step 8 — Report result
 
 Return:
 
@@ -92,8 +114,9 @@ Return:
 2. active frontier;
 3. Global View Checksum;
 4. files changed;
-5. first checkpoint commit status;
-6. next recommended task card.
+5. initializing model gate status and agent run id;
+6. first checkpoint commit status;
+7. next recommended task card.
 
 ## Forbidden during bootstrap
 

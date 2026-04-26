@@ -1,4 +1,4 @@
-# project_os/ Agent Rules
+# aletheia_os/ Agent Rules
 
 
 ## Model gate
@@ -21,8 +21,8 @@ Before modifying this directory:
 
 After modifying this directory:
 
-1. Update `project_os/02_ACTIVE_STATE.md` if frontier, blockers, active nodes, or next actions changed.
-2. Update `project_os/07_EVIDENCE_INDEX.md` if evidence files were added or retired.
-3. Update affected node files or `project_os/01_SYSTEM_GRAPH.yaml` if weight, confidence, dependencies, or status changed.
+1. Update `aletheia_os/02_ACTIVE_STATE.md` if frontier, blockers, active nodes, or next actions changed.
+2. Update `aletheia_os/07_EVIDENCE_INDEX.md` if evidence files were added or retired.
+3. Update affected node files or `aletheia_os/01_SYSTEM_GRAPH.yaml` if weight, confidence, dependencies, or status changed.
 4. Run `python3 scripts/aios_validate.py`.
 5. Create or recommend a checkpoint.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the AI Project OS scaffold.
+"""Validate the AletheiaOS repository structure.
 
 This script intentionally uses only the Python standard library so it works in
 fresh repositories. It performs structural, attention-policy, and lightweight
@@ -20,20 +20,20 @@ REQUIRED_FILES = [
     "START_HERE.md",
     "AGENTS.md",
     "CLAUDE.md",
-    "project_os/AGENTS.md",
-    "project_os/00_CHARTER.md",
-    "project_os/01_SYSTEM_GRAPH.yaml",
-    "project_os/02_ACTIVE_STATE.md",
-    "project_os/03_FRONTIER_BOARD.md",
-    "project_os/04_RISK_REGISTER.md",
-    "project_os/05_GLOSSARY.md",
-    "project_os/06_INTERFACE_CONTRACTS.md",
-    "project_os/07_EVIDENCE_INDEX.md",
-    "project_os/08_GIT_POLICY.md",
-    "project_os/09_DOMAIN_PROFILE.md",
-    "project_os/10_ATTENTION_POLICY.md",
-    "project_os/11_MODEL_GOVERNANCE.md",
-    "project_os/model_registry.json",
+    "aletheia_os/AGENTS.md",
+    "aletheia_os/00_CHARTER.md",
+    "aletheia_os/01_SYSTEM_GRAPH.yaml",
+    "aletheia_os/02_ACTIVE_STATE.md",
+    "aletheia_os/03_FRONTIER_BOARD.md",
+    "aletheia_os/04_RISK_REGISTER.md",
+    "aletheia_os/05_GLOSSARY.md",
+    "aletheia_os/06_INTERFACE_CONTRACTS.md",
+    "aletheia_os/07_EVIDENCE_INDEX.md",
+    "aletheia_os/08_GIT_POLICY.md",
+    "aletheia_os/09_DOMAIN_PROFILE.md",
+    "aletheia_os/10_ATTENTION_POLICY.md",
+    "aletheia_os/11_MODEL_GOVERNANCE.md",
+    "aletheia_os/model_registry.json",
     "src/AGENTS.md",
     "tests/AGENTS.md",
     "experiments/AGENTS.md",
@@ -44,15 +44,15 @@ REQUIRED_FILES = [
 ]
 
 REQUIRED_DIRS = [
-    "project_os/contracts",
-    "project_os/decisions",
-    "project_os/evidence",
-    "project_os/hypotheses",
-    "project_os/nodes",
-    "project_os/playbooks",
-    "project_os/session_notes",
-    "project_os/agent_runs",
-    "project_os/templates",
+    "aletheia_os/contracts",
+    "aletheia_os/decisions",
+    "aletheia_os/evidence",
+    "aletheia_os/hypotheses",
+    "aletheia_os/nodes",
+    "aletheia_os/playbooks",
+    "aletheia_os/session_notes",
+    "aletheia_os/agent_runs",
+    "aletheia_os/templates",
     "scripts",
     "src",
     "tests",
@@ -70,11 +70,11 @@ PROTECTED_PATTERNS = [
 ]
 
 CRITICAL_TBD_FILES = [
-    "project_os/00_CHARTER.md",
-    "project_os/01_SYSTEM_GRAPH.yaml",
-    "project_os/02_ACTIVE_STATE.md",
-    "project_os/09_DOMAIN_PROFILE.md",
-    "project_os/model_registry.json",
+    "aletheia_os/00_CHARTER.md",
+    "aletheia_os/01_SYSTEM_GRAPH.yaml",
+    "aletheia_os/02_ACTIVE_STATE.md",
+    "aletheia_os/09_DOMAIN_PROFILE.md",
+    "aletheia_os/model_registry.json",
 ]
 
 
@@ -100,7 +100,7 @@ def extract_graph_node_ids(graph_text: str) -> set[str]:
 
 def extract_file_node_ids() -> set[str]:
     ids: set[str] = set()
-    for p in (ROOT / "project_os/nodes").glob("*.yaml"):
+    for p in (ROOT / "aletheia_os/nodes").glob("*.yaml"):
         text = p.read_text(encoding="utf-8")
         m = re.search(r"^id:\s*([A-Za-z0-9_.-]+)\s*$", text, re.MULTILINE)
         if m:
@@ -127,7 +127,7 @@ def extract_active_nodes(active_text: str) -> set[str]:
 
 
 def validate_model_registry(errors: list[str], warnings: list[str]) -> None:
-    path = ROOT / "project_os/model_registry.json"
+    path = ROOT / "aletheia_os/model_registry.json"
     if not path.exists():
         return
     try:
@@ -181,7 +181,7 @@ def main() -> int:
             errors.append(f"missing required directory: {directory}")
 
     graph_nodes: set[str] = set()
-    graph_path = ROOT / "project_os/01_SYSTEM_GRAPH.yaml"
+    graph_path = ROOT / "aletheia_os/01_SYSTEM_GRAPH.yaml"
     if graph_path.exists():
         graph = graph_path.read_text(encoding="utf-8")
         for required in ["root:", "nodes:", "priority_formula:"]:
@@ -191,7 +191,7 @@ def main() -> int:
         if "TBD" in graph:
             (warnings if bootstrap_mode else errors).append("system graph still contains TBD markers")
 
-    active_state = ROOT / "project_os/02_ACTIVE_STATE.md"
+    active_state = ROOT / "aletheia_os/02_ACTIVE_STATE.md"
     if active_state.exists():
         text = active_state.read_text(encoding="utf-8")
         for heading in ["## Active frontier", "## Active nodes", "## Current blockers", "## Next actions"]:
@@ -210,7 +210,7 @@ def main() -> int:
             if phrase not in start_text:
                 errors.append(f"START_HERE.md missing required guidance: {phrase}")
 
-    attention = ROOT / "project_os/10_ATTENTION_POLICY.md"
+    attention = ROOT / "aletheia_os/10_ATTENTION_POLICY.md"
     if attention.exists():
         att_text = attention.read_text(encoding="utf-8")
         for phrase in ["Context tiers", "Tier 0", "Global View Checksum", "Stop signs", "Context reset protocol"]:
@@ -226,7 +226,7 @@ def main() -> int:
 
 
     # Model governance checks.
-    model_governance = ROOT / "project_os/11_MODEL_GOVERNANCE.md"
+    model_governance = ROOT / "aletheia_os/11_MODEL_GOVERNANCE.md"
     if model_governance.exists():
         mg_text = model_governance.read_text(encoding="utf-8")
         for phrase in ["Capability tiers", "Task classes", "Attribution requirement", "aios_model_gate.py"]:
@@ -238,7 +238,7 @@ def main() -> int:
     if not model_gate.exists():
         errors.append("missing model gate script: scripts/aios_model_gate.py")
 
-    session_template = ROOT / "project_os/templates/session_note_template.md"
+    session_template = ROOT / "aletheia_os/templates/session_note_template.md"
     if session_template.exists():
         st = session_template.read_text(encoding="utf-8")
         for phrase in ["Agent attribution", "Model id", "Task class"]:
@@ -246,7 +246,7 @@ def main() -> int:
                 warnings.append(f"session note template should include model attribution field: {phrase}")
 
     # Ensure evidence/decision/hypothesis files generally mention linked nodes.
-    for folder in ["project_os/evidence", "project_os/decisions", "project_os/hypotheses"]:
+    for folder in ["aletheia_os/evidence", "aletheia_os/decisions", "aletheia_os/hypotheses"]:
         for p in (ROOT / folder).glob("*.md"):
             text = p.read_text(encoding="utf-8")
             if "README" in p.name:

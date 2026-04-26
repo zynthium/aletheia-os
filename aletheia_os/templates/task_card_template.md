@@ -34,7 +34,7 @@ TBD.
 
 ## Required durable updates
 
-- [ ] `project_os/02_ACTIVE_STATE.md`
+- [ ] `aletheia_os/02_ACTIVE_STATE.md`
 - [ ] evidence record, if claim tested
 - [ ] ADR, if durable decision made
 - [ ] contract, if boundary changed

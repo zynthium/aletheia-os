@@ -36,7 +36,7 @@ These may be revised only through explicit decision records.
 
 | Work item | Node | Status | Owner | Evidence/decision link |
 |---|---|---|---|---|
-| Bootstrap project OS | root | active | user + AI | TBD |
+| Bootstrap AletheiaOS | root | active | user + AI | TBD |
 
 ## Next actions
 

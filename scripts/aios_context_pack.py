@@ -14,13 +14,13 @@ ROOT = Path(__file__).resolve().parents[1]
 FILES = [
     "START_HERE.md",
     "AGENTS.md",
-    "project_os/00_CHARTER.md",
-    "project_os/10_ATTENTION_POLICY.md",
-    "project_os/11_MODEL_GOVERNANCE.md",
-    "project_os/model_registry.json",
-    "project_os/02_ACTIVE_STATE.md",
-    "project_os/01_SYSTEM_GRAPH.yaml",
-    "project_os/08_GIT_POLICY.md",
+    "aletheia_os/00_CHARTER.md",
+    "aletheia_os/10_ATTENTION_POLICY.md",
+    "aletheia_os/11_MODEL_GOVERNANCE.md",
+    "aletheia_os/model_registry.json",
+    "aletheia_os/02_ACTIVE_STATE.md",
+    "aletheia_os/01_SYSTEM_GRAPH.yaml",
+    "aletheia_os/08_GIT_POLICY.md",
 ]
 
 
@@ -30,7 +30,7 @@ def clip(text: str, limit: int = 5000) -> str:
 
 
 def main() -> int:
-    print("# AIOS Context Pack\n")
+    print("# AletheiaOS Context Pack\n")
     for file in FILES:
         p = ROOT / file
         if not p.exists():

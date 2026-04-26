@@ -12,11 +12,11 @@ Use for every non-trivial session:
 
 - `START_HERE.md`
 - `AGENTS.md`
-- `project_os/00_CHARTER.md`
-- `project_os/10_ATTENTION_POLICY.md`
-- `project_os/02_ACTIVE_STATE.md`
-- `project_os/11_MODEL_GOVERNANCE.md` when durable writes are possible
-- `project_os/model_registry.json` when model gating or attribution is involved
+- `aletheia_os/00_CHARTER.md`
+- `aletheia_os/10_ATTENTION_POLICY.md`
+- `aletheia_os/02_ACTIVE_STATE.md`
+- `aletheia_os/11_MODEL_GOVERNANCE.md` when durable writes are possible
+- `aletheia_os/model_registry.json` when model gating or attribution is involved
 
 Purpose: preserve mission, constraints, current frontier, and completion rules.
 
@@ -24,8 +24,8 @@ Purpose: preserve mission, constraints, current frontier, and completion rules.
 
 Load only after the task is located:
 
-- relevant section of `project_os/01_SYSTEM_GRAPH.yaml`
-- relevant file(s) in `project_os/nodes/`
+- relevant section of `aletheia_os/01_SYSTEM_GRAPH.yaml`
+- relevant file(s) in `aletheia_os/nodes/`
 - relevant hypothesis or design thesis
 - current task card or frontier-board entry
 
@@ -35,9 +35,9 @@ Purpose: identify the branch being changed and its parent/child dependencies.
 
 Load when crossing modules, disciplines, abstractions, teams, or runtime boundaries:
 
-- `project_os/06_INTERFACE_CONTRACTS.md`
-- relevant files in `project_os/contracts/`
-- relevant decision records in `project_os/decisions/`
+- `aletheia_os/06_INTERFACE_CONTRACTS.md`
+- relevant files in `aletheia_os/contracts/`
+- relevant decision records in `aletheia_os/decisions/`
 
 Purpose: avoid silently changing interfaces or smuggling new assumptions across boundaries.
 
@@ -45,8 +45,8 @@ Purpose: avoid silently changing interfaces or smuggling new assumptions across 
 
 Load when evaluating, validating, reprioritizing, or promoting a branch:
 
-- relevant evidence files in `project_os/evidence/`
-- `project_os/07_EVIDENCE_INDEX.md`
+- relevant evidence files in `aletheia_os/evidence/`
+- `aletheia_os/07_EVIDENCE_INDEX.md`
 - experiment, simulation, proof, test, or market-observation artifacts
 
 Purpose: separate claim, method, result, interpretation, and system-graph impact.
@@ -67,7 +67,7 @@ Purpose: execute without losing the upstream reason for the execution.
 3. Do not keep expanding context after a local answer is available; first verify whether parent constraints are satisfied.
 4. If a task affects multiple trunks, create or update a decision record before implementation proceeds.
 5. If local implementation reveals a blocker, classify it as A/B/C/D and assess upstream impact before patching.
-6. If context becomes crowded, distill current state into `project_os/session_notes/` and restart from `scripts/aios_orient.py`.
+6. If context becomes crowded, distill current state into `aletheia_os/session_notes/` and restart from `scripts/aios_orient.py`.
 7. Never treat the newest file or latest chat turn as the highest-priority branch unless the frontier board or active state says so.
 
 ## Global View Checksum
@@ -98,8 +98,8 @@ If the checksum cannot be completed, the task is under-specified. Propose a prov
 
 Use this when finishing a substantial task, hitting context pressure, or switching active nodes:
 
-1. Write a session note in `project_os/session_notes/`.
-2. Update `project_os/02_ACTIVE_STATE.md`.
+1. Write a session note in `aletheia_os/session_notes/`.
+2. Update `aletheia_os/02_ACTIVE_STATE.md`.
 3. Update evidence, decision, contract, node, or graph files if affected.
 4. Run `python3 scripts/aios_validate.py`.
 5. Run `python3 scripts/aios_checkpoint.py --auto` when appropriate.

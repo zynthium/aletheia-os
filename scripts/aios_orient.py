@@ -21,7 +21,7 @@ def run(cmd: list[str]) -> subprocess.CompletedProcess[str]:
 
 def main() -> int:
     validate = run([sys.executable, "scripts/aios_validate.py"])
-    print("# AIOS Orientation\n")
+    print("# AletheiaOS Orientation\n")
     print("## Validation\n")
     print(validate.stdout.strip() or "validation produced no output")
     print("\n---\n")

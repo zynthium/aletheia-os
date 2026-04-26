@@ -19,11 +19,11 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-REGISTRY_PATH = ROOT / "project_os/model_registry.json"
+REGISTRY_PATH = ROOT / "aletheia_os/model_registry.json"
 RUNTIME_DIR = ROOT / ".aios_runtime"
 SESSION_MODEL_PATH = RUNTIME_DIR / "session_model.json"
 CURRENT_RUN_PATH = RUNTIME_DIR / "current_agent_run.json"
-AGENT_RUNS_DIR = ROOT / "project_os/agent_runs"
+AGENT_RUNS_DIR = ROOT / "aletheia_os/agent_runs"
 
 TIER_ORDER = {"C0": 0, "C1": 1, "C2": 2, "C3": 3, "C4": 4}
 WRITE_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}

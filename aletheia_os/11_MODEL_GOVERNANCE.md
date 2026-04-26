@@ -34,7 +34,7 @@ If the model is unknown or below the required tier, it may orient, read public p
 
 ## Task classes
 
-Default minimums are stored in `project_os/model_registry.json`.
+Default minimums are stored in `aletheia_os/model_registry.json`.
 
 Typical mapping:
 
@@ -83,7 +83,7 @@ The default policy is:
 unknown model -> read-only orientation; no durable writes; no checkpoint
 ```
 
-To approve a model, edit `project_os/model_registry.json` and add it to `registered_models` with a tier and status.
+To approve a model, edit `aletheia_os/model_registry.json` and add it to `registered_models` with a tier and status.
 
 Do not let the assistant self-upgrade its tier without explicit operator approval. Repository checks can discourage violations, but they are not a cryptographic security boundary.
 
@@ -92,7 +92,7 @@ Do not let the assistant self-upgrade its tier without explicit operator approva
 Every non-trivial task should create an agent run record under:
 
 ```text
-project_os/agent_runs/
+aletheia_os/agent_runs/
 ```
 
 Every session note should include:

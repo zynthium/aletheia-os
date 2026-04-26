@@ -5,13 +5,13 @@ This repository uses a durable project-state system. The repository is the long-
 ## Always read first for non-trivial tasks
 
 1. `START_HERE.md`
-2. `project_os/00_CHARTER.md`
-3. `project_os/10_ATTENTION_POLICY.md`
-4. `project_os/11_MODEL_GOVERNANCE.md`
-5. `project_os/02_ACTIVE_STATE.md`
-6. the relevant node(s) in `project_os/01_SYSTEM_GRAPH.yaml` or `project_os/nodes/`
-7. relevant `project_os/contracts/` files if changing interfaces or boundaries
-8. relevant `project_os/evidence/` and `project_os/decisions/` files if changing claims, priorities, or architecture
+2. `aletheia_os/00_CHARTER.md`
+3. `aletheia_os/10_ATTENTION_POLICY.md`
+4. `aletheia_os/11_MODEL_GOVERNANCE.md`
+5. `aletheia_os/02_ACTIVE_STATE.md`
+6. the relevant node(s) in `aletheia_os/01_SYSTEM_GRAPH.yaml` or `aletheia_os/nodes/`
+7. relevant `aletheia_os/contracts/` files if changing interfaces or boundaries
+8. relevant `aletheia_os/evidence/` and `aletheia_os/decisions/` files if changing claims, priorities, or architecture
 
 For a compact session preload, run:
 
@@ -27,7 +27,7 @@ Before any durable write, implementation change, research update, architecture d
 python3 scripts/aios_model_gate.py --task-class <task_class> --record --objective "<short objective>"
 ```
 
-Task classes are defined in `project_os/model_registry.json`. Unknown or under-tier models are read-only by default. If the gate rejects the model, do not continue with smaller local edits; report the rejection and the required minimum tier.
+Task classes are defined in `aletheia_os/model_registry.json`. Unknown or under-tier models are read-only by default. If the gate rejects the model, do not continue with smaller local edits; report the rejection and the required minimum tier.
 
 Include agent attribution in session notes and checkpoint commits:
 
@@ -79,12 +79,12 @@ Before executing, identify:
 
 After executing, update durable state:
 
-- `project_os/02_ACTIVE_STATE.md` for current frontier and blockers;
-- `project_os/evidence/` for experiments, simulations, observations, derivations, or proofs;
-- `project_os/decisions/` for durable architectural/theoretical/product decisions;
-- `project_os/contracts/` for boundary or interface changes;
-- `project_os/session_notes/` for session distillation;
-- `project_os/01_SYSTEM_GRAPH.yaml` or `project_os/nodes/` if priority, confidence, dependency, or status changed.
+- `aletheia_os/02_ACTIVE_STATE.md` for current frontier and blockers;
+- `aletheia_os/evidence/` for experiments, simulations, observations, derivations, or proofs;
+- `aletheia_os/decisions/` for durable architectural/theoretical/product decisions;
+- `aletheia_os/contracts/` for boundary or interface changes;
+- `aletheia_os/session_notes/` for session distillation;
+- `aletheia_os/01_SYSTEM_GRAPH.yaml` or `aletheia_os/nodes/` if priority, confidence, dependency, or status changed.
 
 ## Non-negotiable constraints
 
@@ -94,7 +94,7 @@ After executing, update durable state:
 - Do not silently change parent assumptions.
 - Do not move a prototype toward production without an interface contract and invalidation criteria.
 - Do not claim a task is complete if durable project state was not updated when it should have been.
-- Do not load the whole repository by default; follow `project_os/10_ATTENTION_POLICY.md` and load context by tier.
+- Do not load the whole repository by default; follow `aletheia_os/10_ATTENTION_POLICY.md` and load context by tier.
 
 ## Blocker classification
 
@@ -117,7 +117,7 @@ src/<project_package_name>/
 
 Directory roles:
 
-- `project_os/`: governance, theory, evidence, decisions, contracts, active state.
+- `aletheia_os/`: governance, theory, evidence, decisions, contracts, active state.
 - `src/`: final durable implementation code.
 - `experiments/`: exploratory work and experiment runs.
 - `simulations/`: simulation scenarios, replays, synthetic environments, stress cases.
@@ -129,12 +129,12 @@ When promoting exploratory work to implementation:
 1. move reusable logic into `src/`;
 2. add or update tests;
 3. link to relevant project node, evidence, decision, or contract;
-4. update `project_os/02_ACTIVE_STATE.md`;
+4. update `aletheia_os/02_ACTIVE_STATE.md`;
 5. validate before checkpoint.
 
 ## Completion standard
 
-For non-trivial work, completion also requires model attribution: an agent run record under `project_os/agent_runs/` or an explicit reason why no model gate was required.
+For non-trivial work, completion also requires model attribution: an agent run record under `aletheia_os/agent_runs/` or an explicit reason why no model gate was required.
 
 
 A task is complete only when:

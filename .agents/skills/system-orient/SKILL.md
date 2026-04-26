@@ -8,9 +8,9 @@ description: Orient a task inside the project charter, active state, system grap
 Use before any non-trivial task.
 
 Read:
-1. `project_os/00_CHARTER.md`
-2. `project_os/02_ACTIVE_STATE.md`
-3. relevant node(s) from `project_os/01_SYSTEM_GRAPH.yaml` or `project_os/nodes/`
+1. `aletheia_os/00_CHARTER.md`
+2. `aletheia_os/02_ACTIVE_STATE.md`
+3. relevant node(s) from `aletheia_os/01_SYSTEM_GRAPH.yaml` or `aletheia_os/nodes/`
 
 Return:
 - active node;

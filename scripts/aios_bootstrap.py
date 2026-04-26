@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bootstrap/finalize the AI Project OS scaffold."""
+"""Bootstrap/finalize an AletheiaOS project."""
 
 from __future__ import annotations
 
@@ -15,10 +15,10 @@ CURRENT_RUN_PATH = ROOT / ".aios_runtime/current_agent_run.json"
 TIER_ORDER = {"C0": 0, "C1": 1, "C2": 2, "C3": 3, "C4": 4}
 
 POST_BOOTSTRAP_REQUIRED_NO_TBD = [
-    "project_os/00_CHARTER.md",
-    "project_os/01_SYSTEM_GRAPH.yaml",
-    "project_os/02_ACTIVE_STATE.md",
-    "project_os/09_DOMAIN_PROFILE.md",
+    "aletheia_os/00_CHARTER.md",
+    "aletheia_os/01_SYSTEM_GRAPH.yaml",
+    "aletheia_os/02_ACTIVE_STATE.md",
+    "aletheia_os/09_DOMAIN_PROFILE.md",
 ]
 
 
@@ -76,7 +76,7 @@ def bootstrap_model_gate_ready() -> int:
         return 0
     if not CURRENT_RUN_PATH.exists():
         print("bootstrap blocked: no AI model gate run recorded")
-        print("Run: python3 scripts/aios_model_gate.py --task-class bootstrap_finalize --record --objective \"Initialize AI Project OS\"")
+        print("Run: python3 scripts/aios_model_gate.py --task-class bootstrap_finalize --record --objective \"Initialize AletheiaOS\"")
         return 1
     try:
         run_data = json.loads(CURRENT_RUN_PATH.read_text(encoding="utf-8"))
@@ -129,7 +129,7 @@ def finalize() -> int:
         return rc
 
     commit = subprocess.run(
-        [sys.executable, "scripts/aios_checkpoint.py", "--auto", "--message", "bootstrap: initialize AI project OS", "--allow-code-only"],
+        [sys.executable, "scripts/aios_checkpoint.py", "--auto", "--message", "bootstrap: initialize AletheiaOS", "--allow-code-only"],
         cwd=ROOT,
         text=True,
     )

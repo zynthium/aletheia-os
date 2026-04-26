@@ -1,6 +1,6 @@
 # Domain Profile
 
-This file specializes the scaffold to the current domain without contaminating the generic operating system.
+This file specializes AletheiaOS to the current domain without contaminating the generic operating system.
 
 ## Domain
 

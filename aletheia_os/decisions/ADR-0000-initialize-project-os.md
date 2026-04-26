@@ -1,4 +1,4 @@
-# ADR-0000 — Initialize AI-Native Project OS
+# ADR-0000 — Initialize AletheiaOS
 
 ## Status
 
@@ -26,4 +26,4 @@ Use this repository as the source of truth for mission, constraints, system grap
 
 ## Review trigger
 
-Revisit if the project OS becomes too heavy, fails to prevent drift, or blocks useful iteration speed.
+Revisit if AletheiaOS becomes too heavy, fails to prevent drift, or blocks useful iteration speed.

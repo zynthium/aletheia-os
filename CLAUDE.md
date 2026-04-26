@@ -15,7 +15,7 @@ python3 scripts/aios_model_gate.py --task-class <task_class> --record --objectiv
 If the gate blocks the task, stop and report the model id, task class, required tier, and allowed fallback.
 
 
-- Use planning before changing `project_os/`, core interfaces, production code, experiments, or simulations.
+- Use planning before changing `aletheia_os/`, core interfaces, production code, experiments, or simulations.
 - Use subagents for exploration, adversarial review, evidence curation, engineering review, and objective/portfolio review when the task is multi-step.
 - Keep the main conversation anchored on the active node and parent constraints.
 - Prefer durable file updates over conversational summaries.
@@ -32,7 +32,7 @@ Preserve root mission, priority order, active frontier, active node, parent cons
 After a task completes:
 
 1. write or update a session note;
-2. update `project_os/02_ACTIVE_STATE.md`;
+2. update `aletheia_os/02_ACTIVE_STATE.md`;
 3. update evidence, decisions, contracts, graph, or node files when affected;
 4. run validation;
 5. create a checkpoint commit when appropriate;
@@ -40,7 +40,7 @@ After a task completes:
 
 ## Attention and drift control
 
-Use `project_os/10_ATTENTION_POLICY.md` as the context-loading policy. Do not load broad local implementation context before the active system node and parent constraints are identified.
+Use `aletheia_os/10_ATTENTION_POLICY.md` as the context-loading policy. Do not load broad local implementation context before the active system node and parent constraints are identified.
 
 Stop and reorient if:
 

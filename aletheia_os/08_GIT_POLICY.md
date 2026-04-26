@@ -41,7 +41,7 @@ AIOS-Task-Class: research_design
 AIOS-Gate: allowed
 ```
 
-If no current agent run exists, checkpointing is blocked by default when `project_os/model_registry.json` requires attribution. Override only with explicit operator intent.
+If no current agent run exists, checkpointing is blocked by default when `aletheia_os/model_registry.json` requires attribution. Override only with explicit operator intent.
 
 ## Auto-commit controls
 

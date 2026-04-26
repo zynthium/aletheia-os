@@ -4,7 +4,7 @@ This file is intentionally temporary. It should be deleted after initialization 
 
 ## Purpose
 
-Initialize this repository as a durable AI-native project operating system. The final project should support complex theory + engineering + optimization programs without depending on any single chat context.
+Initialize this repository as a durable AletheiaOS project. The final project should support complex theory + engineering + optimization programs without depending on any single chat context.
 
 ## Instructions for the AI assistant
 
@@ -17,13 +17,13 @@ Read these files in order:
 1. `START_HERE.md`
 2. `README.md`
 3. `AGENTS.md`
-4. `project_os/00_CHARTER.md`
-5. `project_os/10_ATTENTION_POLICY.md`
-6. `project_os/01_SYSTEM_GRAPH.yaml`
-7. `project_os/11_MODEL_GOVERNANCE.md`
-8. `project_os/model_registry.json`
-9. `project_os/02_ACTIVE_STATE.md`
-10. `project_os/09_DOMAIN_PROFILE.md`
+4. `aletheia_os/00_CHARTER.md`
+5. `aletheia_os/10_ATTENTION_POLICY.md`
+6. `aletheia_os/01_SYSTEM_GRAPH.yaml`
+7. `aletheia_os/11_MODEL_GOVERNANCE.md`
+8. `aletheia_os/model_registry.json`
+9. `aletheia_os/02_ACTIVE_STATE.md`
+10. `aletheia_os/09_DOMAIN_PROFILE.md`
 
 Then produce the Global View Checksum from `START_HERE.md`. If the checksum cannot be completed, mark uncertain fields as `TBD` and continue with initialization rather than inventing precision.
 
@@ -32,17 +32,17 @@ Then produce the Global View Checksum from `START_HERE.md`. If the checksum cann
 Before editing durable project state, run:
 
 ```bash
-python3 scripts/aios_model_gate.py --task-class bootstrap_finalize --record --objective "Initialize AI Project OS"
+python3 scripts/aios_model_gate.py --task-class bootstrap_finalize --record --objective "Initialize AletheiaOS"
 ```
 
-If the model is unknown, either register it in `project_os/model_registry.json` or use an explicit operator-approved override, for example:
+If the model is unknown, either register it in `aletheia_os/model_registry.json` or use an explicit operator-approved override, for example:
 
 ```bash
 AIOS_OPERATOR_APPROVED=1 \
 AIOS_MODEL_TIER=C3 \
 AIOS_MODEL_ID="provider-model-id" \
 AIOS_AGENT_PROVIDER="provider" \
-python3 scripts/aios_model_gate.py --task-class bootstrap_finalize --record --objective "Initialize AI Project OS"
+python3 scripts/aios_model_gate.py --task-class bootstrap_finalize --record --objective "Initialize AletheiaOS"
 ```
 
 Do not finalize bootstrap with an ungated model.
@@ -61,23 +61,23 @@ If the user has already provided enough information, do not ask again. Infer a p
 
 Update these files:
 
-- `project_os/00_CHARTER.md`
-- `project_os/01_SYSTEM_GRAPH.yaml`
-- `project_os/02_ACTIVE_STATE.md`
-- `project_os/03_FRONTIER_BOARD.md`
-- `project_os/04_RISK_REGISTER.md`
-- `project_os/09_DOMAIN_PROFILE.md`
+- `aletheia_os/00_CHARTER.md`
+- `aletheia_os/01_SYSTEM_GRAPH.yaml`
+- `aletheia_os/02_ACTIVE_STATE.md`
+- `aletheia_os/03_FRONTIER_BOARD.md`
+- `aletheia_os/04_RISK_REGISTER.md`
+- `aletheia_os/09_DOMAIN_PROFILE.md`
 
-Keep the scaffold domain-neutral unless the user explicitly asks for a domain-specific project.
+Keep AletheiaOS domain-neutral unless the user explicitly asks for a domain-specific project.
 
 ### Step 5 — Create initial records
 
 Create, at minimum:
 
-- one root node in `project_os/nodes/ROOT.yaml`
-- one initial hypothesis or design thesis in `project_os/hypotheses/`
-- one initial decision record in `project_os/decisions/`
-- one first session note in `project_os/session_notes/`
+- one root node in `aletheia_os/nodes/ROOT.yaml`
+- one initial hypothesis or design thesis in `aletheia_os/hypotheses/`
+- one initial decision record in `aletheia_os/decisions/`
+- one first session note in `aletheia_os/session_notes/`
 
 ### Step 6 — Validate orientation and structure
 
@@ -102,7 +102,7 @@ This should:
 
 - initialize git if needed;
 - configure `.githooks` as the local hooks path;
-- validate the project OS;
+- validate AletheiaOS;
 - remove this `BOOTSTRAP.md` file;
 - create the first git commit.
 
@@ -123,5 +123,5 @@ Return:
 - Do not write production code.
 - Do not run expensive experiments.
 - Do not create many speculative branches.
-- Do not delete the scaffold’s governance files.
+- Do not delete AletheiaOS governance files.
 - Do not skip the initial git checkpoint.

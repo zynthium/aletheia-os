@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_RUN_PATH = ROOT / ".aios_runtime/current_agent_run.json"
-MODEL_REGISTRY_PATH = ROOT / "project_os/model_registry.json"
+MODEL_REGISTRY_PATH = ROOT / "aletheia_os/model_registry.json"
 
 PROTECTED_PATTERNS = [
     re.compile(r"(^|/)\.env(\.|$)"),
@@ -25,7 +25,7 @@ STATE_PATTERNS = [
     "START_HERE.md",
     "AGENTS.md",
     "CLAUDE.md",
-    "project_os/AGENTS.md",
+    "aletheia_os/AGENTS.md",
     "src/AGENTS.md",
     "tests/AGENTS.md",
     "experiments/AGENTS.md",
@@ -33,24 +33,24 @@ STATE_PATTERNS = [
     "configs/AGENTS.md",
     "docs/AGENTS.md",
     "infra/AGENTS.md",
-    "project_os/10_ATTENTION_POLICY.md",
-    "project_os/11_MODEL_GOVERNANCE.md",
-    "project_os/model_registry.json",
-    "project_os/02_ACTIVE_STATE.md",
-    "project_os/01_SYSTEM_GRAPH.yaml",
-    "project_os/03_FRONTIER_BOARD.md",
-    "project_os/04_RISK_REGISTER.md",
-    "project_os/06_INTERFACE_CONTRACTS.md",
-    "project_os/07_EVIDENCE_INDEX.md",
-    "project_os/08_GIT_POLICY.md",
-    "project_os/09_DOMAIN_PROFILE.md",
-    "project_os/evidence/",
-    "project_os/decisions/",
-    "project_os/contracts/",
-    "project_os/hypotheses/",
-    "project_os/nodes/",
-    "project_os/session_notes/",
-    "project_os/agent_runs/",
+    "aletheia_os/10_ATTENTION_POLICY.md",
+    "aletheia_os/11_MODEL_GOVERNANCE.md",
+    "aletheia_os/model_registry.json",
+    "aletheia_os/02_ACTIVE_STATE.md",
+    "aletheia_os/01_SYSTEM_GRAPH.yaml",
+    "aletheia_os/03_FRONTIER_BOARD.md",
+    "aletheia_os/04_RISK_REGISTER.md",
+    "aletheia_os/06_INTERFACE_CONTRACTS.md",
+    "aletheia_os/07_EVIDENCE_INDEX.md",
+    "aletheia_os/08_GIT_POLICY.md",
+    "aletheia_os/09_DOMAIN_PROFILE.md",
+    "aletheia_os/evidence/",
+    "aletheia_os/decisions/",
+    "aletheia_os/contracts/",
+    "aletheia_os/hypotheses/",
+    "aletheia_os/nodes/",
+    "aletheia_os/session_notes/",
+    "aletheia_os/agent_runs/",
 ]
 
 
@@ -165,22 +165,22 @@ def attribution_trailers(run_data: dict) -> str:
 
 def infer_message(files: list[str]) -> str:
     if "BOOTSTRAP.md" in files:
-        return "bootstrap: initialize AI project OS"
-    if "project_os/11_MODEL_GOVERNANCE.md" in files or "project_os/model_registry.json" in files:
+        return "bootstrap: initialize AletheiaOS"
+    if "aletheia_os/11_MODEL_GOVERNANCE.md" in files or "aletheia_os/model_registry.json" in files:
         return "governance: update model gate policy"
-    if "project_os/10_ATTENTION_POLICY.md" in files or "START_HERE.md" in files:
+    if "aletheia_os/10_ATTENTION_POLICY.md" in files or "START_HERE.md" in files:
         return "state: update orientation and attention policy"
-    if any(f.startswith("project_os/evidence/") for f in files):
+    if any(f.startswith("aletheia_os/evidence/") for f in files):
         return "evidence: update evidence ledger"
-    if any(f.startswith("project_os/decisions/") for f in files):
+    if any(f.startswith("aletheia_os/decisions/") for f in files):
         return "decision: update decision records"
-    if any(f.startswith("project_os/contracts/") for f in files) or "project_os/06_INTERFACE_CONTRACTS.md" in files:
+    if any(f.startswith("aletheia_os/contracts/") for f in files) or "aletheia_os/06_INTERFACE_CONTRACTS.md" in files:
         return "contract: update interface contracts"
-    if "project_os/01_SYSTEM_GRAPH.yaml" in files or any(f.startswith("project_os/nodes/") for f in files):
+    if "aletheia_os/01_SYSTEM_GRAPH.yaml" in files or any(f.startswith("aletheia_os/nodes/") for f in files):
         return "graph: update system graph"
-    if "project_os/02_ACTIVE_STATE.md" in files or "project_os/03_FRONTIER_BOARD.md" in files:
+    if "aletheia_os/02_ACTIVE_STATE.md" in files or "aletheia_os/03_FRONTIER_BOARD.md" in files:
         return "state: update active project state"
-    if any(f.startswith("project_os/session_notes/") for f in files):
+    if any(f.startswith("aletheia_os/session_notes/") for f in files):
         return "session: add session distillation"
     if any(f.startswith(("src/", "lib/", "app/", "tests/", "experiments/", "simulations/", "configs/", "infra/")) for f in files):
         return "engineering: update implementation"
@@ -229,7 +229,7 @@ def main() -> int:
     allow_code_only = args.allow_code_only or os.environ.get("AIOS_ALLOW_CODE_ONLY_COMMIT") == "1"
     if not has_state_update(files) and not allow_code_only:
         print("checkpoint blocked: changes do not include durable project-state update")
-        print("Update project_os/02_ACTIVE_STATE.md, attention policy, evidence, decisions, contracts, nodes, or session notes.")
+        print("Update aletheia_os/02_ACTIVE_STATE.md, attention policy, evidence, decisions, contracts, nodes, or session notes.")
         print("Override with --allow-code-only or AIOS_ALLOW_CODE_ONLY_COMMIT=1 if intentional.")
         return 3
 

@@ -1,12 +1,63 @@
-# AI-Native Project OS Scaffold
+# AletheiaOS
 
-This repository is a domain-neutral operating scaffold for large, evolving projects where theory, engineering, evidence, and optimization must co-evolve.
+**Truthful project memory for AI-assisted research and engineering.**
 
-It is designed for work with AI coding assistants such as Codex and Claude Code. The repository, not the chat window, is the long-term memory. The assistant is treated as a local executor, investigator, reviewer, and synthesis engine.
+AletheiaOS is an AI-native project operating system for long-horizon
+research and engineering projects where theory, implementation, evidence,
+risk, and optimization must co-evolve.
+
+It is designed for projects that are too complex to be managed as ordinary
+tickets, notes, or chat threads: quantitative trading systems, theoretical
+research programs, aircraft or vehicle design, robotics, simulations, market
+strategy, product strategy, and other evolving systems where local
+implementation discoveries can invalidate top-level assumptions.
+
+AletheiaOS treats the repository, not the chat window, as the durable memory
+of the project. AI coding assistants such as Codex and Claude Code are used as
+executors, investigators, reviewers, and synthesis engines, while the project
+itself remains governed by charters, system graphs, evidence ledgers, model
+gates, generated overviews, and git checkpoints.
+
+## Why AletheiaOS exists
+
+AI agents are powerful at local execution but fragile at long-horizon
+coherence. In large research-engineering projects, they easily drift toward:
+
+- local optimization
+- stale assumptions
+- unlinked claims
+- forgotten parent constraints
+- undocumented decisions
+- code that no longer reflects the theory
+- experiments that never update the project state
+- unclear attribution of which model changed what
+
+AletheiaOS prevents this by making project state explicit, structured,
+validated, and version-controlled.
+
+## What this is / is not
+
+AletheiaOS is:
+
+- a project memory system for AI-assisted work;
+- a governance scaffold for long-horizon research and engineering;
+- a way to preserve top-down constraints under limited model context;
+- a framework for evidence, decisions, model attribution, and checkpoints;
+- a repository-native operating protocol for Codex, Claude Code, and similar tools.
+
+AletheiaOS is not:
+
+- a task manager;
+- a generic notes app;
+- a replacement for git;
+- a replacement for human judgment;
+- a guarantee that weak AI models can perform high-level research;
+- a magic layer that makes unstructured projects coherent automatically.
 
 ## Suitable project classes
 
-Use this scaffold for projects where the goal cannot be reduced to a short software ticket:
+Use AletheiaOS for projects where the goal cannot be reduced to a short
+software ticket:
 
 - quantitative trading research and productionization
 - theoretical physics programs with simulations and engineering artifacts
@@ -16,7 +67,7 @@ Use this scaffold for projects where the goal cannot be reduced to a short softw
 
 ## Core idea
 
-The project is represented as a **constraint-governed system graph**:
+AletheiaOS represents a project as a **constraint-governed system graph**:
 
 - **Charter**: mission, non-negotiable constraints, priority order
 - **System Graph**: objectives, theories, design branches, capabilities, interfaces, and dependencies
@@ -28,14 +79,68 @@ The project is represented as a **constraint-governed system graph**:
 - **Attention Policy**: how AI agents preserve top-down awareness under limited context
 - **Checkpoint Policy**: when to validate, commit, rebalance, or stop
 
-The aim is to prevent local AI-agent drift: every task should know its parent constraints, current node, success criteria, invalidation criteria, and downstream consequences.
+The aim is to prevent local AI-agent drift. Every task should know its parent
+constraints, current node, success criteria, invalidation criteria, and
+downstream consequences.
+
+## Human overview
+
+AletheiaOS supports a generated human-facing overview layer.
+
+The overview is not a manually maintained status page. It is generated from
+the actual project state:
+
+- system graph
+- active state
+- evidence ledger
+- decision records
+- risk register
+- interface contracts
+- git state
+- validation results
+- agent attribution records
+
+Recommended generated artifacts:
+
+```text
+docs/overview/index.html        # project cockpit
+docs/overview/system_map.svg    # system graph visualization
+docs/overview/status.json       # compiled project state
+docs/overview/nodes/            # drill-down pages for graph nodes
+```
+
+Truthfulness rules:
+
+- overview artifacts are generated, not manually edited;
+- missing state is shown as `unknown`, not inferred as healthy;
+- stale state is shown explicitly;
+- every displayed status links back to source files or git state;
+- overview generation should fail or warn when project state is inconsistent.
+
+## Use as a project scaffold
+
+Use this repository as a GitHub template, or clone it into a new project and
+run the bootstrap flow:
+
+```bash
+git clone https://github.com/<your-org>/aletheia-os.git my-project
+cd my-project
+rm -rf .git
+git init
+python3 scripts/aios_bootstrap.py --finalize
+```
+
+No remote is configured in this checkout, so replace `<your-org>` with the
+actual repository owner before publishing the command.
 
 ## First-time initialization
 
-For any AI coding assistant, `START_HERE.md` is the stable entry point after bootstrap. `BOOTSTRAP.md` is used only once and is deleted after initialization.
+For any AI coding assistant, `START_HERE.md` is the stable entry point after
+bootstrap. `BOOTSTRAP.md` is used only once and is deleted after
+initialization.
 
 1. Create or enter a project directory.
-2. Copy this scaffold into the directory.
+2. Copy AletheiaOS into the directory.
 3. Start Codex or Claude Code from the repository root.
 4. Ask the assistant:
 
@@ -44,17 +149,18 @@ Read BOOTSTRAP.md and initialize this project. Keep the abstraction domain-neutr
 ```
 
 5. The assistant should customize:
-   - `project_os/00_CHARTER.md`
-   - `project_os/01_SYSTEM_GRAPH.yaml`
-   - `project_os/02_ACTIVE_STATE.md`
-   - `project_os/09_DOMAIN_PROFILE.md`
+   - `aletheia_os/00_CHARTER.md`
+   - `aletheia_os/01_SYSTEM_GRAPH.yaml`
+   - `aletheia_os/02_ACTIVE_STATE.md`
+   - `aletheia_os/09_DOMAIN_PROFILE.md`
 6. Run:
 
 ```bash
 python3 scripts/aios_bootstrap.py --finalize
 ```
 
-This validates the scaffold, configures local git hooks, removes `BOOTSTRAP.md`, and creates the initial git checkpoint.
+This validates AletheiaOS, configures local git hooks, removes
+`BOOTSTRAP.md`, and creates the initial git checkpoint.
 
 ## Daily workflow
 
@@ -79,13 +185,14 @@ Workflow:
 
 ## Important commands
 
+The current script prefix `aios_` stands for AletheiaOS.
+
 ```bash
 # Validate required project-state files and linkage rules
 python3 scripts/aios_validate.py
 
 # Gate the current AI assistant for a task and record attribution
 python3 scripts/aios_model_gate.py --task-class research_design --record --objective "short objective"
-
 
 # Print a compact context pack for a new AI session
 python3 scripts/aios_context_pack.py
@@ -105,13 +212,18 @@ python3 scripts/aios_bootstrap.py --configure-hooks
 
 ## Model governance and attribution
 
-This scaffold includes a capability gate for AI coding assistants. The project does not assume every model is competent enough for research-heavy work. Before durable writes, the assistant should run:
+AletheiaOS includes a capability gate for AI coding assistants. It does not
+assume every model is competent enough for research-heavy work. Before durable
+writes, the assistant should run:
 
 ```bash
 python3 scripts/aios_model_gate.py --task-class <task_class> --record --objective "<short objective>"
 ```
 
-The gate checks `project_os/model_registry.json` and creates an attribution record under `project_os/agent_runs/`. Unknown models are read-only by default. For tools that do not expose a model identifier, set explicit metadata:
+The gate checks `aletheia_os/model_registry.json` and creates an attribution
+record under `aletheia_os/agent_runs/`. Unknown models are read-only by
+default. For tools that do not expose a model identifier, set explicit
+metadata:
 
 ```bash
 AIOS_AGENT_PROVIDER=openai \
@@ -130,11 +242,14 @@ C3: research-engineering model
 C4: strategic research lead / safety-critical model
 ```
 
-Every non-trivial checkpoint should include agent attribution trailers in the git commit message. Configure approved models in `project_os/model_registry.json`; keep weak or unwanted models in the denylist.
+Every non-trivial checkpoint should include agent attribution trailers in the
+git commit message. Configure approved models in
+`aletheia_os/model_registry.json`; keep weak or unwanted models in the denylist.
 
 ## Attention model
 
-The scaffold uses a tiered attention policy rather than asking the assistant to read everything.
+AletheiaOS uses a tiered attention policy rather than asking the assistant to
+read everything.
 
 ```text
 Tier 0: START_HERE, AGENTS, Charter, Attention Policy, Model Governance, Active State
@@ -144,7 +259,9 @@ Tier 3: evidence relevant to the current claim or promotion decision
 Tier 4: local implementation files, tests, experiments, and simulations
 ```
 
-This keeps the assistant anchored in the root mission while preventing the context window from being consumed by irrelevant branches. The detailed rules live in `project_os/10_ATTENTION_POLICY.md`.
+This keeps the assistant anchored in the root mission while preventing the
+context window from being consumed by irrelevant branches. The detailed rules
+live in `aletheia_os/10_ATTENTION_POLICY.md`.
 
 ## Where final implementation code belongs
 
@@ -165,20 +282,22 @@ src/market_optimizer/
 
 Directory boundaries:
 
-- `project_os/`: why the project exists, what is currently true, what evidence exists, what decisions were made.
+- `aletheia_os/`: why the project exists, what is currently true, what evidence exists, what decisions were made.
 - `src/`: reusable implementation code that may become production, simulation, or durable system code.
 - `experiments/`: exploratory notebooks, runs, temporary analysis, and research trials.
 - `simulations/`: scenario engines, replay environments, synthetic worlds, stress cases.
 - `tests/`: verification of implementation, assumptions, interfaces, leakage, and regressions.
 - `scripts/`: thin operational wrappers and repository tooling.
 
-`experiments/` and `simulations/` may import from `src/`; `src/` must not import from `experiments/`.
+`experiments/` and `simulations/` may import from `src/`; `src/` must not
+import from `experiments/`.
 
 ## Auto checkpoint behavior
 
-This scaffold supports conservative automatic git commits.
+AletheiaOS supports conservative automatic git commits.
 
-By default, Claude Code's stop hook only validates and reports whether a checkpoint is recommended. To allow automatic commits on stop events, set:
+By default, Claude Code's stop hook only validates and reports whether a
+checkpoint is recommended. To allow automatic commits on stop events, set:
 
 ```bash
 export AIOS_AUTOCOMMIT=1
@@ -190,15 +309,17 @@ A stop-event checkpoint is allowed only when:
 - git has changes;
 - no protected secret-like files are staged;
 - an allowed agent run is recorded, unless the operator explicitly overrides attribution;
-- the task has updated durable project state, such as `project_os/02_ACTIVE_STATE.md`, `project_os/evidence/`, `project_os/decisions/`, `project_os/contracts/`, or `project_os/session_notes/`.
+- the task has updated durable project state, such as `aletheia_os/02_ACTIVE_STATE.md`, `aletheia_os/evidence/`, `aletheia_os/decisions/`, `aletheia_os/contracts/`, or `aletheia_os/session_notes/`.
 
-This avoids committing half-finished code-only edits without project-state synchronization or model attribution. To allow code-only auto commits, set:
+This avoids committing half-finished code-only edits without project-state
+synchronization or model attribution. To allow code-only auto commits, set:
 
 ```bash
 export AIOS_ALLOW_CODE_ONLY_COMMIT=1
 ```
 
-To deliberately bypass missing model attribution for a manual/operator commit only:
+To deliberately bypass missing model attribution for a manual/operator commit
+only:
 
 ```bash
 export AIOS_ALLOW_UNATTRIBUTED_CHECKPOINT=1
@@ -219,7 +340,7 @@ python3 scripts/aios_checkpoint.py --auto --message "checkpoint: complete active
 ├── CLAUDE.md                      # Claude Code project memory, imports AGENTS.md
 ├── BOOTSTRAP.md                   # First-run initialization protocol; deleted after setup
 ├── README.md                      # Human-facing documentation
-├── project_os/                    # Durable project memory and governance
+├── aletheia_os/                   # Durable project memory and governance
 │   ├── AGENTS.md
 │   ├── 00_CHARTER.md
 │   ├── 01_SYSTEM_GRAPH.yaml
@@ -263,12 +384,12 @@ python3 scripts/aios_checkpoint.py --auto --message "checkpoint: complete active
 - Do not move an idea toward production without evidence, interfaces, and invalidation criteria.
 - Treat implementation failures as possible upstream design evidence.
 - Keep root instructions short; move repeatable workflows into skills and playbooks.
-- Use `project_os/10_ATTENTION_POLICY.md` to prevent broad context loading and local drift.
+- Use `aletheia_os/10_ATTENTION_POLICY.md` to prevent broad context loading and local drift.
 
 ## Commit message convention
 
 ```text
-bootstrap: initialize AI project OS
+bootstrap: initialize AletheiaOS
 state: update active project state
 graph: update system graph
 hypothesis: add or revise hypothesis

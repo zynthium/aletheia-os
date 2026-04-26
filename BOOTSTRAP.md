@@ -14,12 +14,16 @@ You are initializing the project. Do not start implementation work yet.
 
 Read these files in order:
 
-1. `README.md`
-2. `AGENTS.md`
-3. `project_os/00_CHARTER.md`
-4. `project_os/01_SYSTEM_GRAPH.yaml`
-5. `project_os/02_ACTIVE_STATE.md`
-6. `project_os/09_DOMAIN_PROFILE.md`
+1. `START_HERE.md`
+2. `README.md`
+3. `AGENTS.md`
+4. `project_os/00_CHARTER.md`
+5. `project_os/10_ATTENTION_POLICY.md`
+6. `project_os/01_SYSTEM_GRAPH.yaml`
+7. `project_os/02_ACTIVE_STATE.md`
+8. `project_os/09_DOMAIN_PROFILE.md`
+
+Then produce the Global View Checksum from `START_HERE.md`. If the checksum cannot be completed, mark uncertain fields as `TBD` and continue with initialization rather than inventing precision.
 
 ### Step 2 — Establish project identity
 
@@ -53,15 +57,16 @@ Create, at minimum:
 - one initial decision record in `project_os/decisions/`
 - one first session note in `project_os/session_notes/`
 
-### Step 5 — Validate
+### Step 5 — Validate orientation and structure
 
 Run:
 
 ```bash
+python3 scripts/aios_orient.py
 python3 scripts/aios_validate.py
 ```
 
-Fix validation issues before finalizing.
+Fix validation issues before finalizing. During bootstrap, `TBD` markers are allowed as warnings. After `BOOTSTRAP.md` is removed, critical `TBD` markers become validation errors.
 
 ### Step 6 — Finalize bootstrap
 
@@ -85,9 +90,10 @@ Return:
 
 1. initialized project identity;
 2. active frontier;
-3. files changed;
-4. first checkpoint commit status;
-5. next recommended task card.
+3. Global View Checksum;
+4. files changed;
+5. first checkpoint commit status;
+6. next recommended task card.
 
 ## Forbidden during bootstrap
 

@@ -25,11 +25,14 @@ The project is represented as a **constraint-governed system graph**:
 - **Decision Records**: durable design/theory/product/engineering decisions
 - **Interface Contracts**: boundaries between modules, disciplines, teams, or abstractions
 - **Risk Register**: uncertainty, failure modes, invalidation paths
+- **Attention Policy**: how AI agents preserve top-down awareness under limited context
 - **Checkpoint Policy**: when to validate, commit, rebalance, or stop
 
 The aim is to prevent local AI-agent drift: every task should know its parent constraints, current node, success criteria, invalidation criteria, and downstream consequences.
 
 ## First-time initialization
+
+For any AI coding assistant, `START_HERE.md` is the stable entry point after bootstrap. `BOOTSTRAP.md` is used only once and is deleted after initialization.
 
 1. Create or enter a project directory.
 2. Copy this scaffold into the directory.
@@ -37,7 +40,7 @@ The aim is to prevent local AI-agent drift: every task should know its parent co
 4. Ask the assistant:
 
 ```text
-Read BOOTSTRAP.md and initialize this project. Keep the abstraction domain-neutral unless I specify a domain profile.
+Read BOOTSTRAP.md and initialize this project. Keep the abstraction domain-neutral unless I specify a domain profile. Before changing files, produce the Global View Checksum from START_HERE.md.
 ```
 
 5. The assistant should customize:
@@ -55,7 +58,15 @@ This validates the scaffold, configures local git hooks, removes `BOOTSTRAP.md`,
 
 ## Daily workflow
 
-Use one active node per session.
+Use one active node per session. When starting or resuming work, run:
+
+```bash
+python3 scripts/aios_orient.py
+```
+
+This prints the top-down context pack and Global View Checksum template.
+
+Workflow:
 
 ```text
 1. Orient: identify active graph node, parent constraints, success/failure criteria.
@@ -75,6 +86,9 @@ python3 scripts/aios_validate.py
 # Print a compact context pack for a new AI session
 python3 scripts/aios_context_pack.py
 
+# Validate and print the top-down orientation pack
+python3 scripts/aios_orient.py
+
 # Create a safe project checkpoint commit
 python3 scripts/aios_checkpoint.py --auto
 
@@ -84,6 +98,48 @@ python3 scripts/aios_bootstrap.py --finalize
 # Enable local git pre-commit validation hook
 python3 scripts/aios_bootstrap.py --configure-hooks
 ```
+
+## Attention model
+
+The scaffold uses a tiered attention policy rather than asking the assistant to read everything.
+
+```text
+Tier 0: START_HERE, AGENTS, Charter, Attention Policy, Active State
+Tier 1: active system node and parent/child dependencies
+Tier 2: contracts and decision records for crossed boundaries
+Tier 3: evidence relevant to the current claim or promotion decision
+Tier 4: local implementation files, tests, experiments, and simulations
+```
+
+This keeps the assistant anchored in the root mission while preventing the context window from being consumed by irrelevant branches. The detailed rules live in `project_os/10_ATTENTION_POLICY.md`.
+
+## Where final implementation code belongs
+
+For code-delivering projects, durable implementation code belongs under:
+
+```text
+src/<project_package_name>/
+```
+
+Examples:
+
+```text
+src/quant_system/
+src/aircraft_design/
+src/physics_sim/
+src/market_optimizer/
+```
+
+Directory boundaries:
+
+- `project_os/`: why the project exists, what is currently true, what evidence exists, what decisions were made.
+- `src/`: reusable implementation code that may become production, simulation, or durable system code.
+- `experiments/`: exploratory notebooks, runs, temporary analysis, and research trials.
+- `simulations/`: scenario engines, replay environments, synthetic worlds, stress cases.
+- `tests/`: verification of implementation, assumptions, interfaces, leakage, and regressions.
+- `scripts/`: thin operational wrappers and repository tooling.
+
+`experiments/` and `simulations/` may import from `src/`; `src/` must not import from `experiments/`.
 
 ## Auto checkpoint behavior
 
@@ -118,11 +174,13 @@ python3 scripts/aios_checkpoint.py --auto --message "checkpoint: complete active
 
 ```text
 .
+├── START_HERE.md                  # Stable entry point for any AI coding assistant
 ├── AGENTS.md                      # Codex/repo-level agent operating rules
 ├── CLAUDE.md                      # Claude Code project memory, imports AGENTS.md
 ├── BOOTSTRAP.md                   # First-run initialization protocol; deleted after setup
 ├── README.md                      # Human-facing documentation
 ├── project_os/                    # Durable project memory and governance
+│   ├── AGENTS.md
 │   ├── 00_CHARTER.md
 │   ├── 01_SYSTEM_GRAPH.yaml
 │   ├── 02_ACTIVE_STATE.md
@@ -133,6 +191,7 @@ python3 scripts/aios_checkpoint.py --auto --message "checkpoint: complete active
 │   ├── 07_EVIDENCE_INDEX.md
 │   ├── 08_GIT_POLICY.md
 │   ├── 09_DOMAIN_PROFILE.md
+│   ├── 10_ATTENTION_POLICY.md
 │   ├── contracts/
 │   ├── decisions/
 │   ├── evidence/
@@ -141,7 +200,11 @@ python3 scripts/aios_checkpoint.py --auto --message "checkpoint: complete active
 │   ├── playbooks/
 │   ├── session_notes/
 │   └── templates/
-├── scripts/                       # Validation, bootstrap, checkpoint, context tooling
+├── scripts/                       # Validation, orientation, bootstrap, checkpoint, context tooling
+├── src/                           # Durable implementation code
+├── tests/                         # Verification
+├── experiments/                   # Exploratory work
+├── simulations/                   # Simulation and stress scenarios
 ├── .agents/skills/                # Codex-compatible skills
 ├── .claude/skills/                # Claude Code-compatible skills
 ├── .claude/agents/                # Claude Code subagents
@@ -157,6 +220,7 @@ python3 scripts/aios_checkpoint.py --auto --message "checkpoint: complete active
 - Do not move an idea toward production without evidence, interfaces, and invalidation criteria.
 - Treat implementation failures as possible upstream design evidence.
 - Keep root instructions short; move repeatable workflows into skills and playbooks.
+- Use `project_os/10_ATTENTION_POLICY.md` to prevent broad context loading and local drift.
 
 ## Commit message convention
 

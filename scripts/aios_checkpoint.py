@@ -19,6 +19,18 @@ PROTECTED_PATTERNS = [
 ]
 
 STATE_PATTERNS = [
+    "START_HERE.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "project_os/AGENTS.md",
+    "src/AGENTS.md",
+    "tests/AGENTS.md",
+    "experiments/AGENTS.md",
+    "simulations/AGENTS.md",
+    "configs/AGENTS.md",
+    "docs/AGENTS.md",
+    "infra/AGENTS.md",
+    "project_os/10_ATTENTION_POLICY.md",
     "project_os/02_ACTIVE_STATE.md",
     "project_os/01_SYSTEM_GRAPH.yaml",
     "project_os/03_FRONTIER_BOARD.md",
@@ -98,6 +110,8 @@ def has_protected(files: list[str]) -> list[str]:
 def infer_message(files: list[str]) -> str:
     if "BOOTSTRAP.md" in files:
         return "bootstrap: initialize AI project OS"
+    if "project_os/10_ATTENTION_POLICY.md" in files or "START_HERE.md" in files:
+        return "state: update orientation and attention policy"
     if any(f.startswith("project_os/evidence/") for f in files):
         return "evidence: update evidence ledger"
     if any(f.startswith("project_os/decisions/") for f in files):
@@ -110,7 +124,7 @@ def infer_message(files: list[str]) -> str:
         return "state: update active project state"
     if any(f.startswith("project_os/session_notes/") for f in files):
         return "session: add session distillation"
-    if any(f.startswith(("src/", "lib/", "app/", "tests/", "experiments/", "simulations/")) for f in files):
+    if any(f.startswith(("src/", "lib/", "app/", "tests/", "experiments/", "simulations/", "configs/", "infra/")) for f in files):
         return "engineering: update implementation"
     return "checkpoint: durable project state update"
 
@@ -156,7 +170,7 @@ def main() -> int:
     allow_code_only = args.allow_code_only or os.environ.get("AIOS_ALLOW_CODE_ONLY_COMMIT") == "1"
     if not has_state_update(files) and not allow_code_only:
         print("checkpoint blocked: changes do not include durable project-state update")
-        print("Update project_os/02_ACTIVE_STATE.md, evidence, decisions, contracts, nodes, or session notes.")
+        print("Update project_os/02_ACTIVE_STATE.md, attention policy, evidence, decisions, contracts, nodes, or session notes.")
         print("Override with --allow-code-only or AIOS_ALLOW_CODE_ONLY_COMMIT=1 if intentional.")
         return 3
 

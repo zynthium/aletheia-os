@@ -4,11 +4,41 @@ This repository uses a durable project-state system. The repository is the long-
 
 ## Always read first for non-trivial tasks
 
-1. `project_os/00_CHARTER.md`
-2. `project_os/02_ACTIVE_STATE.md`
-3. the relevant node(s) in `project_os/01_SYSTEM_GRAPH.yaml` or `project_os/nodes/`
-4. relevant `project_os/contracts/` files if changing interfaces or boundaries
-5. relevant `project_os/evidence/` and `project_os/decisions/` files if changing claims, priorities, or architecture
+1. `START_HERE.md`
+2. `project_os/00_CHARTER.md`
+3. `project_os/10_ATTENTION_POLICY.md`
+4. `project_os/02_ACTIVE_STATE.md`
+5. the relevant node(s) in `project_os/01_SYSTEM_GRAPH.yaml` or `project_os/nodes/`
+6. relevant `project_os/contracts/` files if changing interfaces or boundaries
+7. relevant `project_os/evidence/` and `project_os/decisions/` files if changing claims, priorities, or architecture
+
+For a compact session preload, run:
+
+```bash
+python3 scripts/aios_orient.py
+```
+
+## Global View Checksum
+
+Before executing, identify or produce:
+
+```text
+Root mission:
+Priority order:
+Active frontier:
+Active node:
+Parent node and constraints:
+Current objective:
+Explicit non-objectives:
+Success criteria:
+Invalidation / stop criteria:
+Likely downstream impact:
+Required durable updates:
+Verification path:
+Checkpoint plan:
+```
+
+If the active node cannot be identified, do not proceed as if the task were local. Propose a provisional task card or ask for the minimum missing information.
 
 ## Operating cycle
 
@@ -40,6 +70,7 @@ After executing, update durable state:
 - Do not silently change parent assumptions.
 - Do not move a prototype toward production without an interface contract and invalidation criteria.
 - Do not claim a task is complete if durable project state was not updated when it should have been.
+- Do not load the whole repository by default; follow `project_os/10_ATTENTION_POLICY.md` and load context by tier.
 
 ## Blocker classification
 
@@ -51,6 +82,31 @@ When blocked, classify the blocker:
 - **D — Objective conflict**: the project goal, market requirement, physical constraint, or optimization target must be reconsidered.
 
 Do not patch locally until the blocker type and upstream impact are recorded.
+
+## Code placement rules
+
+Durable implementation code belongs under:
+
+```text
+src/<project_package_name>/
+```
+
+Directory roles:
+
+- `project_os/`: governance, theory, evidence, decisions, contracts, active state.
+- `src/`: final durable implementation code.
+- `experiments/`: exploratory work and experiment runs.
+- `simulations/`: simulation scenarios, replays, synthetic environments, stress cases.
+- `tests/`: verification of code, assumptions, contracts, leakage, boundaries, and regressions.
+- `scripts/`: thin operational wrappers and repository tooling.
+
+When promoting exploratory work to implementation:
+
+1. move reusable logic into `src/`;
+2. add or update tests;
+3. link to relevant project node, evidence, decision, or contract;
+4. update `project_os/02_ACTIVE_STATE.md`;
+5. validate before checkpoint.
 
 ## Completion standard
 

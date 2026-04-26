@@ -180,3 +180,23 @@ Return:
 4. project-state files updated;
 5. unresolved risks;
 6. checkpoint status.
+
+<!-- BEGIN ALETHEIAOS_MODEL_LED_BOOTSTRAP -->
+## Model-led bootstrap protocol
+
+When `BOOTSTRAP.md` exists, the AI assistant must treat initialization as model-led.
+
+Do not ask the operator to run internal scripts. The assistant must:
+
+1. read `BOOTSTRAP.md`;
+2. orient from `START_HERE.md`, `AGENTS.md`, `aletheia_os/10_ATTENTION_POLICY.md`, `aletheia_os/11_MODEL_GOVERNANCE.md`, and `aletheia_os/12_INTAKE_POLICY.md`;
+3. run model gating before durable writes;
+4. run intake inventory;
+5. classify existing materials by provenance, reliability, and sensitivity;
+6. synthesize durable records;
+7. validate;
+8. finalize bootstrap;
+9. report checkpoint status.
+
+Existing materials must not be treated as automatically true. Convert them into hypotheses, evidence, decisions, contracts, risks, context, or deferred items with provenance.
+<!-- END ALETHEIAOS_MODEL_LED_BOOTSTRAP -->

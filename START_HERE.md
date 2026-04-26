@@ -77,3 +77,13 @@ A task is not complete until the durable state is coherent:
 3. affected evidence / decision / contract / active-state files updated when applicable;
 4. session note written for substantial work with agent attribution;
 5. checkpoint commit created or explicitly deferred with reason.
+
+<!-- BEGIN ALETHEIAOS_MODEL_LED_BOOTSTRAP -->
+## Bootstrap entry rule
+
+If `BOOTSTRAP.md` exists, stop ordinary task execution and enter model-led bootstrap mode.
+
+The assistant should not ask the operator for script-level instructions. It should read `BOOTSTRAP.md`, run its own model gate, inventory existing materials, classify them using `aletheia_os/12_INTAKE_POLICY.md`, synthesize durable project state, validate, finalize, and report.
+
+The Global View Checksum still applies during bootstrap. Unknown fields should be marked as `TBD` rather than invented.
+<!-- END ALETHEIAOS_MODEL_LED_BOOTSTRAP -->

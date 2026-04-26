@@ -118,3 +118,19 @@ Stop local execution and reorient when any of these occur:
 - the working set expands into unrelated branches;
 - the project-state files and implementation files disagree;
 - the current model is unknown, under-tier, or rejected for the task class.
+
+<!-- BEGIN ALETHEIAOS_BOOTSTRAP_ATTENTION_MODE -->
+## Bootstrap attention mode
+
+During bootstrap, do not load the entire repository into context.
+
+Use this attention order:
+
+1. `BOOTSTRAP.md`, `START_HERE.md`, `AGENTS.md`;
+2. charter, active state, attention policy, model governance, intake policy;
+3. intake inventory summary;
+4. selected high-signal source files;
+5. local implementation files only when needed to understand existing system boundaries.
+
+Large files, raw data, notebooks, binaries, build outputs, secrets, credentials, and vendor data must be excluded or deferred unless explicitly required and safe.
+<!-- END ALETHEIAOS_BOOTSTRAP_ATTENTION_MODE -->

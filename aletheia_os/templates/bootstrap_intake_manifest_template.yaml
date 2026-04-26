@@ -1,0 +1,23 @@
+bootstrap_intake_manifest:
+  generated_at: TBD
+  generated_by_agent_run: TBD
+  initialization_mode: TBD # greenfield | brownfield | migration
+  objective: TBD
+
+summary:
+  total_items: 0
+  included_items: 0
+  excluded_sensitive_items: 0
+  deferred_large_items: 0
+  conflicting_items: 0
+
+items:
+  - path: TBD
+    kind: TBD
+    size_bytes: 0
+    classification: unknown
+    confidence: 0.0
+    reason: TBD
+    proposed_record_type: TBD # hypothesis | evidence | decision | contract | risk | context | deferred
+    linked_node: TBD
+    action: defer

@@ -403,3 +403,25 @@ risk: update risk register
 session: add session distillation
 checkpoint: durable project checkpoint
 ```
+
+<!-- BEGIN ALETHEIAOS_MODEL_LED_BOOTSTRAP -->
+## Model-led bootstrap
+
+AletheiaOS bootstrap is model-led.
+
+The operator does not need to know which internal scripts to run. Start an approved AI coding assistant from the repository root and give a high-level initialization instruction. The assistant reads `BOOTSTRAP.md`, gates itself, inventories existing materials, classifies prior research and code, synthesizes durable project state, validates, finalizes bootstrap, and reports checkpoint status.
+
+Example:
+
+```text
+Initialize this repository with AletheiaOS. Reuse existing research materials and code where appropriate. Do not start implementation work during bootstrap.
+```
+
+For an existing quantitative trading research-to-production project:
+
+```text
+Initialize this repository with AletheiaOS for a quantitative trading research-to-production system. Reuse existing research notes, notebooks, experiments, code, reports, strategy documents, and design decisions where appropriate. Preserve provenance and uncertainty. Do not start new strategy implementation during bootstrap.
+```
+
+Internal bootstrap commands are assistant-facing tools. They are documented so the model can operate reliably, not so the user must manually orchestrate bootstrap.
+<!-- END ALETHEIAOS_MODEL_LED_BOOTSTRAP -->

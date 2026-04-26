@@ -369,3 +369,25 @@ risk: update risk register
 session: add session distillation
 checkpoint: durable project checkpoint
 ```
+
+<!-- BEGIN ALETHEIAOS_MODEL_LED_BOOTSTRAP_ZH -->
+## 模型主导初始化
+
+AletheiaOS 的首次初始化由模型引导完成。
+
+用户不需要知道内部脚本的调用顺序。用户只需要从仓库根目录启动已批准的 AI 编程助手，并给出高层初始化目标。助手会读取 `BOOTSTRAP.md`，自行完成模型门禁、已有材料盘点、旧研究与代码分类、项目状态综合、验证、bootstrap finalize 和 checkpoint 汇报。
+
+示例：
+
+```text
+Initialize this repository with AletheiaOS. Reuse existing research materials and code where appropriate. Do not start implementation work during bootstrap.
+```
+
+对于已有量化研究到生产系统，可以这样说：
+
+```text
+Initialize this repository with AletheiaOS for a quantitative trading research-to-production system. Reuse existing research notes, notebooks, experiments, code, reports, strategy documents, and design decisions where appropriate. Preserve provenance and uncertainty. Do not start new strategy implementation during bootstrap.
+```
+
+内部 bootstrap 命令是给 AI 助手使用的工具，而不是要求用户手动编排初始化流程。
+<!-- END ALETHEIAOS_MODEL_LED_BOOTSTRAP_ZH -->

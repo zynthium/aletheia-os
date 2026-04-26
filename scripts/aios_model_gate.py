@@ -30,6 +30,19 @@ CURRENT_RUN_PATH = RUNTIME_DIR / "current_agent_run.json"
 AGENT_RUNS_DIR = ROOT / "aletheia_os/agent_runs"
 CODEX_CONFIG_PATH = Path.home() / ".codex" / "config.toml"
 CODEX_ENV_KEYS = ("CODEX_THREAD_ID", "CODEX_CI", "CODEX_SANDBOX")
+CLAUDE_SETTINGS_PATHS = (
+    Path.home() / ".claude" / "settings.json",
+    ROOT / ".claude" / "settings.json",
+    ROOT / ".claude" / "settings.local.json",
+)
+CLAUDE_MODEL_ENV_KEYS = (
+    "ANTHROPIC_MODEL",
+    "CLAUDE_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    "CLAUDE_CODE_EFFORT_LEVEL",
+)
 
 TIER_ORDER = {"C0": 0, "C1": 1, "C2": 2, "C3": 3, "C4": 4}
 WRITE_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
@@ -70,7 +83,11 @@ def load_json(path: Path, default: Any) -> Any:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except Exception as exc:
-        raise RuntimeError(f"invalid JSON in {path.relative_to(ROOT)}: {exc}") from exc
+        try:
+            display_path = str(path.relative_to(ROOT))
+        except ValueError:
+            display_path = str(path)
+        raise RuntimeError(f"invalid JSON in {display_path}: {exc}") from exc
 
 
 def save_json(path: Path, data: Any) -> None:
@@ -90,11 +107,60 @@ def infer_provider_from_model(model_id: str) -> str:
     normalized = model_id.lower()
     if normalized.startswith(("gpt-", "o1", "o3", "o4", "o5")):
         return "openai"
-    if normalized.startswith("claude-"):
+    if normalized.startswith(("claude-", "anthropic/claude-")) or normalized in {"best", "opus", "sonnet", "haiku", "opusplan"}:
         return "anthropic"
     if normalized.startswith(("gemini-", "gemma-")):
         return "google"
     return "unknown"
+
+
+def strip_context_suffix(model_id: str) -> str:
+    return re.sub(r"\[(?:1m|200k)\]$", "", model_id.strip())
+
+
+def claude_uses_third_party_provider(env: dict[str, str]) -> bool:
+    return any(
+        env.get(key)
+        for key in (
+            "CLAUDE_CODE_USE_BEDROCK",
+            "CLAUDE_CODE_USE_VERTEX",
+            "ANTHROPIC_BEDROCK_BASE_URL",
+            "ANTHROPIC_VERTEX_PROJECT_ID",
+            "CLOUD_ML_REGION",
+            "AWS_BEARER_TOKEN_BEDROCK",
+        )
+    )
+
+
+def normalize_claude_model_setting(model_id: str, env: dict[str, str] | None = None) -> str:
+    """Resolve Claude Code aliases where docs define a stable direct-API mapping.
+
+    `default` and `opusplan` are intentionally left unresolved: `default`
+    depends on account/provider, and `opusplan` can switch between Opus and
+    Sonnet depending on planning/execution phase.
+    """
+    env = env or {}
+    normalized = strip_context_suffix(str(model_id))
+    if normalized.startswith("anthropic/"):
+        normalized = normalized.split("/", 1)[1]
+    alias = normalized.lower()
+    third_party_provider = claude_uses_third_party_provider(env)
+
+    if alias in {"best", "opus"}:
+        if env.get("ANTHROPIC_DEFAULT_OPUS_MODEL"):
+            return strip_context_suffix(env["ANTHROPIC_DEFAULT_OPUS_MODEL"])
+        if third_party_provider:
+            return normalized
+        return strip_context_suffix(env.get("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-4-7"))
+    if alias == "sonnet":
+        if env.get("ANTHROPIC_DEFAULT_SONNET_MODEL"):
+            return strip_context_suffix(env["ANTHROPIC_DEFAULT_SONNET_MODEL"])
+        if third_party_provider:
+            return normalized
+        return strip_context_suffix(env.get("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-4-6"))
+    if alias == "haiku" and env.get("ANTHROPIC_DEFAULT_HAIKU_MODEL"):
+        return strip_context_suffix(env["ANTHROPIC_DEFAULT_HAIKU_MODEL"])
+    return normalized
 
 
 def detect_codex_config_model() -> dict[str, str]:
@@ -121,6 +187,59 @@ def detect_codex_config_model() -> dict[str, str]:
     return result
 
 
+def read_claude_settings_model() -> dict[str, str]:
+    result: dict[str, str] = {}
+    settings_env: dict[str, str] = {}
+
+    for path in CLAUDE_SETTINGS_PATHS:
+        data = load_json(path, {})
+        if not isinstance(data, dict):
+            continue
+
+        env = data.get("env")
+        if isinstance(env, dict):
+            for key in CLAUDE_MODEL_ENV_KEYS:
+                value = env.get(key)
+                if value:
+                    settings_env[key] = str(value)
+
+        model = data.get("model") or settings_env.get("ANTHROPIC_MODEL")
+        if model:
+            result["model_id"] = normalize_claude_model_setting(str(model), settings_env)
+            result["provider"] = "anthropic"
+            result["agent_tool"] = "claude_code"
+            result["metadata_source"] = str(path)
+
+        effort = data.get("effortLevel") or settings_env.get("CLAUDE_CODE_EFFORT_LEVEL")
+        if effort:
+            result["reasoning_effort"] = str(effort)
+
+    return result
+
+
+def detect_claude_config_model() -> dict[str, str]:
+    env: dict[str, str] = {}
+    for key in CLAUDE_MODEL_ENV_KEYS:
+        value = os.environ.get(key)
+        if value:
+            env[key] = value
+
+    model_id = os.environ.get("ANTHROPIC_MODEL") or os.environ.get("CLAUDE_MODEL")
+    if model_id:
+        result = {
+            "provider": "anthropic",
+            "model_id": normalize_claude_model_setting(model_id, env),
+            "agent_tool": "claude_code",
+            "metadata_source": "anthropic_environment",
+        }
+        effort = os.environ.get("CLAUDE_CODE_EFFORT_LEVEL")
+        if effort:
+            result["reasoning_effort"] = effort
+        return result
+
+    return read_claude_settings_model()
+
+
 def normalize_model_key(provider: str | None, model_id: str | None) -> list[str]:
     keys: list[str] = []
     if provider and model_id:
@@ -142,29 +261,43 @@ def detect_provider(args: argparse.Namespace, payload: dict[str, Any] | None = N
     )
     if env_provider:
         return env_provider
+    if os.environ.get("ANTHROPIC_MODEL") or os.environ.get("CLAUDE_MODEL"):
+        return "anthropic"
     codex_model = detect_codex_config_model()
     if codex_model.get("provider"):
         return codex_model["provider"]
     session = load_json(SESSION_MODEL_PATH, {})
     if session.get("provider"):
         return str(session["provider"])
+    claude_model = detect_claude_config_model()
+    if claude_model.get("provider"):
+        return claude_model["provider"]
     return "unknown"
 
 
 def detect_model(args: argparse.Namespace, payload: dict[str, Any] | None = None) -> str:
     if args.model:
-        return args.model
+        if args.provider == "anthropic":
+            return normalize_claude_model_setting(args.model, dict(os.environ))
+        return strip_context_suffix(args.model)
     if payload and payload.get("model"):
-        return str(payload["model"])
+        if payload.get("hook_event_name") in {"SessionStart", "PreToolUse"}:
+            return normalize_claude_model_setting(str(payload["model"]), dict(os.environ))
+        return strip_context_suffix(str(payload["model"]))
     for key in ["AIOS_MODEL_ID", "AIOS_MODEL", "ANTHROPIC_MODEL", "CLAUDE_MODEL", "OPENAI_MODEL", "CODEX_MODEL", "LLM_MODEL", "MODEL"]:
         if os.environ.get(key):
-            return os.environ[key]
+            if key in {"ANTHROPIC_MODEL", "CLAUDE_MODEL"}:
+                return normalize_claude_model_setting(os.environ[key], dict(os.environ))
+            return strip_context_suffix(os.environ[key])
     codex_model = detect_codex_config_model()
     if codex_model.get("model_id"):
         return codex_model["model_id"]
     session = load_json(SESSION_MODEL_PATH, {})
     if session.get("model_id"):
         return str(session["model_id"])
+    claude_model = detect_claude_config_model()
+    if claude_model.get("model_id"):
+        return claude_model["model_id"]
     return "unknown"
 
 
@@ -182,6 +315,9 @@ def detect_tool(args: argparse.Namespace, payload: dict[str, Any] | None = None)
     session = load_json(SESSION_MODEL_PATH, {})
     if session.get("agent_tool"):
         return str(session["agent_tool"])
+    claude_model = detect_claude_config_model()
+    if claude_model.get("agent_tool"):
+        return claude_model["agent_tool"]
     return "unknown"
 
 
@@ -199,6 +335,13 @@ def registered_entry(registry: dict[str, Any], provider: str, model_id: str) -> 
             if status in {"example_disabled", "disabled", "denied", "deny"}:
                 return status, entry
             return "registered", entry
+        for entry in registered.values():
+            aliases = entry.get("aliases", []) if isinstance(entry, dict) else []
+            if key in aliases:
+                status = str(entry.get("status", "allowed"))
+                if status in {"example_disabled", "disabled", "denied", "deny"}:
+                    return status, entry
+                return "registered", entry
     return "unknown", None
 
 

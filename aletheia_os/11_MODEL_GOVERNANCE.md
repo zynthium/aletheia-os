@@ -81,6 +81,20 @@ identification from `~/.codex/config.toml`. If the Codex runtime exposes
 configured `model`, infers the provider, and treats the tool as `codex`.
 This is host-provided metadata, not model self-attestation.
 
+When running under Claude Code, the preferred source is the `SessionStart`
+hook payload. Claude Code provides a `model` field, and the gate persists it
+for later checks. If a hook record is not available, the gate falls back to
+Claude Code environment/configuration metadata such as `ANTHROPIC_MODEL`,
+`CLAUDE_MODEL`, `~/.claude/settings.json`, `.claude/settings.json`, and
+`.claude/settings.local.json`. Claude Code aliases are normalized where the
+direct Anthropic API runtime mapping is stable: `opus` and `best` resolve to
+`claude-opus-4-7`, and `sonnet` resolves to `claude-sonnet-4-6` unless
+corresponding `ANTHROPIC_DEFAULT_*_MODEL` pins override them. For Bedrock,
+Vertex, Foundry, or gateway-style deployments, the gate only resolves aliases
+when the deployment pins an explicit model ID. The gate intentionally does not
+upgrade `default` or `opusplan` to C4 from configuration alone, because their
+effective model depends on account/provider or execution phase.
+
 ## Unknown model rule
 
 The default policy is:

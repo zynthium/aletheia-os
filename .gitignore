@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Runtime logs
+.aios_runtime/
+
+# Secrets and local config
+.env
+.env.*
+*.pem
+*.key
+*.crt
+secrets/
+*.secret
+*.credentials
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+
+# Heavy/generated artifacts
+artifacts/
+outputs/
+runs/
+*.parquet
+*.h5
+*.feather
+*.pkl
+*.npy
+*.npz

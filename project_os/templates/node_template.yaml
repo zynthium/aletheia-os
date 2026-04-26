@@ -1,0 +1,21 @@
+id: TBD
+title: TBD
+type: root|trunk|branch|leaf|capability|interface|risk|objective|hypothesis|implementation
+status: proposed|active|frozen|killed|retired|production
+weight: 0.0
+confidence: 0.0
+parent: TBD
+children: []
+thesis: "TBD"
+core_constraints:
+  - TBD
+dependencies: []
+evidence: []
+decisions: []
+contracts: []
+metrics: []
+kill_criteria:
+  - TBD
+open_questions:
+  - TBD
+last_reviewed: TBD

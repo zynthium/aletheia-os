@@ -1,0 +1,27 @@
+id: root
+title: "TBD Project Root"
+type: root
+status: active
+weight: 1.0
+confidence: 0.2
+thesis: "TBD"
+parent: null
+children:
+  - objectives
+  - theory_model
+  - system_design
+  - engineering_execution
+  - evidence_validation
+  - optimization_allocation
+  - risk_safety
+core_constraints:
+  - "Durable project state lives in files and git."
+  - "Important claims must be linked to evidence or marked as assumptions."
+dependencies: []
+evidence: []
+decisions: []
+contracts: []
+kill_criteria: []
+open_questions:
+  - "What is the first non-trivial active frontier?"
+last_reviewed: TBD

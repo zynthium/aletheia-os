@@ -273,6 +273,30 @@ def validate_graph_and_skeleton(root: Path, errors: list[str], warnings: list[st
             errors.append(f"skeleton reference target missing: {target.relative_to(root).as_posix()}")
 
 
+def validate_truth_intake(root: Path, errors: list[str]) -> None:
+    intake = root / ".aletheia" / "truth_intake"
+    if not intake.exists():
+        return
+    registry_path = intake / "registry.json"
+    if registry_path.exists():
+        try:
+            registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            errors.append(f"truth intake registry JSON invalid: {exc}")
+            registry = {}
+        if registry and registry.get("schema") != "AIOS_TRUTH_INTAKE_REGISTRY":
+            errors.append("truth intake registry schema invalid")
+    source_ref = re.compile(r"\[source:\s*SRC-[0-9a-f]{12}#chunk-[0-9]{4}\]")
+    for packet in list((intake / "runs").glob("*/BOOTSTRAP_SYNTHESIS_PACKET.md")) + list(
+        (intake / "runs").glob("*/FUSION_PACKET.md")
+    ):
+        for line_no, line in enumerate(packet.read_text(encoding="utf-8").splitlines(), start=1):
+            stripped = line.strip()
+            if stripped.startswith("- ") and "TBD" not in stripped and not source_ref.search(stripped):
+                rel = packet.relative_to(root).as_posix()
+                errors.append(f"candidate claim missing source ref: {rel}:{line_no}")
+
+
 def main() -> int:
     root = repo_root()
     errors: list[str] = []
@@ -294,6 +318,7 @@ def main() -> int:
     validate_claude_settings(root, errors)
     validate_model_registry(root, errors, warnings)
     validate_graph_and_skeleton(root, errors, warnings, bootstrap_mode)
+    validate_truth_intake(root, errors)
 
     for path in root.rglob("*"):
         if not path.is_file():

@@ -46,6 +46,10 @@ REQUIRED = [
     "assets/scaffold/.aletheia/contracts/INDEX.md",
     "assets/scaffold/.aletheia/evidence/INDEX.md",
     "assets/scaffold/.aletheia/hypotheses/.gitkeep",
+    "assets/scaffold/.aletheia/truth_intake/inbox/.gitkeep",
+    "assets/scaffold/.aletheia/truth_intake/runs/.gitkeep",
+    "assets/scaffold/.aletheia/truth_intake/registry.json",
+    "assets/scaffold/.aletheia/truth_intake/PROMOTION_LOG.md",
     "assets/scaffold/.aletheia/nodes/ROOT.yaml",
     "assets/scaffold/.aletheia/playbooks/guided_bootstrap.md",
     "assets/scaffold/.aletheia/bin/orient.py",
@@ -57,6 +61,7 @@ REQUIRED = [
     "assets/scaffold/.aletheia/bin/bootstrap_finalize.py",
     "assets/scaffold/.aletheia/bin/intake_inventory.py",
     "assets/scaffold/.aletheia/bin/guided_bootstrap.py",
+    "assets/scaffold/.aletheia/bin/truth_intake.py",
     "assets/scaffold/.aletheia/bin/change_hook.py",
     "assets/scaffold/.aletheia/bin/stop_hook.py",
     "assets/scaffold/.aletheia/templates/DECISION.md",
@@ -70,6 +75,10 @@ REQUIRED = [
     "assets/scaffold/.aletheia/templates/AGENT_RUN.json",
     "assets/scaffold/.aletheia/templates/TRUTH_INVENTORY_REPORT.md",
     "assets/scaffold/.aletheia/templates/TRUTH_INTAKE_MANIFEST.yaml",
+    "assets/scaffold/.aletheia/templates/CONVERSATION_DIGEST.md",
+    "assets/scaffold/.aletheia/templates/BOOTSTRAP_SYNTHESIS_PACKET.md",
+    "assets/scaffold/.aletheia/templates/FUSION_PACKET.md",
+    "assets/scaffold/.aletheia/templates/PROMOTION_LOG.md",
 ]
 
 PACKAGE_DIRS = [

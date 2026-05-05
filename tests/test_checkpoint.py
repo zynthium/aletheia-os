@@ -64,6 +64,39 @@ class CheckpointTests(unittest.TestCase):
             self.assertIn("checkpoint candidate:", output)
             self.assertIn("agent_run: RUN-test test/test-model", output)
 
+    def test_checkpoint_infers_intake_stage_message(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            subprocess.run(["git", "add", "-A"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            subprocess.run(
+                ["git", "commit", "-m", "bootstrap"],
+                cwd=target,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            run_dir = target / ".aletheia" / "truth_intake" / "runs" / "RUN-test"
+            run_dir.mkdir(parents=True)
+            (run_dir / "source_manifest.json").write_text("{}\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/checkpoint.py", "--dry-run", "--no-model-gate"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("message: intake: stage research sources", output)
+
 
 if __name__ == "__main__":
     unittest.main()

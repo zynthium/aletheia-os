@@ -278,6 +278,7 @@ def validate_truth_intake(root: Path, errors: list[str]) -> None:
     if not intake.exists():
         return
     registry_path = intake / "registry.json"
+    registry = {}
     if registry_path.exists():
         try:
             registry = json.loads(registry_path.read_text(encoding="utf-8"))
@@ -286,6 +287,19 @@ def validate_truth_intake(root: Path, errors: list[str]) -> None:
             registry = {}
         if registry and registry.get("schema") != "AIOS_TRUTH_INTAKE_REGISTRY":
             errors.append("truth intake registry schema invalid")
+    sources = registry.get("sources", {}) if isinstance(registry, dict) else {}
+    for manifest in (intake / "runs").glob("*/source_manifest.json"):
+        try:
+            items = json.loads(manifest.read_text(encoding="utf-8"))
+        except Exception as exc:
+            errors.append(f"truth intake source manifest JSON invalid: {manifest.relative_to(root).as_posix()}: {exc}")
+            continue
+        for item in items if isinstance(items, list) else []:
+            source_id = item.get("source_id")
+            registry_source = sources.get(source_id, {}) if source_id else {}
+            if registry_source.get("canonical_hash") != item.get("canonical_hash"):
+                rel = manifest.relative_to(root).as_posix()
+                errors.append(f"truth intake manifest hash mismatch: {rel} {source_id}")
     source_ref = re.compile(r"\[source:\s*SRC-[0-9a-f]{12}#chunk-[0-9]{4}\]")
     for packet in list((intake / "runs").glob("*/BOOTSTRAP_SYNTHESIS_PACKET.md")) + list(
         (intake / "runs").glob("*/FUSION_PACKET.md")

@@ -22,12 +22,12 @@ def infer_mode(items: list[dict]) -> str:
     doc_count = sum(1 for item in items if "document" in item.get("kind", "") or "design" in item.get("kind", ""))
     evidence_count = sum(1 for item in items if "evidence" in item.get("kind", "") or "experiment" in item.get("kind", ""))
     if code_count >= 10 or evidence_count >= 3 or doc_count >= 3 or code_count >= 3:
-        return "brownfield"
-    return "greenfield"
+        return "existing repository"
+    return "new repository"
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Prepare an AletheiaOS guided bootstrap import report.")
+    parser = argparse.ArgumentParser(description="Prepare an AletheiaOS guided project truth inventory report.")
     parser.add_argument("--objective", default="Initialize AletheiaOS")
     parser.add_argument("--skip-gate", action="store_true")
     parser.add_argument("--skip-inventory", action="store_true")
@@ -50,7 +50,7 @@ def main() -> int:
     if not args.skip_inventory:
         run(["python3", ".aletheia/bin/intake_inventory.py"], root)
 
-    intake_dir = root / ".aletheia" / "bootstrap_intake"
+    intake_dir = root / ".aletheia" / "truth_intake"
     inventory_path = intake_dir / "inventory.json"
     inventory = json.loads(inventory_path.read_text(encoding="utf-8")) if inventory_path.exists() else {"items": []}
     items = inventory.get("items", [])
@@ -64,7 +64,7 @@ def main() -> int:
     def counts(mapping: dict[str, int]) -> str:
         return "\n".join(f"- {key}: {value}" for key, value in sorted(mapping.items())) or "None"
 
-    report = f"""# Bootstrap Import Report
+    report = f"""# Truth Inventory Report
 
 ## Metadata
 
@@ -84,7 +84,7 @@ Total items: {len(items)}
 
 {counts(by_kind)}
 
-## Durable Records Created Or Updated
+## Project Truth Records Created Or Updated
 
 TBD - assistant must fill after synthesis.
 
@@ -97,8 +97,8 @@ TBD - assistant must fill after synthesis.
 TBD - assistant must fill after synthesis.
 """
     intake_dir.mkdir(parents=True, exist_ok=True)
-    (intake_dir / "IMPORT_REPORT.md").write_text(report, encoding="utf-8")
-    print(f"wrote {intake_dir / 'IMPORT_REPORT.md'}")
+    (intake_dir / "TRUTH_INVENTORY_REPORT.md").write_text(report, encoding="utf-8")
+    print(f"wrote {intake_dir / 'TRUTH_INVENTORY_REPORT.md'}")
     return 0
 
 

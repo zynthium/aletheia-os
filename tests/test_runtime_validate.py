@@ -69,6 +69,51 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0, output)
             self.assertIn("skeleton root children do not match system graph root children", output)
 
+    def test_validate_rejects_missing_contract_decision_and_evidence_refs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            skeleton = target / ".aletheia" / "state" / "SKELETON.yaml"
+            skeleton.write_text(
+                skeleton.read_text(encoding="utf-8")
+                .replace("    contract_refs: []", "    contract_refs:\n      - contracts/missing.md")
+                .replace("    decision_refs: []", "    decision_refs:\n      - decisions/missing.md")
+                .replace("    evidence_refs: []", "    evidence_refs:\n      - evidence/missing.md"),
+                encoding="utf-8",
+            )
+
+            result = validate_target(target)
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn("skeleton reference target missing: .aletheia/contracts/missing.md", output)
+            self.assertIn("skeleton reference target missing: .aletheia/decisions/missing.md", output)
+            self.assertIn("skeleton reference target missing: .aletheia/evidence/missing.md", output)
+
+    def test_orient_outputs_truth_layer_sections(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/orient.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("# AletheiaOS Project Truth Orientation", output)
+            self.assertIn("## Project Truth", output)
+            self.assertIn("## Active Frontier", output)
+            self.assertIn("## Linked Evidence", output)
+            self.assertIn("## Missing Or Stale Truth Warnings", output)
+
 
 if __name__ == "__main__":
     unittest.main()

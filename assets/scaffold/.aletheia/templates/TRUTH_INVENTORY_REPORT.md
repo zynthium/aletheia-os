@@ -1,8 +1,8 @@
-# Bootstrap Import Report
+# Truth Inventory Report
 
 ## Metadata
 
-- Initialization mode: TBD
+- Initialization mode: greenfield | existing repository
 - Objective: TBD
 
 ## Inventory Summary
@@ -17,7 +17,7 @@ TBD.
 
 TBD.
 
-## Durable Records Created Or Updated
+## Project Truth Records Created Or Updated
 
 TBD.
 

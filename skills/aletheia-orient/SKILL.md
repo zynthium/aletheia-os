@@ -1,11 +1,11 @@
 ---
 name: aletheia-orient
-description: Orient work inside an AletheiaOS repository. Use before non-trivial tasks to load root mission, active frontier, active node, parent constraints, system graph, project skeleton, contracts, decisions, evidence, and stop criteria without scanning the whole repository.
+description: Orient from the AletheiaOS project truth layer. Use before non-trivial tasks to load root mission, active frontier, active node, parent constraints, system graph, project skeleton, contracts, decisions, evidence, risks, and stop criteria without scanning the whole repository.
 ---
 
 # Aletheia Orient
 
-Load the smallest context that preserves the global skeleton.
+Load the smallest context that preserves the global skeleton and current project truth.
 
 Read order:
 
@@ -15,7 +15,7 @@ Read order:
 4. `.aletheia/state/ACTIVE_STATE.md`
 5. `.aletheia/state/SYSTEM_GRAPH.yaml`
 6. `.aletheia/state/SKELETON.yaml`
-7. Active node decisions, evidence, contracts, and code paths.
+7. Active node decisions, evidence, contracts, risks, and code paths.
 
 Return:
 

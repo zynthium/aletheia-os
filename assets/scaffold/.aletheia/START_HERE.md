@@ -1,6 +1,6 @@
 # AletheiaOS Start Here
 
-Build a top-down view before local work.
+Build a top-down view of project truth before local work.
 
 Read order:
 
@@ -12,7 +12,7 @@ Read order:
 6. `.aletheia/state/SYSTEM_GRAPH.yaml`
 7. `.aletheia/state/SKELETON.yaml`
 8. `.aletheia/state/RISK_REGISTER.md`
-9. `.aletheia/state/FRONTIER_BOARD.md`, `.aletheia/state/DOMAIN_PROFILE.md`, and relevant decisions, evidence, contracts, nodes, and source files.
+9. `.aletheia/state/FRONTIER_BOARD.md`, `.aletheia/state/DOMAIN_PROFILE.md`, and relevant decisions, evidence, contracts, risks, nodes, and source files.
 
 Before durable writes, run `.aletheia/bin/model_gate.py` with the correct task class:
 

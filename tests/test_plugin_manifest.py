@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -17,6 +18,11 @@ class PluginManifestTests(unittest.TestCase):
 
         self.assertEqual(manifest["name"], "aletheia-os")
         self.assertEqual(manifest["skills"], "./skills/")
+        self.assertIn("truth layer", manifest["description"])
+        self.assertIn("project truth", manifest["interface"]["shortDescription"])
+        self.assertIn("architecture", manifest["interface"]["longDescription"])
+        self.assertIn("evidence", manifest["interface"]["longDescription"])
+        self.assertIn("truth-layer", manifest["keywords"])
         self.assertIsInstance(manifest["interface"]["defaultPrompt"], list)
         self.assertLessEqual(len(manifest["interface"]["defaultPrompt"]), 3)
         for prompt in manifest["interface"]["defaultPrompt"]:
@@ -59,10 +65,49 @@ class PluginManifestTests(unittest.TestCase):
         readme = (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
 
         self.assertFalse((ROOT / ("README" + ".md")).exists())
+        self.assertIn("仓库原生事实层", readme)
+        self.assertIn("One repo. One project truth. Many agents.", readme)
+        self.assertIn("不是另一个 coding workflow", readme)
+        self.assertIn("OpenSpec", readme)
+        self.assertIn("Superpowers", readme)
         self.assertIn(".claude-plugin/plugin.json", readme)
         self.assertIn("claude --plugin-dir .", readme)
         self.assertIn("claude --plugin-dir /tmp/aletheia-os-dist/aletheia-os", readme)
         self.assertIn("/plugin", readme)
+
+    def test_plugin_content_avoids_migration_and_compatibility_language(self) -> None:
+        banned_patterns = [
+            r"\bmigration\b",
+            r"\bmigrate\b",
+            r"\bimport\b",
+            r"\blegacy\b",
+            r"\bcompat\b",
+            r"\bCompatibility\b",
+            "迁移",
+            "导入",
+            "兼容",
+        ]
+        checked_roots = [
+            ROOT / "README.zh-CN.md",
+            ROOT / "skills",
+            ROOT / "assets" / "scaffold",
+            ROOT / ".codex-plugin" / "plugin.json",
+            ROOT / ".claude-plugin" / "plugin.json",
+        ]
+        offenders: list[str] = []
+        for checked in checked_roots:
+            paths = [checked] if checked.is_file() else [path for path in checked.rglob("*") if path.is_file()]
+            for path in paths:
+                if ".gitkeep" in path.name:
+                    continue
+                if path.suffix.lower() not in {".md", ".json", ".yaml", ".yml", ".txt"}:
+                    continue
+                text = path.read_text(encoding="utf-8")
+                for pattern in banned_patterns:
+                    if re.search(pattern, text):
+                        offenders.append(f"{path.relative_to(ROOT)} contains {pattern}")
+
+        self.assertEqual(offenders, [])
 
 
 if __name__ == "__main__":

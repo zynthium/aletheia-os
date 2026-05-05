@@ -1,7 +1,7 @@
 {
   "name": "aletheia-os",
   "version": "0.1.0",
-  "description": "Repo-native project-state OS for agentic development. Initializes, orients, maintains, validates, and checkpoints repositories using the AletheiaOS .aletheia control plane.",
+  "description": "Repo-native truth layer for AI-assisted research and engineering. Maintains project truth, architecture constraints, research evidence, decisions, risks, and agent attribution in .aletheia/.",
   "author": {
     "name": "joeslee",
     "url": "https://github.com/joeslee"
@@ -13,13 +13,16 @@
     "aletheia",
     "codex",
     "plugin",
-    "project-state"
+    "truth-layer",
+    "project-truth",
+    "architecture",
+    "evidence"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "AletheiaOS",
-    "shortDescription": "Repo-native project-state control plane for AI-assisted work.",
-    "longDescription": "AletheiaOS keeps durable project state in .aletheia/ and gives Codex a repo-native control plane for orientation, model gating, validation, checkpoints, and structured execution.",
+    "shortDescription": "Repo-native project truth layer for AI-assisted research and engineering.",
+    "longDescription": "AletheiaOS keeps project truth in .aletheia/: mission, active state, system graph, architecture constraints, research evidence, decisions, contracts, risks, and agent attribution for Codex and other agents.",
     "developerName": "joeslee",
     "category": "Productivity",
     "capabilities": [
@@ -28,8 +31,8 @@
     "websiteURL": "https://github.com/joeslee/aletheia-os",
     "defaultPrompt": [
       "Initialize this repository with AletheiaOS.",
-      "Orient on the current .aletheia state.",
-      "Checkpoint durable state after meaningful work."
+      "Orient on the current project truth.",
+      "Checkpoint project truth after meaningful work."
     ]
   }
 }

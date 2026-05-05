@@ -57,8 +57,8 @@ REQUIRED = [
     "assets/scaffold/.aletheia/templates/NODE.yaml",
     "assets/scaffold/.aletheia/templates/TASK_CARD.md",
     "assets/scaffold/.aletheia/templates/AGENT_RUN.json",
-    "assets/scaffold/.aletheia/templates/BOOTSTRAP_IMPORT_REPORT.md",
-    "assets/scaffold/.aletheia/templates/BOOTSTRAP_INTAKE_MANIFEST.yaml",
+    "assets/scaffold/.aletheia/templates/TRUTH_INVENTORY_REPORT.md",
+    "assets/scaffold/.aletheia/templates/TRUTH_INTAKE_MANIFEST.yaml",
 ]
 
 PACKAGE_DIRS = [

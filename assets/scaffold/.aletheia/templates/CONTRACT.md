@@ -19,6 +19,6 @@ Describe outputs and guarantees.
 
 Describe expected failure modes and recovery.
 
-## Compatibility
+## Boundary evolution impact
 
-Describe versioning or migration expectations.
+Describe what project facts, callers, tests, risks, or decisions must change if this boundary changes.

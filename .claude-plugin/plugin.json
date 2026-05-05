@@ -1,7 +1,7 @@
 {
   "name": "aletheia-os",
   "version": "0.1.0",
-  "description": "Repo-native project-state OS for agentic development. Initializes, orients, maintains, validates, and checkpoints repositories using the AletheiaOS .aletheia control plane.",
+  "description": "Repo-native truth layer for AI-assisted research and engineering. Maintains project truth, architecture constraints, research evidence, decisions, risks, and agent attribution in .aletheia/.",
   "author": {
     "name": "joeslee",
     "url": "https://github.com/joeslee"
@@ -13,7 +13,10 @@
     "aletheia",
     "claude-code",
     "plugin",
-    "project-state"
+    "truth-layer",
+    "project-truth",
+    "architecture",
+    "evidence"
   ],
   "skills": "./skills/"
 }

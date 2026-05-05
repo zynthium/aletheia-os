@@ -1,63 +1,87 @@
 # AletheiaOS
 
-AletheiaOS 是一个面向 Codex 的项目状态操作系统。它让 AI agent 在开发复杂项目时，不再只依赖聊天上下文，而是把项目目标、当前状态、系统骨架、证据、决策、契约和 agent 运行记录沉淀到仓库本身。
+**面向 AI 辅助研究与工程的仓库原生事实层。**
 
-这个项目以 Codex plugin 的形式发布。安装后，Codex 可以用它为任意仓库建立 `.aletheia/` 控制平面，并在后续开发中按统一协议进行取向、模型门控、证据记录、架构迭代、总览生成、验证和 checkpoint。Claude Code hooks 是默认 scaffold 的一部分，hook 命令指向 `.aletheia/bin/`。
+**One repo. One project truth. Many agents.**
+
+AletheiaOS 用 `.aletheia/` 为复杂项目维护唯一可信事实源：使命、当前状态、系统图、项目骨架、架构约束、研究证据、决策记录、接口契约、风险和 agent 归因。
+
+它适用于长周期研究与工程项目。在这类项目中，理论、实现、证据、风险和优化会共同演化，局部实现发现也可能推翻顶层假设。AletheiaOS 的目标不是替代 Codex、Claude Code、OpenSpec、Superpowers、gstack、Compound 或其他 AI 编码工作流，而是为它们提供同一份 repo-native project truth。
 
 ## 为什么需要 AletheiaOS
 
-复杂项目不是一组孤立文件。它们通常具有逐层展开的结构：
+AI agent 擅长局部执行，但在长周期一致性上很脆弱。复杂项目通常会出现：
+
+- 局部优化覆盖上层约束；
+- 研究结论、架构决策和代码实现彼此脱节；
+- 聊天记录、设计文档、README 和当前代码互相矛盾；
+- 重要 claim 没有证据、推翻标准或后续决策；
+- agent 不清楚当前 active node、父级约束和边界契约；
+- 多个 agent 或工具基于不同版本的项目事实工作。
+
+AletheiaOS 通过把项目事实显式化、结构化、可验证并纳入版本控制来减少这种漂移。它让 agent 在当前事实下工作，并在完成后更新事实。
+
+## 定位边界
+
+AletheiaOS 是：
+
+- repo-native truth layer；
+- 面向 AI 辅助研究与工程的真实项目记忆；
+- 受约束治理的系统图；
+- 架构约束、研究证据、决策、契约、风险和 agent 归因的事实账本；
+- Codex、Claude Code 及类似工具可共同读写的项目事实控制平面。
+
+AletheiaOS 不是另一个 coding workflow，也不是：
+
+- 任务管理器；
+- 通用笔记应用；
+- feature spec 工具；
+- Claude/Codex memory 的替代品；
+- TDD、review、ship 或虚拟团队插件；
+- 人类判断的替代品；
+- 自动把非结构化项目变得一致的魔法层。
+
+## 与其他工具的关系
 
 ```text
-mission -> objectives -> system graph -> skeleton -> contracts -> code
+Claude Code / Codex 提供 agent runtime。
+Superpowers / gstack / Compound 指导 agent 如何工作。
+OpenSpec 管理 change-level specs。
+AletheiaOS 维护它们共同依赖的 project-level truth。
 ```
 
-AI agent 如果只读取局部文件，很容易在错误的目标、过期的假设或不完整的架构边界下优化。AletheiaOS 的目标是让 agent 每次工作前都能先获得项目骨架，再按需展开到具体节点和文件。
+AletheiaOS 不争夺流程入口。它提供 `.aletheia/` 事实层，让不同 agent、技能和工作流在同一份当前事实上 orient、执行、验证和 checkpoint。
 
-## 核心边界
+## 核心模型
+
+AletheiaOS 将项目表示为一个受约束治理的系统图：
 
 ```text
-AletheiaOS plugin = Codex 的分发与操作层
-.aletheia/ = 目标仓库的长期项目记忆
-src/tests/docs = 项目的实现与数据平面
+mission -> system graph -> skeleton -> contracts -> evidence -> decisions -> code
 ```
 
-插件负责初始化和操作 `.aletheia/`。项目的真实状态保存在目标仓库中，而不是保存在聊天记录或插件内部。
+其中：
+
+- `governance/` 保存 charter、attention policy、model governance、model registry、git policy 和 intake policy；
+- `state/` 保存 active state、system graph、project skeleton、frontier board、glossary、domain profile 和 risk register；
+- `nodes/` 保存可下钻的系统节点事实；
+- `evidence/` 保存实验、验证、观察、推理和解释记录；
+- `decisions/` 保存长期项目和架构决策；
+- `contracts/` 保存模块、接口和边界契约；
+- `risks/` 保存失效模式、不确定性和待证伪假设；
+- `agent_runs/` 保存 agent attribution 和模型门控记录。
+
+源码、测试、公开文档和构建配置仍保存在项目常规目录中。`.aletheia/` 是事实控制平面，不是实现与数据平面的替代品。
 
 ## 功能
 
-- 为目标仓库初始化 `.aletheia/` 控制平面。
-- 引导 Codex 读取项目 mission、active state、system graph 和 project skeleton。
-- 在写入前执行模型能力门控和 agent attribution。
+- 为目标仓库初始化 `.aletheia/` truth layer。
+- 引导 agent 从唯一事实源读取 mission、active state、system graph、skeleton 和 active node。
+- 在 durable writes 前执行模型能力门控和 agent attribution。
 - 记录 evidence、decisions、contracts、risks 和 session notes。
-- 支持复杂项目的架构演进和逐层展开。
+- 支持复杂项目的架构演进、约束追踪和逐层展开。
 - 提供 repo-native validation、overview、bootstrap finalize 和 checkpoint runtime。
 - 通过 model registry 管理 task class、能力层级、注册模型和 denylist。
-- 保持源码、测试、公开文档和构建配置在项目常规目录中。
-
-## 目录结构
-
-```text
-.codex-plugin/
-  plugin.json
-skills/
-  aletheia-bootstrap/
-  aletheia-orient/
-  aletheia-checkpoint/
-  aletheia-design-evidence/
-  aletheia-architecture-evolution/
-assets/
-  scaffold/
-    AGENTS.md
-    START_HERE.md
-    .claude/settings.json
-    .aletheia/
-scripts/
-  aletheia_scaffold.py
-  init_aletheia.py
-  validate_scaffold.py
-  package_plugin.py
-```
 
 ## 安装
 
@@ -79,7 +103,7 @@ python3 scripts/package_plugin.py --output /tmp/aletheia-os-dist
 claude --plugin-dir /tmp/aletheia-os-dist/aletheia-os
 ```
 
-启动 Claude Code 后，可在目标仓库中要求 Claude 使用 `aletheia-bootstrap` 初始化 `.aletheia/` 控制平面。
+启动 Claude Code 后，可在目标仓库中要求 Claude 使用 `aletheia-bootstrap` 初始化 `.aletheia/` truth layer。
 
 ### Claude Code Marketplace 安装
 
@@ -101,7 +125,7 @@ claude --plugin-dir /tmp/aletheia-os-dist/aletheia-os
 
 ### Codex 本地安装
 
-Codex 使用 `.codex-plugin/plugin.json` 作为 manifest。发布目录同样由打包脚本生成：
+Codex 使用 `.codex-plugin/plugin.json` 作为 manifest。发布目录由打包脚本生成：
 
 ```bash
 python3 scripts/package_plugin.py --output /tmp/aletheia-os-dist
@@ -164,50 +188,26 @@ python3 scripts/validate_scaffold.py assets/scaffold
   bin/
 ```
 
-其中：
+`bin/` 提供 orient、context pack、model gate、intake inventory、guided bootstrap、overview、validate、bootstrap finalize、checkpoint 和 Claude hook runtime。
 
-- `governance/` 保存 charter、attention policy、model governance、model registry、git policy 和 intake policy。
-- `state/` 保存 active state、system graph、project skeleton、frontier board、glossary、domain profile 和 risk register。
-- `decisions/` 保存长期项目和架构决策。
-- `evidence/` 保存实验、验证、观察、推理和解释记录。
-- `contracts/` 保存模块、接口和边界契约。
-- `agent_runs/` 保存 agent attribution 和模型门控记录。
-- `templates/` 提供 decision、evidence、risk、contract、hypothesis、node、task card、agent run 和 session note 模板。
-- `bin/` 提供 orient、context pack、model gate、intake inventory、guided bootstrap、overview、validate、bootstrap finalize、checkpoint 和 Claude hook runtime。
-
-## 推荐工作流
+## 推荐闭环
 
 ```text
-orient
+orient on project truth
 -> model gate
 -> execute
--> update durable state
--> validate
+-> update evidence / decision / contract / risk / active state
+-> validate truth layer
 -> checkpoint
 ```
 
 对应的 plugin skills：
 
-- `aletheia-bootstrap`：初始化目标仓库。
-- `aletheia-orient`：建立全局项目视图并定位 active node。
-- `aletheia-checkpoint`：验证并创建 checkpoint。
+- `aletheia-bootstrap`：初始化目标仓库的 `.aletheia/` truth layer。
+- `aletheia-orient`：从唯一事实源建立项目视图并定位 active node。
+- `aletheia-checkpoint`：验证并提交 coherent project truth update。
 - `aletheia-design-evidence`：为 claim、实验和设计分支创建可证伪证据。
 - `aletheia-architecture-evolution`：支持架构决策、契约变更和 skeleton traversal。
-
-## AletheiaOS 能力闭环
-
-AletheiaOS 不只是初始化 `.aletheia/`，它还提供完整的项目记忆闭环：
-
-```text
-bootstrap
--> orient
--> model gate
--> execute
--> evidence / decision / contract / risk update
--> overview
--> validate
--> checkpoint
-```
 
 关键 runtime：
 
@@ -223,39 +223,23 @@ python3 .aletheia/bin/validate.py
 python3 .aletheia/bin/checkpoint.py
 ```
 
-## 项目骨架感知
-
-AletheiaOS 通过 `SYSTEM_GRAPH.yaml` 和 `SKELETON.yaml` 帮助 agent 保持全局骨架感知。
-
-每个 skeleton node 可以描述：
-
-- 所在层级；
-- 父节点和子节点；
-- 目的和不变量；
-- 接口和依赖；
-- 拥有的路径；
-- 测试路径；
-- 相关 contracts、decisions 和 evidence；
-- 何时展开，何时停止。
-
-这样 agent 可以从 root mission 逐层展开，而不是默认扫描整个仓库。
-
 ## 设计原则
 
-1. 仓库是长期记忆，聊天不是长期记忆。
+1. 仓库是长期事实源，聊天不是长期事实源。
 2. 每个重要 claim 都应可证伪或明确标记为解释性判断。
 3. 实现必须能追溯到目标、系统节点、契约或证据。
 4. 架构迭代是一种设计研究流程，需要 evidence 和 invalidation criteria。
-5. `.aletheia/` 是控制平面，不是源码、测试或公开文档的替代品。
-6. plugin 负责操作协议，目标仓库负责保存真实项目状态。
-7. 人类总览应从真实项目状态生成，而不是手写状态页。
+5. `.aletheia/` 是 truth layer，不是源码、测试或公开文档的替代品。
+6. plugin 负责操作协议，目标仓库负责保存真实项目事实。
+7. 人类总览应从真实项目事实生成，而不是手写状态页。
 
 ## 适合谁使用
 
-AletheiaOS 适合正在用 Codex 维护复杂项目的开发者，尤其是：
+AletheiaOS 适合正在用 AI agent 维护复杂研究与工程项目的开发者，尤其是：
 
 - 项目目标和约束需要长期保留；
 - 架构会持续演进；
+- 研究成果和设计取舍需要沉淀为证据与决策；
 - 需要区分 claim、evidence、decision 和 implementation；
-- 希望 agent 每次工作前先理解全局骨架；
+- 希望多个 agent 每次工作前先对齐同一份项目事实；
 - 不希望重要项目状态只存在于聊天上下文。

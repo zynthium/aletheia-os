@@ -10,7 +10,7 @@ TBD. Define the durable project mission in one paragraph.
 2. Every implementation must preserve traceability to the claim, requirement, or system node it serves.
 3. Evidence must distinguish observation, simulation, proof, field feedback, market data, and expert judgment.
 4. Local optimization must not silently override parent constraints.
-5. Project state must be recoverable from git and files, not chat memory.
+5. Project truth must be recoverable from git and files, not chat memory.
 
 ## Priority order
 

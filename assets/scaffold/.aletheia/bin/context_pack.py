@@ -5,7 +5,6 @@ from pathlib import Path
 
 
 FILES = [
-    ".aletheia/START_HERE.md",
     ".aletheia/governance/CHARTER.md",
     ".aletheia/governance/ATTENTION_POLICY.md",
     ".aletheia/governance/MODEL_GOVERNANCE.md",
@@ -28,7 +27,8 @@ def clip(text: str, limit: int = 5000) -> str:
 
 def main() -> int:
     root = repo_root()
-    print("# AletheiaOS Context Pack\n")
+    print("# AletheiaOS Project Truth Context Pack\n")
+    print("Use this pack to ground agent work in the repository's current project truth.\n")
     for rel in FILES:
         path = root / rel
         print(f"## {rel}\n")

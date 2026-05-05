@@ -49,8 +49,8 @@ REQUIRED_PATHS = [
     ".aletheia/templates/NODE.yaml",
     ".aletheia/templates/TASK_CARD.md",
     ".aletheia/templates/AGENT_RUN.json",
-    ".aletheia/templates/BOOTSTRAP_IMPORT_REPORT.md",
-    ".aletheia/templates/BOOTSTRAP_INTAKE_MANIFEST.yaml",
+    ".aletheia/templates/TRUTH_INVENTORY_REPORT.md",
+    ".aletheia/templates/TRUTH_INTAKE_MANIFEST.yaml",
 ]
 
 REQUIRED_DIRS = [
@@ -163,6 +163,40 @@ def extract_graph_node_ids(graph_text: str) -> set[str]:
     return ids
 
 
+def extract_skeleton_refs(skeleton_text: str) -> list[str]:
+    refs: list[str] = []
+    in_ref_list = False
+    for line in skeleton_text.splitlines():
+        field = re.match(r"^\s{4}(contract_refs|decision_refs|evidence_refs):\s*(.*)$", line)
+        if field:
+            in_ref_list = True
+            inline = field.group(2).strip()
+            if inline and inline != "[]":
+                refs.extend(re.findall(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.\-/]+", inline))
+            continue
+        if in_ref_list:
+            item = re.match(r"^\s{6}-\s+(.+?)\s*$", line)
+            if item:
+                value = item.group(1).strip().strip("\"'")
+                if value:
+                    refs.append(value)
+                continue
+            if re.match(r"^\s{4}[A-Za-z_][A-Za-z0-9_]*:", line) or re.match(r"^\s{2}[A-Za-z0-9_.-]+:", line):
+                in_ref_list = False
+    return refs
+
+
+def resolve_truth_ref(root: Path, ref: str) -> Path | None:
+    normalized = ref.strip().strip("\"'")
+    if not normalized or normalized.startswith("/") or ".." in Path(normalized).parts:
+        return None
+    if normalized.startswith(".aletheia/"):
+        return root / normalized
+    if normalized.startswith(("contracts/", "decisions/", "evidence/")):
+        return root / ".aletheia" / normalized
+    return None
+
+
 def validate_claude_settings(root: Path, errors: list[str]) -> None:
     path = root / ".claude" / "settings.json"
     if not path.exists():
@@ -231,6 +265,12 @@ def validate_graph_and_skeleton(root: Path, errors: list[str], warnings: list[st
             errors.append("active state references unknown graph nodes: " + ", ".join(missing))
     if "TBD" in graph_text:
         (warnings if bootstrap_mode else errors).append("system graph still contains TBD markers")
+    for ref in extract_skeleton_refs(skeleton_text):
+        target = resolve_truth_ref(root, ref)
+        if target is None:
+            errors.append(f"skeleton reference is outside allowed truth records: {ref}")
+        elif not target.exists():
+            errors.append(f"skeleton reference target missing: {target.relative_to(root).as_posix()}")
 
 
 def main() -> int:

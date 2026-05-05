@@ -1,11 +1,11 @@
 ---
 name: aletheia-architecture-evolution
-description: Guide complex architecture iteration in AletheiaOS repositories. Use when changing module boundaries, contracts, dependency direction, project skeleton nodes, ADR/RFC records, transition plans, or architecture drift checks.
+description: Evolve AletheiaOS architecture truth. Use when changing module boundaries, contracts, dependency direction, project skeleton nodes, ADR/RFC records, transition plans, or architecture drift checks.
 ---
 
 # Aletheia Architecture Evolution
 
-Treat architecture changes as falsifiable design research.
+Treat architecture changes as falsifiable design research that updates project truth.
 
 Before changing architecture:
 

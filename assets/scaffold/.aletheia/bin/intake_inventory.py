@@ -123,7 +123,7 @@ def iter_files(root: Path):
 
 def main() -> int:
     root = repo_root()
-    out_dir = root / ".aletheia" / "bootstrap_intake"
+    out_dir = root / ".aletheia" / "truth_intake"
     out_dir.mkdir(parents=True, exist_ok=True)
     items = []
     for rel in sorted(iter_files(root), key=lambda item: str(item)):
@@ -151,7 +151,7 @@ def main() -> int:
         "items": items,
     }
     (out_dir / "inventory.json").write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    lines = ["# Bootstrap Intake Inventory", "", f"Generated at: {payload['generated_at']}", "", "## Items", ""]
+    lines = ["# Truth Intake Inventory", "", f"Generated at: {payload['generated_at']}", "", "## Items", ""]
     for item in items:
         lines.append(
             f"- `{item['path']}` - {item['kind']} - {item['initial_classification']} - {item['size_bytes']} bytes"

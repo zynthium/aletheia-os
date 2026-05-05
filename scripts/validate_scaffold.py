@@ -53,8 +53,8 @@ REQUIRED_PATHS = [
     ".aletheia/templates/NODE.yaml",
     ".aletheia/templates/TASK_CARD.md",
     ".aletheia/templates/AGENT_RUN.json",
-    ".aletheia/templates/BOOTSTRAP_IMPORT_REPORT.md",
-    ".aletheia/templates/BOOTSTRAP_INTAKE_MANIFEST.yaml",
+    ".aletheia/templates/TRUTH_INVENTORY_REPORT.md",
+    ".aletheia/templates/TRUTH_INTAKE_MANIFEST.yaml",
 ]
 
 REQUIRED_SKELETON_ROOT_FIELDS = [
@@ -73,6 +73,17 @@ REQUIRED_SKELETON_ROOT_FIELDS = [
     "stop_when",
     "confidence",
     "last_reviewed",
+]
+
+BANNED_TEXT_PATTERNS = [
+    re.compile(r"\bmigration\b", re.I),
+    re.compile(r"\bmigrate\b", re.I),
+    re.compile(r"\bimport\b", re.I),
+    re.compile(r"\blegacy\b", re.I),
+    re.compile(r"\bcompat\b", re.I),
+    re.compile("迁移"),
+    re.compile("导入"),
+    re.compile("兼容"),
 ]
 
 
@@ -102,6 +113,21 @@ def validate_skeleton(root: Path) -> list[str]:
     return [f".aletheia/state/SKELETON.yaml nodes.root missing field: {field}" for field in missing]
 
 
+def validate_no_retired_language(root: Path) -> list[str]:
+    errors: list[str] = []
+    checked_suffixes = {".md", ".json", ".yaml", ".yml", ".txt"}
+    for path in root.rglob("*"):
+        if not path.is_file() or path.name == ".gitkeep":
+            continue
+        if path.suffix.lower() not in checked_suffixes:
+            continue
+        text = path.read_text(encoding="utf-8")
+        for pattern in BANNED_TEXT_PATTERNS:
+            if pattern.search(text):
+                errors.append(f"{path.relative_to(root).as_posix()} contains retired language: {pattern.pattern}")
+    return errors
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate an AletheiaOS scaffold directory.")
     parser.add_argument("scaffold", type=Path)
@@ -114,7 +140,7 @@ def main() -> int:
             print(f"missing required path: {rel}", file=sys.stderr)
         return 1
 
-    skeleton_errors = validate_skeleton(root)
+    skeleton_errors = validate_skeleton(root) + validate_no_retired_language(root)
     if skeleton_errors:
         for error in skeleton_errors:
             print(error, file=sys.stderr)

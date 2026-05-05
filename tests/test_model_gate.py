@@ -22,7 +22,7 @@ def run_script(script: str, *args: str, cwd: Path | None = None) -> subprocess.C
     )
 
 
-class ModelGateAndMigrationTests(unittest.TestCase):
+class ModelGateTests(unittest.TestCase):
     def test_model_gate_blocks_unregistered_write_and_allows_operator_override(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
@@ -83,46 +83,6 @@ class ModelGateAndMigrationTests(unittest.TestCase):
             self.assertEqual(allowed.returncode, 0, allowed.stdout + allowed.stderr)
             self.assertTrue((target / ".aletheia" / "runtime" / "current_agent_run.json").exists())
             self.assertTrue(any((target / ".aletheia" / "agent_runs").glob("*.json")))
-
-    def test_migrate_legacy_rewrites_paths_preserves_legacy_tree_and_writes_claude_settings(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / "target"
-            target.mkdir()
-            legacy = target / "aletheia_os"
-            legacy.mkdir()
-            (legacy / "00_CHARTER.md").write_text(
-                "See aletheia_os/02_ACTIVE_STATE.md and aletheia_os/01_SYSTEM_GRAPH.yaml.\n",
-                encoding="utf-8",
-            )
-            (legacy / "01_SYSTEM_GRAPH.yaml").write_text(
-                "version: 0.1\nschema: AIOS_SYSTEM_GRAPH\nupdated: 2026-05-05\n",
-                encoding="utf-8",
-            )
-            (legacy / "02_ACTIVE_STATE.md").write_text("# Active State\n", encoding="utf-8")
-            (legacy / "10_ATTENTION_POLICY.md").write_text("Use aletheia_os/00_CHARTER.md.\n", encoding="utf-8")
-            (legacy / "11_MODEL_GOVERNANCE.md").write_text("Gate via aletheia_os/model_registry.json.\n", encoding="utf-8")
-            (legacy / "model_registry.json").write_text(
-                json.dumps({"capability_tiers": {"C0": {"rank": 0}}, "task_classes": {}, "registered_models": {}, "denylist": []}, indent=2)
-                + "\n",
-                encoding="utf-8",
-            )
-            (legacy / "decisions").mkdir()
-            (legacy / "decisions" / "ADR-0000.md").write_text("Decision references aletheia_os/07_EVIDENCE_INDEX.md.\n", encoding="utf-8")
-
-            result = run_script("scripts/migrate_aletheia.py", str(target))
-            self.assertEqual(result.returncode, 0, result.stderr)
-
-            self.assertTrue((target / ".aletheia" / "governance" / "INTAKE_POLICY.md").exists())
-            self.assertTrue((target / ".claude" / "settings.json").exists())
-            self.assertTrue((target / "aletheia_os").exists())
-            self.assertTrue((target / ".aletheia" / "bootstrap_intake" / "IMPORT_REPORT.md").exists())
-
-            charter = (target / ".aletheia" / "governance" / "CHARTER.md").read_text(encoding="utf-8")
-            self.assertNotIn("aletheia_os/", charter)
-            attention = (target / ".aletheia" / "governance" / "ATTENTION_POLICY.md").read_text(encoding="utf-8")
-            self.assertNotIn("aletheia_os/", attention)
-            self.assertIn(".aletheia/", attention)
-
 
 if __name__ == "__main__":
     unittest.main()

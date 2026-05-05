@@ -87,13 +87,6 @@ PROTECTED_PATTERNS = [
     re.compile(r"\.(pem|key|crt|credentials|secret)$", re.IGNORECASE),
 ]
 
-LEGACY_REFERENCE_PATTERNS = [
-    "aletheia_os/",
-    "scripts/aios_",
-    ".aios_runtime",
-]
-
-
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
@@ -215,19 +208,6 @@ def validate_model_registry(root: Path, errors: list[str], warnings: list[str]) 
         warnings.append("model registry has no enabled registered models; writes require operator approval or registry customization")
 
 
-def validate_legacy_references(root: Path, errors: list[str]) -> None:
-    skip_parts = {"bin", "runtime", "bootstrap_intake", "migrations"}
-    for path in (root / ".aletheia").rglob("*"):
-        if not path.is_file() or path.suffix.lower() not in {".md", ".txt", ".json", ".yaml", ".yml", ".toml", ".py"}:
-            continue
-        rel_parts = set(path.relative_to(root / ".aletheia").parts)
-        if rel_parts & skip_parts:
-            continue
-        text = path.read_text(encoding="utf-8")
-        if any(pattern in text for pattern in LEGACY_REFERENCE_PATTERNS):
-            errors.append(f"legacy path reference in {path.relative_to(root).as_posix()}")
-
-
 def validate_graph_and_skeleton(root: Path, errors: list[str], warnings: list[str], bootstrap_mode: bool) -> None:
     graph_path = root / ".aletheia" / "state" / "SYSTEM_GRAPH.yaml"
     skeleton_path = root / ".aletheia" / "state" / "SKELETON.yaml"
@@ -274,7 +254,6 @@ def main() -> int:
     validate_claude_settings(root, errors)
     validate_model_registry(root, errors, warnings)
     validate_graph_and_skeleton(root, errors, warnings, bootstrap_mode)
-    validate_legacy_references(root, errors)
 
     for path in root.rglob("*"):
         if not path.is_file():

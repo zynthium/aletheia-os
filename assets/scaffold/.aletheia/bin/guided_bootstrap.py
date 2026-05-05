@@ -21,9 +21,7 @@ def infer_mode(items: list[dict]) -> str:
     code_count = sum(1 for item in items if item.get("kind") == "implementation_code")
     doc_count = sum(1 for item in items if "document" in item.get("kind", "") or "design" in item.get("kind", ""))
     evidence_count = sum(1 for item in items if "evidence" in item.get("kind", "") or "experiment" in item.get("kind", ""))
-    if code_count >= 10 or evidence_count >= 3:
-        return "migration"
-    if doc_count >= 3 or code_count >= 3:
+    if code_count >= 10 or evidence_count >= 3 or doc_count >= 3 or code_count >= 3:
         return "brownfield"
     return "greenfield"
 

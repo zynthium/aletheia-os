@@ -39,21 +39,18 @@ def validate_target(target: Path) -> subprocess.CompletedProcess[str]:
 
 
 class RuntimeValidateTests(unittest.TestCase):
-    def test_validate_rejects_missing_claude_settings_and_legacy_paths(self) -> None:
+    def test_validate_rejects_missing_claude_settings(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
             target.mkdir()
             init_target(target)
             (target / ".claude" / "settings.json").unlink()
-            policy = target / ".aletheia" / "governance" / "ATTENTION_POLICY.md"
-            policy.write_text(policy.read_text(encoding="utf-8") + "\nLegacy: aletheia_os/00_CHARTER.md\n", encoding="utf-8")
 
             result = validate_target(target)
 
             output = result.stdout + result.stderr
             self.assertNotEqual(result.returncode, 0, output)
             self.assertIn("missing required path: .claude/settings.json", output)
-            self.assertIn("legacy path reference", output)
 
     def test_validate_rejects_graph_skeleton_root_child_mismatch(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

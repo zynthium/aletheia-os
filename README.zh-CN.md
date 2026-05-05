@@ -55,7 +55,6 @@ assets/
 scripts/
   aletheia_scaffold.py
   init_aletheia.py
-  migrate_aletheia.py
   validate_scaffold.py
   package_plugin.py
 ```
@@ -79,14 +78,6 @@ BOOTSTRAP.md
 ```
 
 `.claude/settings.json` 会配置 SessionStart、PreToolUse、PostToolUse 和 Stop hooks，用 `.aletheia/bin/model_gate.py`、`change_hook.py` 和 `stop_hook.py` 执行强制门禁与审计。
-
-### 迁移旧版 `aletheia_os/`
-
-```bash
-python3 scripts/migrate_aletheia.py /path/to/target-repo
-```
-
-迁移会把旧控制面复制到 `.aletheia/`，重写 active `.aletheia` 文档里的旧路径引用，生成 `.aletheia/bootstrap_intake/IMPORT_REPORT.md`，并默认保留原 `aletheia_os/` 目录。
 
 ### 验证插件自带 scaffold
 

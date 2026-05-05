@@ -10,6 +10,10 @@ from pathlib import Path
 REQUIRED = [
     ".codex-plugin/plugin.json",
     "README.zh-CN.md",
+    "scripts/aletheia_scaffold.py",
+    "scripts/init_aletheia.py",
+    "scripts/validate_scaffold.py",
+    "scripts/package_plugin.py",
     "skills/aletheia-bootstrap/SKILL.md",
     "skills/aletheia-orient/SKILL.md",
     "skills/aletheia-checkpoint/SKILL.md",

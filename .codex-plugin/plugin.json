@@ -1,0 +1,10 @@
+{
+  "name": "aletheia-os",
+  "version": "0.1.0",
+  "description": "Repo-native project-state OS for agentic development. Initializes, orients, maintains, validates, and checkpoints repositories using the AletheiaOS .aletheia control plane.",
+  "interface": {
+    "displayName": "AletheiaOS",
+    "shortDescription": "Repo-native project-state control plane for AI-assisted work.",
+    "defaultPrompt": "Initialize or operate this repository with AletheiaOS. Keep durable project state in .aletheia/ and preserve code, tests, and public docs in their normal project locations."
+  }
+}

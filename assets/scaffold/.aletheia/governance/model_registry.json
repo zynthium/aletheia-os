@@ -1,0 +1,76 @@
+{
+  "capability_tiers": {
+    "C0": {
+      "rank": 0,
+      "label": "unknown_or_read_only"
+    },
+    "C1": {
+      "rank": 1,
+      "label": "basic_helper"
+    },
+    "C2": {
+      "rank": 2,
+      "label": "engineering_executor"
+    },
+    "C3": {
+      "rank": 3,
+      "label": "research_engineer"
+    },
+    "C4": {
+      "rank": 4,
+      "label": "strategic_research_lead"
+    }
+  },
+  "task_classes": {
+    "orientation": {
+      "min_tier": "C0",
+      "write_allowed": false
+    },
+    "documentation_noncritical": {
+      "min_tier": "C1",
+      "write_allowed": true
+    },
+    "mechanical_implementation": {
+      "min_tier": "C2",
+      "write_allowed": true
+    },
+    "bugfix_local": {
+      "min_tier": "C2",
+      "write_allowed": true
+    },
+    "cross_boundary_refactor": {
+      "min_tier": "C3",
+      "write_allowed": true
+    },
+    "research_design": {
+      "min_tier": "C3",
+      "write_allowed": true
+    },
+    "hypothesis_update": {
+      "min_tier": "C3",
+      "write_allowed": true
+    },
+    "architecture_decision": {
+      "min_tier": "C3",
+      "write_allowed": true
+    },
+    "production_safety_critical": {
+      "min_tier": "C4",
+      "write_allowed": true
+    },
+    "root_theory_revision": {
+      "min_tier": "C4",
+      "write_allowed": true
+    },
+    "checkpoint": {
+      "min_tier": "C2",
+      "write_allowed": true
+    },
+    "bootstrap_finalize": {
+      "min_tier": "C3",
+      "write_allowed": true
+    }
+  },
+  "registered_models": {},
+  "denylist": []
+}

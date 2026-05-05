@@ -1,0 +1,94 @@
+version: 0.1
+schema: AIOS_SYSTEM_GRAPH
+updated: 2026-05-05
+
+root:
+  id: root
+  title: "TBD Project Root"
+  thesis: "TBD: define the governing project thesis."
+  status: active
+  weight: 1.0
+  confidence: 0.1
+  children:
+    - objectives
+    - theory_model
+    - system_design
+    - engineering_execution
+    - evidence_validation
+    - risk_safety
+
+nodes:
+  objectives:
+    type: trunk
+    parent: root
+    status: active
+    weight: 0.95
+    confidence: 0.1
+    thesis: "Defines what the system optimizes and what must not be sacrificed."
+    dependencies: []
+    evidence: []
+    kill_criteria: []
+
+  theory_model:
+    type: trunk
+    parent: root
+    status: active
+    weight: 0.9
+    confidence: 0.1
+    thesis: "The explanatory or generative model behind the project."
+    dependencies:
+      - objectives
+    evidence: []
+    kill_criteria:
+      - "Cannot explain known critical failure cases."
+
+  system_design:
+    type: trunk
+    parent: root
+    status: active
+    weight: 0.9
+    confidence: 0.1
+    thesis: "Architecture or design decomposition that turns objectives and theory into buildable components."
+    dependencies:
+      - objectives
+      - theory_model
+    evidence: []
+    kill_criteria:
+      - "Boundary choices repeatedly create interface mismatch blockers."
+
+  engineering_execution:
+    type: trunk
+    parent: root
+    status: active
+    weight: 0.85
+    confidence: 0.1
+    thesis: "Implementation, reproducibility, automation, tests, and deployment."
+    dependencies:
+      - system_design
+    evidence: []
+    kill_criteria: []
+
+  evidence_validation:
+    type: trunk
+    parent: root
+    status: active
+    weight: 0.9
+    confidence: 0.1
+    thesis: "Evidence production, interpretation, falsification, and audit."
+    dependencies:
+      - theory_model
+      - engineering_execution
+    evidence: []
+    kill_criteria: []
+
+  risk_safety:
+    type: trunk
+    parent: root
+    status: active
+    weight: 0.95
+    confidence: 0.1
+    thesis: "Protects against catastrophic failure, invalid assumptions, and hidden tail risks."
+    dependencies:
+      - objectives
+    evidence: []
+    kill_criteria: []

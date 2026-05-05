@@ -12,18 +12,21 @@ Read order:
 6. `.aletheia/state/SYSTEM_GRAPH.yaml`
 7. `.aletheia/state/SKELETON.yaml`
 8. `.aletheia/state/RISK_REGISTER.md`
-9. Relevant decisions, evidence, contracts, nodes, and source files.
+9. `.aletheia/state/FRONTIER_BOARD.md`, `.aletheia/state/DOMAIN_PROFILE.md`, and relevant decisions, evidence, contracts, nodes, and source files.
 
 Before durable writes, run `.aletheia/bin/model_gate.py` with the correct task class:
 
 ```bash
-python3 .aletheia/bin/model_gate.py --task-class <task_class> --provider <provider> --model-id <model_id> --capability-tier <C0-C4> --record --objective "<short objective>"
+python3 .aletheia/bin/model_gate.py --task-class <task_class> --provider <provider> --model-id <model_id> --record --objective "<short objective>"
 ```
 
 Useful runtime commands:
 
 ```bash
 python3 .aletheia/bin/orient.py
+python3 .aletheia/bin/context_pack.py
+python3 .aletheia/bin/intake_inventory.py
+python3 .aletheia/bin/guided_bootstrap.py --objective "Initialize AletheiaOS"
 python3 .aletheia/bin/overview.py
 python3 .aletheia/bin/validate.py
 python3 .aletheia/bin/checkpoint.py

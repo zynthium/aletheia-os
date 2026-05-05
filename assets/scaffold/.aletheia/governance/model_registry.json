@@ -1,4 +1,13 @@
 {
+  "default_policy": {
+    "unknown_model_policy": "read_only",
+    "require_registered_model_for_writes": true,
+    "require_agent_run_for_checkpoint": true,
+    "allow_self_attested_tier": false,
+    "minimum_tier_for_bootstrap_finalize": "C3",
+    "minimum_tier_for_checkpoint": "C2",
+    "unclassified_write_minimum_tier": "C3"
+  },
   "capability_tiers": {
     "C0": {
       "rank": 0,

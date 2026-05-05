@@ -11,5 +11,6 @@ Before claiming completion for non-trivial work:
 2. Confirm affected `.aletheia/` state, decisions, evidence, or contracts were updated.
 3. Run repository validation when the user asks for verification or checkpointing.
 4. Create a checkpoint only when validation state is known and the user has not deferred commits.
+5. Preserve agent attribution trailers in checkpoint commits.
 
 Never hide unresolved risks.

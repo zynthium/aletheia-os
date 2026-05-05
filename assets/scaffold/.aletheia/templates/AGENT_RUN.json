@@ -1,0 +1,11 @@
+{
+  "run_id": "RUN-YYYYMMDDTHHMMSSZ-000000",
+  "provider": "unknown",
+  "model_id": "unknown",
+  "agent_tool": "unknown",
+  "capability_tier": "C0",
+  "task_class": "orientation",
+  "gate_status": "unknown",
+  "objective": "TBD",
+  "recorded_at": "TBD"
+}

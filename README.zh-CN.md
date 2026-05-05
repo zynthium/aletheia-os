@@ -2,7 +2,7 @@
 
 AletheiaOS 是一个面向 Codex 的项目状态操作系统。它让 AI agent 在开发复杂项目时，不再只依赖聊天上下文，而是把项目目标、当前状态、系统骨架、证据、决策、契约和 agent 运行记录沉淀到仓库本身。
 
-这个项目以 Codex plugin 的形式发布。安装后，Codex 可以用它为任意仓库建立 `.aletheia/` 控制平面，并在后续开发中按统一协议进行取向、模型门控、证据记录、架构迭代、总览生成、验证和 checkpoint。
+这个项目以 Codex plugin 的形式发布。安装后，Codex 可以用它为任意仓库建立 `.aletheia/` 控制平面，并在后续开发中按统一协议进行取向、模型门控、证据记录、架构迭代、总览生成、验证和 checkpoint。Claude Code hooks 是默认 scaffold 的一部分，hook 命令指向 `.aletheia/bin/`。
 
 ## 为什么需要 AletheiaOS
 
@@ -50,8 +50,10 @@ assets/
   scaffold/
     AGENTS.md
     START_HERE.md
+    .claude/settings.json
     .aletheia/
 scripts/
+  aletheia_scaffold.py
   init_aletheia.py
   migrate_aletheia.py
   validate_scaffold.py
@@ -71,8 +73,20 @@ python3 scripts/init_aletheia.py /path/to/target-repo
 ```text
 AGENTS.md
 START_HERE.md
+BOOTSTRAP.md
+.claude/settings.json
 .aletheia/
 ```
+
+`.claude/settings.json` 会配置 SessionStart、PreToolUse、PostToolUse 和 Stop hooks，用 `.aletheia/bin/model_gate.py`、`change_hook.py` 和 `stop_hook.py` 执行强制门禁与审计。
+
+### 迁移旧版 `aletheia_os/`
+
+```bash
+python3 scripts/migrate_aletheia.py /path/to/target-repo
+```
+
+迁移会把旧控制面复制到 `.aletheia/`，重写 active `.aletheia` 文档里的旧路径引用，生成 `.aletheia/bootstrap_intake/IMPORT_REPORT.md`，并默认保留原 `aletheia_os/` 目录。
 
 ### 验证插件自带 scaffold
 
@@ -102,6 +116,9 @@ python3 scripts/package_plugin.py --output /tmp/aletheia-os-dist
   VERSION
   governance/
   state/
+  hypotheses/
+  nodes/
+  playbooks/
   decisions/
   evidence/
   contracts/
@@ -114,14 +131,14 @@ python3 scripts/package_plugin.py --output /tmp/aletheia-os-dist
 
 其中：
 
-- `governance/` 保存 charter、attention policy、model governance、model registry 和 git policy。
-- `state/` 保存 active state、system graph、project skeleton 和 risk register。
+- `governance/` 保存 charter、attention policy、model governance、model registry、git policy 和 intake policy。
+- `state/` 保存 active state、system graph、project skeleton、frontier board、glossary、domain profile 和 risk register。
 - `decisions/` 保存长期项目和架构决策。
 - `evidence/` 保存实验、验证、观察、推理和解释记录。
 - `contracts/` 保存模块、接口和边界契约。
 - `agent_runs/` 保存 agent attribution 和模型门控记录。
-- `templates/` 提供 decision、evidence、risk、contract 和 session note 模板。
-- `bin/` 提供 orient、model gate、overview、validate、bootstrap finalize 和 checkpoint runtime。
+- `templates/` 提供 decision、evidence、risk、contract、hypothesis、node、task card、agent run 和 session note 模板。
+- `bin/` 提供 orient、context pack、model gate、intake inventory、guided bootstrap、overview、validate、bootstrap finalize、checkpoint 和 Claude hook runtime。
 
 ## 推荐工作流
 
@@ -162,7 +179,10 @@ bootstrap
 ```bash
 python3 .aletheia/bin/bootstrap_finalize.py
 python3 .aletheia/bin/orient.py
-python3 .aletheia/bin/model_gate.py --task-class <task_class> --provider <provider> --model-id <model_id> --capability-tier <C0-C4> --record --objective "<objective>"
+python3 .aletheia/bin/context_pack.py
+python3 .aletheia/bin/model_gate.py --task-class <task_class> --provider <provider> --model-id <model_id> --record --objective "<objective>"
+python3 .aletheia/bin/intake_inventory.py
+python3 .aletheia/bin/guided_bootstrap.py --objective "<objective>"
 python3 .aletheia/bin/overview.py
 python3 .aletheia/bin/validate.py
 python3 .aletheia/bin/checkpoint.py

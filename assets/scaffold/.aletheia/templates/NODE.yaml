@@ -1,0 +1,10 @@
+id: node_id
+title: Node title
+status: draft
+parent: root
+children: []
+owned_paths: []
+contract_refs: []
+decision_refs: []
+evidence_refs: []
+invalidation_criteria: []

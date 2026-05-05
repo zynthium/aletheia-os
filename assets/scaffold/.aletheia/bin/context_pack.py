@@ -4,17 +4,15 @@ from __future__ import annotations
 from pathlib import Path
 
 
-ORIENTATION_FILES = [
+FILES = [
     ".aletheia/START_HERE.md",
     ".aletheia/governance/CHARTER.md",
     ".aletheia/governance/ATTENTION_POLICY.md",
     ".aletheia/governance/MODEL_GOVERNANCE.md",
+    ".aletheia/governance/model_registry.json",
     ".aletheia/state/ACTIVE_STATE.md",
     ".aletheia/state/SYSTEM_GRAPH.yaml",
     ".aletheia/state/SKELETON.yaml",
-    ".aletheia/state/FRONTIER_BOARD.md",
-    ".aletheia/state/DOMAIN_PROFILE.md",
-    ".aletheia/state/RISK_REGISTER.md",
 ]
 
 
@@ -22,19 +20,23 @@ def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def clip(text: str, limit: int = 5000) -> str:
+    if len(text) <= limit:
+        return text
+    return text[:limit] + "\n...[truncated]\n"
+
+
 def main() -> int:
     root = repo_root()
-    print("# AletheiaOS Orientation")
-    print()
-    print(f"Repository: {root}")
-    for rel in ORIENTATION_FILES:
+    print("# AletheiaOS Context Pack\n")
+    for rel in FILES:
         path = root / rel
+        print(f"## {rel}\n")
+        if path.exists():
+            print(clip(path.read_text(encoding="utf-8")).rstrip())
+        else:
+            print("MISSING")
         print()
-        print(f"--- {rel} ---")
-        if not path.exists():
-            print(f"MISSING: {rel}")
-            continue
-        print(path.read_text(encoding="utf-8").rstrip())
     return 0
 
 

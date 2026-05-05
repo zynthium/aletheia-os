@@ -1,0 +1,14 @@
+id: root
+title: Root project node
+status: active
+parent: null
+children:
+  - objectives
+  - theory_model
+  - system_design
+  - engineering_execution
+  - evidence_validation
+  - risk_safety
+linked_state:
+  - .aletheia/state/SYSTEM_GRAPH.yaml
+  - .aletheia/state/SKELETON.yaml

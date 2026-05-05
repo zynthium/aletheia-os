@@ -2,28 +2,9 @@
 from __future__ import annotations
 
 import argparse
-import shutil
 from pathlib import Path
 
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SCAFFOLD_ROOT = REPO_ROOT / "assets" / "scaffold"
-
-
-def copy_tree_without_overwrite(src: Path, dst: Path) -> list[Path]:
-    written: list[Path] = []
-    for path in src.rglob("*"):
-        rel = path.relative_to(src)
-        target = dst / rel
-        if path.is_dir():
-            target.mkdir(parents=True, exist_ok=True)
-            continue
-        if target.exists():
-            continue
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(path, target)
-        written.append(target)
-    return written
+from aletheia_scaffold import SCAFFOLD_ROOT, copy_tree_without_overwrite, ensure_claude_settings
 
 
 def main() -> int:
@@ -38,8 +19,10 @@ def main() -> int:
         parser.error(f"missing scaffold root: {SCAFFOLD_ROOT}")
 
     written = copy_tree_without_overwrite(SCAFFOLD_ROOT, target)
+    claude_status = ensure_claude_settings(target)
     print(f"initialized AletheiaOS scaffold in {target}")
     print(f"files written: {len(written)}")
+    print(f"claude settings: {claude_status}")
     return 0
 
 

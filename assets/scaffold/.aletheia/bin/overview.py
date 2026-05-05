@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
@@ -12,6 +14,9 @@ STATE_FILES = [
     ".aletheia/state/SYSTEM_GRAPH.yaml",
     ".aletheia/state/SKELETON.yaml",
     ".aletheia/state/RISK_REGISTER.md",
+    ".aletheia/state/FRONTIER_BOARD.md",
+    ".aletheia/state/GLOSSARY.md",
+    ".aletheia/state/DOMAIN_PROFILE.md",
 ]
 
 
@@ -61,12 +66,30 @@ def write_index(path: Path, status: dict) -> None:
     <tr><th>Path</th><th>Exists</th><th>Size</th></tr>
     {''.join(rows)}
   </table>
+  <h2>Validation</h2>
+  <pre>{escape(json.dumps(status['validation'], indent=2))}</pre>
   <h2>Records</h2>
   <pre>{escape(json.dumps(status['records'], indent=2))}</pre>
 </body>
 </html>
 """
     path.write_text(html, encoding="utf-8")
+
+
+def validation_state(root: Path) -> dict:
+    result = subprocess.run(
+        [sys.executable, ".aletheia/bin/validate.py"],
+        cwd=root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    return {
+        "returncode": result.returncode,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+    }
 
 
 def main() -> int:
@@ -77,10 +100,13 @@ def main() -> int:
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "repo": str(root),
         "state_files": [file_state(root, rel) for rel in STATE_FILES],
+        "validation": validation_state(root),
         "records": {
             "decisions": list_records(root, ".aletheia/decisions"),
             "evidence": list_records(root, ".aletheia/evidence"),
             "contracts": list_records(root, ".aletheia/contracts"),
+            "hypotheses": list_records(root, ".aletheia/hypotheses"),
+            "nodes": list_records(root, ".aletheia/nodes"),
             "risks": list_records(root, ".aletheia/risks"),
             "agent_runs": list_records(root, ".aletheia/agent_runs"),
         },

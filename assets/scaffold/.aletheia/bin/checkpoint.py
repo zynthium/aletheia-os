@@ -2,27 +2,27 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
+import re
 import subprocess
+import sys
 from pathlib import Path
 
 
-STATE_ALLOWLIST = [
-    ".aletheia",
+PROTECTED_PATTERNS = [
+    re.compile(r"(^|/)\.env(\.|$)"),
+    re.compile(r"(^|/)secrets/"),
+    re.compile(r"\.(pem|key|crt|credentials|secret)$", re.IGNORECASE),
+]
+
+STATE_PATTERNS = [
     "AGENTS.md",
     "START_HERE.md",
     "BOOTSTRAP.md",
-    "docs/overview",
-]
-
-SECRET_NAME_MARKERS = [
-    ".env",
-    "secret",
-    "secrets",
-    "credential",
-    "credentials",
-    "private_key",
-    "id_rsa",
-    "token",
+    ".claude/settings.json",
+    ".aletheia/",
+    "docs/overview/",
 ]
 
 
@@ -30,86 +30,227 @@ def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-def run(cmd: list[str], root: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, cwd=root, text=True, capture_output=True, check=False)
+def run(cmd: list[str], root: Path, *, capture: bool = False) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        cmd,
+        cwd=root,
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE if capture else None,
+        stderr=subprocess.PIPE if capture else None,
+    )
 
 
-def changed_paths(root: Path) -> list[str]:
-    status = run(["git", "status", "--porcelain"], root)
-    if status.returncode != 0:
-        raise RuntimeError(status.stderr)
-    paths = []
-    for line in status.stdout.splitlines():
+def ensure_git(root: Path) -> None:
+    available = run(["git", "--version"], root, capture=True)
+    if available.returncode != 0:
+        raise RuntimeError("git is not available on PATH")
+    inside = run(["git", "rev-parse", "--is-inside-work-tree"], root, capture=True)
+    if inside.returncode != 0:
+        run(["git", "init"], root)
+
+
+def status_files(root: Path) -> list[str]:
+    result = run(["git", "status", "--porcelain"], root, capture=True)
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr or "git status failed")
+    files = []
+    for line in result.stdout.splitlines():
         if not line.strip():
             continue
-        paths.append(line[3:])
-    return paths
+        path = line[3:].strip()
+        if " -> " in path:
+            path = path.split(" -> ", 1)[1]
+        files.append(path)
+    return files
 
 
-def has_secret_like_path(paths: list[str]) -> list[str]:
-    hits = []
-    for path in paths:
-        lower = path.lower()
-        if any(marker in lower for marker in SECRET_NAME_MARKERS):
-            hits.append(path)
-    return hits
+def has_state_update(files: list[str]) -> bool:
+    for file in files:
+        for pattern in STATE_PATTERNS:
+            if pattern.endswith("/"):
+                if file.startswith(pattern):
+                    return True
+            elif file == pattern:
+                return True
+    return False
+
+
+def protected_files(files: list[str]) -> list[str]:
+    return [file for file in files if any(pattern.search(file) for pattern in PROTECTED_PATTERNS)]
+
+
+def load_json(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def require_agent_run_for_checkpoint(root: Path) -> bool:
+    registry = load_json(root / ".aletheia" / "governance" / "model_registry.json")
+    policy = registry.get("default_policy", {}) if isinstance(registry.get("default_policy", {}), dict) else {}
+    return bool(policy.get("require_agent_run_for_checkpoint", False))
+
+
+def load_current_agent_run(root: Path) -> dict:
+    run_data = load_json(root / ".aletheia" / "runtime" / "current_agent_run.json")
+    if run_data:
+        return run_data
+    provider = os.environ.get("AIOS_AGENT_PROVIDER") or os.environ.get("AIOS_PROVIDER")
+    model = os.environ.get("AIOS_MODEL_ID") or os.environ.get("AIOS_MODEL")
+    tier = os.environ.get("AIOS_MODEL_TIER") or os.environ.get("AIOS_CAPABILITY_TIER")
+    task_class = os.environ.get("AIOS_TASK_CLASS")
+    if provider or model or tier or task_class:
+        return {
+            "run_id": os.environ.get("AIOS_AGENT_RUN_ID", "unrecorded-env"),
+            "provider": provider or "unknown",
+            "model_id": model or "unknown",
+            "capability_tier": tier or "unknown",
+            "task_class": task_class or "unknown",
+            "gate_status": os.environ.get("AIOS_GATE_STATUS", "unrecorded"),
+        }
+    return {}
+
+
+def attribution_trailers(run_data: dict) -> str:
+    if not run_data:
+        return ""
+    fields = [
+        ("AIOS-Agent-Run", run_data.get("run_id", "unknown")),
+        ("AIOS-Agent-Provider", run_data.get("provider", "unknown")),
+        ("AIOS-Agent-Model", run_data.get("model_id", "unknown")),
+        ("AIOS-Agent-Tier", run_data.get("capability_tier", "unknown")),
+        ("AIOS-Task-Class", run_data.get("task_class", "unknown")),
+        ("AIOS-Gate", run_data.get("gate_status", "unknown")),
+    ]
+    return "\n\n" + "\n".join(f"{key}: {value}" for key, value in fields)
+
+
+def infer_message(files: list[str]) -> str:
+    if "BOOTSTRAP.md" in files:
+        return "bootstrap: initialize AletheiaOS"
+    if any(file.startswith(".aletheia/evidence/") for file in files):
+        return "evidence: update evidence ledger"
+    if any(file.startswith(".aletheia/decisions/") for file in files):
+        return "decision: update decision records"
+    if any(file.startswith(".aletheia/contracts/") for file in files):
+        return "contract: update interface contracts"
+    if ".aletheia/state/SYSTEM_GRAPH.yaml" in files or any(file.startswith(".aletheia/nodes/") for file in files):
+        return "graph: update system graph"
+    if ".aletheia/state/ACTIVE_STATE.md" in files:
+        return "state: update active project state"
+    if any(file.startswith(("src/", "lib/", "app/", "tests/", "experiments/", "simulations/", "configs/", "infra/")) for file in files):
+        return "engineering: update implementation"
+    return "checkpoint: durable project state update"
+
+
+def validate(root: Path) -> int:
+    script = root / ".aletheia" / "bin" / "validate.py"
+    if not script.exists():
+        print("validation skipped: .aletheia/bin/validate.py missing")
+        return 0
+    return subprocess.run([sys.executable, ".aletheia/bin/validate.py"], cwd=root, text=True).returncode
 
 
 def stage_state_paths(root: Path) -> int:
-    existing = [path for path in STATE_ALLOWLIST if (root / path).exists()]
+    existing = [pattern for pattern in STATE_PATTERNS if (root / pattern.rstrip("/")).exists()]
     if not existing:
         print("checkpoint blocked: no AletheiaOS state paths exist")
         return 1
-    add = run(["git", "add", *existing], root)
-    if add.returncode != 0:
-        print(add.stderr, end="")
-    return add.returncode
+    result = run(["git", "add", *existing], root, capture=True)
+    if result.returncode != 0:
+        print(result.stderr, end="")
+    return result.returncode
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate and optionally create an AletheiaOS checkpoint.")
-    parser.add_argument("--auto", action="store_true", help="Create a git commit after validation")
-    parser.add_argument("--message", default="checkpoint: update AletheiaOS state")
-    parser.add_argument("--include-worktree", action="store_true", help="Stage the full worktree after secret-name screening")
+    parser.add_argument("--auto", action="store_true")
+    parser.add_argument("--message", default=None)
+    parser.add_argument("--no-validate", action="store_true")
+    parser.add_argument("--allow-code-only", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--no-model-gate", action="store_true")
+    parser.add_argument("--state-only", action="store_true")
+    parser.add_argument("--include-worktree", action="store_true", help="Deprecated: full worktree is the default.")
     args = parser.parse_args()
 
     root = repo_root()
-    validate = run(["python3", ".aletheia/bin/validate.py"], root)
-    print(validate.stdout, end="")
-    if validate.returncode != 0:
-        print(validate.stderr, end="")
-        return validate.returncode
+    ensure_git(root)
+    files = status_files(root)
+    if not files:
+        print("checkpoint skipped: working tree is clean")
+        return 0
 
+    protected = protected_files(files)
+    if protected:
+        print("checkpoint blocked: protected-looking files are present:")
+        for file in protected:
+            print(f"  - {file}")
+        return 2
+
+    if not args.no_validate:
+        rc = validate(root)
+        if rc != 0:
+            print("checkpoint blocked: validation failed")
+            return rc
+
+    if not has_state_update(files) and not (args.allow_code_only or os.environ.get("AIOS_ALLOW_CODE_ONLY_COMMIT") == "1"):
+        print("checkpoint blocked: changes do not include durable project-state update")
+        print("Update .aletheia state, evidence, decisions, contracts, nodes, or session notes.")
+        return 3
+
+    run_data = load_current_agent_run(root)
+    allow_unattributed = args.no_model_gate or os.environ.get("AIOS_ALLOW_UNATTRIBUTED_CHECKPOINT") == "1"
+    if require_agent_run_for_checkpoint(root) and not run_data and not allow_unattributed:
+        print("checkpoint blocked: no current AI agent run attribution found")
+        print('Run: python3 .aletheia/bin/model_gate.py --task-class <task_class> --record --objective "..."')
+        return 4
+    if run_data and run_data.get("gate_status") not in {"allowed", "unrecorded"} and not allow_unattributed:
+        print("checkpoint blocked: current AI agent run was not allowed by model gate")
+        print(f"  run_id: {run_data.get('run_id')}")
+        print(f"  gate_status: {run_data.get('gate_status')}")
+        return 5
+
+    message = args.message or infer_message(files)
+    print("checkpoint candidate:")
+    for file in files:
+        print(f"  - {file}")
+    print(f"message: {message}")
+    if run_data:
+        print(
+            f"agent_run: {run_data.get('run_id', 'unknown')} "
+            f"{run_data.get('provider', 'unknown')}/{run_data.get('model_id', 'unknown')} "
+            f"tier={run_data.get('capability_tier', 'unknown')} task={run_data.get('task_class', 'unknown')}"
+        )
+
+    if args.dry_run:
+        return 0
     if not args.auto:
-        print("checkpoint deferred: pass --auto to create a git commit")
-        return 0
+        answer = input("Create checkpoint commit? [y/N] ").strip().lower()
+        if answer not in {"y", "yes"}:
+            print("checkpoint skipped by user")
+            return 0
 
-    paths = changed_paths(root)
-    if not paths:
-        print("checkpoint skipped: no changes")
-        return 0
-
-    secret_hits = has_secret_like_path(paths)
-    if secret_hits:
-        print("checkpoint blocked: secret-like path names detected")
-        for path in secret_hits:
-            print(f"  {path}")
-        return 1
-
-    if args.include_worktree:
-        add = run(["git", "add", "."], root)
+    if args.state_only:
+        rc = stage_state_paths(root)
+        if rc != 0:
+            return rc
+    else:
+        add = run(["git", "add", "-A"], root, capture=True)
         if add.returncode != 0:
             print(add.stderr, end="")
             return add.returncode
-    else:
-        staged = stage_state_paths(root)
-        if staged != 0:
-            return staged
 
-    commit = run(["git", "commit", "-m", args.message], root)
+    commit = run(["git", "commit", "-m", message + attribution_trailers(run_data)], root, capture=True)
     print(commit.stdout, end="")
     if commit.returncode != 0:
         print(commit.stderr, end="")
+        print("checkpoint failed: git commit returned non-zero status")
     return commit.returncode
 
 

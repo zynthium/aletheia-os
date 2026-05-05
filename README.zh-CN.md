@@ -201,6 +201,8 @@ orient on project truth
 -> checkpoint
 ```
 
+`orient` 会输出固定的 Global View Checksum，帮助 agent 在动手前明确 active node、父级约束、成功标准、推翻标准、需要更新的 truth records、验证路径和 checkpoint 计划。
+
 对应的 plugin skills：
 
 - `aletheia-bootstrap`：初始化目标仓库的 `.aletheia/` truth layer。

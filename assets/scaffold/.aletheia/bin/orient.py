@@ -82,6 +82,21 @@ def main() -> int:
     print_block("Linked Contracts", "\n".join(skeleton_refs(skeleton_text, "contract_refs")))
     print_block("Known Risks", read(root, TRUTH_FILES["risks"]))
     print_block("Missing Or Stale Truth Warnings", "\n".join(warnings))
+    print_block(
+        "Global View Checksum",
+        """```text
+Root mission:
+Active frontier:
+Active node:
+Parent constraints:
+Success criteria:
+Invalidation criteria:
+Required truth updates:
+Verification path:
+Model gate status:
+Checkpoint plan:
+```""",
+    )
     return 0
 
 

@@ -113,6 +113,48 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("## Active Frontier", output)
             self.assertIn("## Linked Evidence", output)
             self.assertIn("## Missing Or Stale Truth Warnings", output)
+            self.assertIn("## Global View Checksum", output)
+            for field in [
+                "Root mission:",
+                "Active frontier:",
+                "Active node:",
+                "Parent constraints:",
+                "Success criteria:",
+                "Invalidation criteria:",
+                "Required truth updates:",
+                "Verification path:",
+                "Model gate status:",
+                "Checkpoint plan:",
+            ]:
+                self.assertIn(field, output)
+
+    def test_scaffold_attention_policy_contains_minimal_context_protocol(self) -> None:
+        policy = (ROOT / "assets" / "scaffold" / ".aletheia" / "governance" / "ATTENTION_POLICY.md").read_text(
+            encoding="utf-8"
+        )
+
+        for phrase in [
+            "## Context tiers",
+            "Tier 0",
+            "Tier 4",
+            "## Stop signs",
+            "## Context reset protocol",
+        ]:
+            self.assertIn(phrase, policy)
+
+    def test_truth_templates_keep_traceability_fields(self) -> None:
+        template_root = ROOT / "assets" / "scaffold" / ".aletheia" / "templates"
+        expectations = {
+            "EVIDENCE.md": ["Linked node", "Limitations", "Confidence impact"],
+            "DECISION.md": ["Affected nodes", "Affected contracts", "Evidence links", "Review trigger"],
+            "CONTRACT.md": ["Serves nodes", "Upstream assumptions", "Invariants", "Validation"],
+            "SESSION_NOTE.md": ["Active node", "Files changed", "Truth records updated", "Checkpoint"],
+        }
+
+        for filename, phrases in expectations.items():
+            text = (template_root / filename).read_text(encoding="utf-8")
+            for phrase in phrases:
+                self.assertIn(phrase, text)
 
 
 if __name__ == "__main__":

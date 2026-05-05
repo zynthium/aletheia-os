@@ -15,9 +15,25 @@ Gate status:
 
 Record what changed and why.
 
+## Active node
+
+Record the active system graph or skeleton node.
+
+## Files changed
+
+List important files changed or state that no files changed.
+
+## Truth records updated
+
+List updated evidence, decisions, contracts, risks, nodes, or active state.
+
 ## Verification
 
 Record checks run or explicitly deferred.
+
+## Checkpoint
+
+Record checkpoint commit, deferral reason, or next checkpoint action.
 
 ## Next actions
 

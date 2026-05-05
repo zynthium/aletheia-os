@@ -68,6 +68,7 @@ class PluginManifestTests(unittest.TestCase):
         self.assertIn("仓库原生事实层", readme)
         self.assertIn("One repo. One project truth. Many agents.", readme)
         self.assertIn("不是另一个 coding workflow", readme)
+        self.assertIn("Global View Checksum", readme)
         self.assertIn("OpenSpec", readme)
         self.assertIn("Superpowers", readme)
         self.assertIn(".claude-plugin/plugin.json", readme)

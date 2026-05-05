@@ -8,10 +8,14 @@ from pathlib import Path
 
 
 EXPECTED_PLUGIN_NAME = "aletheia-os"
+EXPECTED_REPOSITORY = "https://github.com/zynthium/aletheia-os"
+EXPECTED_DEVELOPER = "zynthium"
 
 REQUIRED = [
     ".codex-plugin/plugin.json",
     ".claude-plugin/plugin.json",
+    ".claude-plugin/marketplace.json",
+    ".agents/plugins/marketplace.json",
     "README.zh-CN.md",
     "agents/truth-auditor.md",
     "agents/evidence-curator.md",
@@ -20,6 +24,7 @@ REQUIRED = [
     "codex-agents/evidence-curator.toml",
     "codex-agents/architecture-reviewer.toml",
     "scripts/aletheia_scaffold.py",
+    "scripts/install_aletheia.py",
     "scripts/init_aletheia.py",
     "scripts/validate_scaffold.py",
     "scripts/package_plugin.py",
@@ -70,6 +75,7 @@ REQUIRED = [
 PACKAGE_DIRS = [
     ".codex-plugin",
     ".claude-plugin",
+    ".agents",
     "agents",
     "codex-agents",
     "skills",
@@ -87,6 +93,16 @@ def validate_manifest(manifest: dict) -> list[str]:
     if manifest.get("skills") != "./skills/":
         errors.append('plugin manifest must set skills to "./skills/"')
 
+    author = manifest.get("author")
+    if not isinstance(author, dict) or author.get("name") != EXPECTED_DEVELOPER:
+        errors.append(f"plugin manifest author.name must be {EXPECTED_DEVELOPER}")
+
+    if manifest.get("homepage") != EXPECTED_REPOSITORY:
+        errors.append(f"plugin manifest homepage must be {EXPECTED_REPOSITORY}")
+
+    if manifest.get("repository") != EXPECTED_REPOSITORY:
+        errors.append(f"plugin manifest repository must be {EXPECTED_REPOSITORY}")
+
     for key in ["author", "homepage", "repository", "license", "keywords"]:
         if key not in manifest:
             errors.append(f"plugin manifest missing field: {key}")
@@ -95,6 +111,12 @@ def validate_manifest(manifest: dict) -> list[str]:
     if not isinstance(interface, dict):
         errors.append("plugin manifest missing interface block")
         return errors
+
+    if interface.get("developerName") != EXPECTED_DEVELOPER:
+        errors.append(f"plugin manifest interface.developerName must be {EXPECTED_DEVELOPER}")
+
+    if interface.get("websiteURL") != EXPECTED_REPOSITORY:
+        errors.append(f"plugin manifest interface.websiteURL must be {EXPECTED_REPOSITORY}")
 
     for key in [
         "displayName",
@@ -134,6 +156,43 @@ def validate_claude_manifest(codex_manifest: dict, claude_manifest: dict) -> lis
     return errors
 
 
+def validate_marketplaces(claude_marketplace: dict, codex_marketplace: dict) -> list[str]:
+    errors: list[str] = []
+    if claude_marketplace.get("name") != EXPECTED_PLUGIN_NAME:
+        errors.append(f"Claude marketplace name must be {EXPECTED_PLUGIN_NAME}")
+    claude_plugins = claude_marketplace.get("plugins")
+    if not isinstance(claude_plugins, list) or not claude_plugins:
+        errors.append("Claude marketplace must include plugins")
+    else:
+        first = claude_plugins[0]
+        if not isinstance(first, dict) or first.get("name") != EXPECTED_PLUGIN_NAME:
+            errors.append(f"Claude marketplace plugin name must be {EXPECTED_PLUGIN_NAME}")
+
+    if codex_marketplace.get("name") != EXPECTED_PLUGIN_NAME:
+        errors.append(f"Codex marketplace name must be {EXPECTED_PLUGIN_NAME}")
+    interface = codex_marketplace.get("interface")
+    if not isinstance(interface, dict) or interface.get("displayName") != "AletheiaOS":
+        errors.append("Codex marketplace interface.displayName must be AletheiaOS")
+    codex_plugins = codex_marketplace.get("plugins")
+    if not isinstance(codex_plugins, list) or not codex_plugins:
+        errors.append("Codex marketplace must include plugins")
+    else:
+        first = codex_plugins[0]
+        source = first.get("source") if isinstance(first, dict) else None
+        policy = first.get("policy") if isinstance(first, dict) else None
+        if not isinstance(first, dict) or first.get("name") != EXPECTED_PLUGIN_NAME:
+            errors.append(f"Codex marketplace plugin name must be {EXPECTED_PLUGIN_NAME}")
+        if not isinstance(source, dict) or source.get("source") != "local" or source.get("path") != "./":
+            errors.append('Codex marketplace source must be local "./"')
+        if (
+            not isinstance(policy, dict)
+            or policy.get("installation") != "AVAILABLE"
+            or policy.get("authentication") != "ON_INSTALL"
+        ):
+            errors.append("Codex marketplace policy must be AVAILABLE/ON_INSTALL")
+    return errors
+
+
 def copy_release(root: Path, output: Path, plugin_name: str) -> Path:
     release_root = output / plugin_name
     if release_root.exists():
@@ -165,7 +224,13 @@ def main() -> int:
 
     manifest = json.loads((root / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
     claude_manifest = json.loads((root / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))
-    manifest_errors = validate_manifest(manifest) + validate_claude_manifest(manifest, claude_manifest)
+    claude_marketplace = json.loads((root / ".claude-plugin/marketplace.json").read_text(encoding="utf-8"))
+    codex_marketplace = json.loads((root / ".agents/plugins/marketplace.json").read_text(encoding="utf-8"))
+    manifest_errors = (
+        validate_manifest(manifest)
+        + validate_claude_manifest(manifest, claude_manifest)
+        + validate_marketplaces(claude_marketplace, codex_marketplace)
+    )
     if manifest_errors:
         for error in manifest_errors:
             print(error)

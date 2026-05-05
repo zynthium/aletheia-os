@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "description": "Repo-native truth layer for AI-assisted research and engineering. Maintains project truth, architecture constraints, research evidence, decisions, risks, and agent attribution in .aletheia/.",
   "author": {
-    "name": "joeslee",
-    "url": "https://github.com/joeslee"
+    "name": "zynthium",
+    "url": "https://github.com/zynthium"
   },
-  "homepage": "https://github.com/joeslee/aletheia-os",
-  "repository": "https://github.com/joeslee/aletheia-os",
+  "homepage": "https://github.com/zynthium/aletheia-os",
+  "repository": "https://github.com/zynthium/aletheia-os",
   "license": "MIT",
   "keywords": [
     "aletheia",
@@ -23,12 +23,12 @@
     "displayName": "AletheiaOS",
     "shortDescription": "Repo-native project truth layer for AI-assisted research and engineering.",
     "longDescription": "AletheiaOS keeps project truth in .aletheia/: mission, active state, system graph, architecture constraints, research evidence, decisions, contracts, risks, and agent attribution for Codex and other agents.",
-    "developerName": "joeslee",
+    "developerName": "zynthium",
     "category": "Productivity",
     "capabilities": [
       "Write"
     ],
-    "websiteURL": "https://github.com/joeslee/aletheia-os",
+    "websiteURL": "https://github.com/zynthium/aletheia-os",
     "defaultPrompt": [
       "Initialize this repository with AletheiaOS.",
       "Orient on the current project truth.",

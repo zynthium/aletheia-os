@@ -85,47 +85,55 @@ mission -> system graph -> skeleton -> contracts -> evidence -> decisions -> cod
 
 ## 安装
 
-### Claude Code 本地开发安装
+### 推荐：一条命令安装
 
-Claude Code 插件要求插件根目录包含 `.claude-plugin/plugin.json`，技能等组件放在插件根目录下的 `skills/` 等常规目录中。AletheiaOS 同时保留 `.codex-plugin/plugin.json` 和 `.claude-plugin/plugin.json`，因此同一个发布目录可以被 Codex 和 Claude Code 使用。
-
-从本仓库直接测试：
+全局安装到 Claude Code，并为 Codex 注册 marketplace：
 
 ```bash
-cd /Users/joeslee/Projects/GitHub/aletheia-os
-claude --plugin-dir .
+python3 scripts/install_aletheia.py --host both --scope user
 ```
 
-从发布目录测试：
+项目级安装，并把 Codex 可选 subagents 放入目标仓库：
 
 ```bash
-python3 scripts/package_plugin.py --output /tmp/aletheia-os-dist
-claude --plugin-dir /tmp/aletheia-os-dist/aletheia-os
+python3 scripts/install_aletheia.py --host both --scope project --project /path/to/target-repo --with-codex-agents
 ```
 
-启动 Claude Code 后，可在目标仓库中要求 Claude 使用 `aletheia-bootstrap` 初始化 `.aletheia/` truth layer。
+如果希望安装后直接初始化目标仓库的 `.aletheia/` truth layer：
 
-### Claude Code Marketplace 安装
-
-如果要通过 Claude Code marketplace 分发，需要把发布后的 `aletheia-os/` 目录加入你的 plugin marketplace。Marketplace entry 的 `name` 应为 `aletheia-os`，本地 source path 应指向该插件目录。
-
-示例：
-
-```json
-{
-  "name": "aletheia-os",
-  "source": {
-    "source": "local",
-    "path": "./plugins/aletheia-os"
-  }
-}
+```bash
+python3 scripts/install_aletheia.py --host both --scope project --project /path/to/target-repo --with-codex-agents --init-project
 ```
 
-插件目录准备好后，在 Claude Code 中添加对应 marketplace，再从 `/plugin` 菜单安装 `aletheia-os`。
+Claude Code 可以通过 CLI 完成 marketplace 注册和插件安装。Codex CLI 当前可以注册 marketplace；注册后在 Codex 中打开 `/plugins`，从 AletheiaOS marketplace 启用 `aletheia-os`。
 
-### Codex 本地安装
+### 手动安装
 
-Codex 使用 `.codex-plugin/plugin.json` 作为 manifest。发布目录由打包脚本生成：
+Claude Code 全局安装：
+
+```bash
+claude plugin marketplace add zynthium/aletheia-os --scope user
+claude plugin install aletheia-os@aletheia-os --scope user
+```
+
+Claude Code 项目级安装：
+
+```bash
+claude plugin marketplace add zynthium/aletheia-os --scope project
+claude plugin install aletheia-os@aletheia-os --scope project
+```
+
+Codex 全局注册 marketplace：
+
+```bash
+codex plugin marketplace add zynthium/aletheia-os
+```
+
+然后在 Codex 中打开 `/plugins`，启用 `aletheia-os`。
+
+### 本地开发安装
+
+本地开发时可以直接从当前 checkout 或发布目录测试。AletheiaOS 同时包含 `.codex-plugin/plugin.json` 和 `.claude-plugin/plugin.json`，同一个发布目录可以被 Codex 和 Claude Code 使用。
 
 ```bash
 python3 scripts/package_plugin.py --output /tmp/aletheia-os-dist
@@ -137,7 +145,14 @@ python3 scripts/package_plugin.py --output /tmp/aletheia-os-dist
 /tmp/aletheia-os-dist/aletheia-os/
 ```
 
-该目录包含 `.codex-plugin/`、`.claude-plugin/`、`agents/`、`codex-agents/`、`skills/`、`assets/`、`scripts/` 和 `README.zh-CN.md`。
+该目录包含 `.codex-plugin/`、`.claude-plugin/`、`.agents/`、`agents/`、`codex-agents/`、`skills/`、`assets/`、`scripts/` 和 `README.zh-CN.md`。
+
+本地 Claude Code 测试：
+
+```bash
+claude plugin validate .
+claude --plugin-dir .
+```
 
 ## 可选 subagents
 

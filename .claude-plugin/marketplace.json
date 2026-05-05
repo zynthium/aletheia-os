@@ -1,0 +1,14 @@
+{
+  "name": "aletheia-os",
+  "owner": {
+    "name": "zynthium",
+    "url": "https://github.com/zynthium"
+  },
+  "plugins": [
+    {
+      "name": "aletheia-os",
+      "source": "./",
+      "description": "Repo-native truth layer for AI-assisted research and engineering."
+    }
+  ]
+}

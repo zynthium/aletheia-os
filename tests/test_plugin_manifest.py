@@ -18,6 +18,11 @@ class PluginManifestTests(unittest.TestCase):
 
         self.assertEqual(manifest["name"], "aletheia-os")
         self.assertEqual(manifest["skills"], "./skills/")
+        self.assertEqual(manifest["author"]["name"], "zynthium")
+        self.assertEqual(manifest["repository"], "https://github.com/zynthium/aletheia-os")
+        self.assertEqual(manifest["homepage"], "https://github.com/zynthium/aletheia-os")
+        self.assertEqual(manifest["interface"]["developerName"], "zynthium")
+        self.assertEqual(manifest["interface"]["websiteURL"], "https://github.com/zynthium/aletheia-os")
         self.assertIn("truth layer", manifest["description"])
         self.assertIn("project truth", manifest["interface"]["shortDescription"])
         self.assertIn("architecture", manifest["interface"]["longDescription"])
@@ -61,7 +66,7 @@ class PluginManifestTests(unittest.TestCase):
             self.assertTrue((release_root / ".codex-plugin" / "plugin.json").exists())
             self.assertTrue((release_root / ".claude-plugin" / "plugin.json").exists())
 
-    def test_readme_documents_claude_code_installation(self) -> None:
+    def test_readme_documents_simple_installation(self) -> None:
         readme = (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
 
         self.assertFalse((ROOT / ("README" + ".md")).exists())
@@ -72,9 +77,12 @@ class PluginManifestTests(unittest.TestCase):
         self.assertIn("OpenSpec", readme)
         self.assertIn("Superpowers", readme)
         self.assertIn(".claude-plugin/plugin.json", readme)
-        self.assertIn("claude --plugin-dir .", readme)
-        self.assertIn("claude --plugin-dir /tmp/aletheia-os-dist/aletheia-os", readme)
+        self.assertIn("python3 scripts/install_aletheia.py --host both --scope user", readme)
+        self.assertIn("zynthium/aletheia-os", readme)
+        self.assertIn("claude plugin marketplace add zynthium/aletheia-os --scope user", readme)
+        self.assertIn("codex plugin marketplace add zynthium/aletheia-os", readme)
         self.assertIn("/plugin", readme)
+        self.assertIn("/plugins", readme)
 
     def test_plugin_content_avoids_migration_and_compatibility_language(self) -> None:
         banned_patterns = [
@@ -96,6 +104,8 @@ class PluginManifestTests(unittest.TestCase):
             ROOT / "assets" / "scaffold",
             ROOT / ".codex-plugin" / "plugin.json",
             ROOT / ".claude-plugin" / "plugin.json",
+            ROOT / ".claude-plugin" / "marketplace.json",
+            ROOT / ".agents" / "plugins" / "marketplace.json",
         ]
         offenders: list[str] = []
         for checked in checked_roots:
@@ -109,6 +119,25 @@ class PluginManifestTests(unittest.TestCase):
                 for pattern in banned_patterns:
                     if re.search(pattern, text):
                         offenders.append(f"{path.relative_to(ROOT)} contains {pattern}")
+
+        self.assertEqual(offenders, [])
+
+    def test_plugin_content_uses_zynthium_repository_identity(self) -> None:
+        checked_roots = [
+            ROOT / "README.zh-CN.md",
+            ROOT / ".codex-plugin" / "plugin.json",
+            ROOT / ".claude-plugin" / "plugin.json",
+            ROOT / ".claude-plugin" / "marketplace.json",
+            ROOT / ".agents" / "plugins" / "marketplace.json",
+        ]
+        offenders: list[str] = []
+        for checked in checked_roots:
+            if not checked.exists():
+                offenders.append(f"missing {checked.relative_to(ROOT)}")
+                continue
+            text = checked.read_text(encoding="utf-8")
+            if "joeslee" in text or "github.com/joeslee" in text:
+                offenders.append(str(checked.relative_to(ROOT)))
 
         self.assertEqual(offenders, [])
 

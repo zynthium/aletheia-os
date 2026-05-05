@@ -7,6 +7,8 @@ import shutil
 from pathlib import Path
 
 
+EXPECTED_PLUGIN_NAME = "aletheia-os"
+
 REQUIRED = [
     ".codex-plugin/plugin.json",
     "README.zh-CN.md",
@@ -67,8 +69,51 @@ PACKAGE_DIRS = [
 ]
 
 
-def copy_release(root: Path, output: Path) -> Path:
-    release_root = output / "aletheia-os-plugin"
+def validate_manifest(manifest: dict) -> list[str]:
+    errors: list[str] = []
+    if manifest.get("name") != EXPECTED_PLUGIN_NAME:
+        errors.append(f"plugin manifest name must be {EXPECTED_PLUGIN_NAME}")
+
+    if manifest.get("skills") != "./skills/":
+        errors.append('plugin manifest must set skills to "./skills/"')
+
+    for key in ["author", "homepage", "repository", "license", "keywords"]:
+        if key not in manifest:
+            errors.append(f"plugin manifest missing field: {key}")
+
+    interface = manifest.get("interface")
+    if not isinstance(interface, dict):
+        errors.append("plugin manifest missing interface block")
+        return errors
+
+    for key in [
+        "displayName",
+        "shortDescription",
+        "longDescription",
+        "developerName",
+        "category",
+        "capabilities",
+        "websiteURL",
+        "defaultPrompt",
+    ]:
+        if key not in interface:
+            errors.append(f"plugin manifest interface missing field: {key}")
+
+    default_prompt = interface.get("defaultPrompt")
+    if not isinstance(default_prompt, list):
+        errors.append("plugin manifest interface.defaultPrompt must be an array")
+    elif len(default_prompt) > 3:
+        errors.append("plugin manifest interface.defaultPrompt must contain at most 3 prompts")
+    elif not all(isinstance(item, str) for item in default_prompt):
+        errors.append("plugin manifest interface.defaultPrompt must contain only strings")
+    elif any(len(item) > 128 for item in default_prompt):
+        errors.append("plugin manifest interface.defaultPrompt entries must be 128 characters or shorter")
+
+    return errors
+
+
+def copy_release(root: Path, output: Path, plugin_name: str) -> Path:
+    release_root = output / plugin_name
     if release_root.exists():
         shutil.rmtree(release_root)
     release_root.mkdir(parents=True)
@@ -97,13 +142,15 @@ def main() -> int:
         return 1
 
     manifest = json.loads((root / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
-    if manifest.get("name") != "aletheia-os":
-        print("plugin manifest name must be aletheia-os")
+    manifest_errors = validate_manifest(manifest)
+    if manifest_errors:
+        for error in manifest_errors:
+            print(error)
         return 1
 
     print("plugin package smoke check passed")
     if args.output:
-        release_root = copy_release(root, args.output.resolve())
+        release_root = copy_release(root, args.output.resolve(), manifest["name"])
         print(f"release package written: {release_root}")
     return 0
 

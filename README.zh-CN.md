@@ -94,7 +94,7 @@ python3 scripts/package_plugin.py --output /tmp/aletheia-os-dist
 输出：
 
 ```text
-/tmp/aletheia-os-dist/aletheia-os-plugin/
+/tmp/aletheia-os-dist/aletheia-os/
 ```
 
 ## `.aletheia/` 中有什么

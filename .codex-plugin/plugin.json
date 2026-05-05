@@ -2,9 +2,34 @@
   "name": "aletheia-os",
   "version": "0.1.0",
   "description": "Repo-native project-state OS for agentic development. Initializes, orients, maintains, validates, and checkpoints repositories using the AletheiaOS .aletheia control plane.",
+  "author": {
+    "name": "joeslee",
+    "url": "https://github.com/joeslee"
+  },
+  "homepage": "https://github.com/joeslee/aletheia-os",
+  "repository": "https://github.com/joeslee/aletheia-os",
+  "license": "MIT",
+  "keywords": [
+    "aletheia",
+    "codex",
+    "plugin",
+    "project-state"
+  ],
+  "skills": "./skills/",
   "interface": {
     "displayName": "AletheiaOS",
     "shortDescription": "Repo-native project-state control plane for AI-assisted work.",
-    "defaultPrompt": "Initialize or operate this repository with AletheiaOS. Keep durable project state in .aletheia/ and preserve code, tests, and public docs in their normal project locations."
+    "longDescription": "AletheiaOS keeps durable project state in .aletheia/ and gives Codex a repo-native control plane for orientation, model gating, validation, checkpoints, and structured execution.",
+    "developerName": "joeslee",
+    "category": "Productivity",
+    "capabilities": [
+      "Write"
+    ],
+    "websiteURL": "https://github.com/joeslee/aletheia-os",
+    "defaultPrompt": [
+      "Initialize this repository with AletheiaOS.",
+      "Orient on the current .aletheia state.",
+      "Checkpoint durable state after meaningful work."
+    ]
   }
 }

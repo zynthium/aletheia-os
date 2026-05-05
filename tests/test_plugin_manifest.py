@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PluginManifestTests(unittest.TestCase):
-    def test_manifest_uses_complete_plugin_schema(self) -> None:
+    def test_codex_manifest_uses_complete_plugin_schema(self) -> None:
         manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
 
         self.assertEqual(manifest["name"], "aletheia-os")
@@ -26,6 +26,18 @@ class PluginManifestTests(unittest.TestCase):
         self.assertIn("category", manifest["interface"])
         self.assertIn("capabilities", manifest["interface"])
 
+    def test_claude_manifest_uses_plugin_root_components(self) -> None:
+        codex_manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
+        claude_manifest = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(claude_manifest["name"], codex_manifest["name"])
+        self.assertEqual(claude_manifest["description"], codex_manifest["description"])
+        self.assertEqual(claude_manifest["version"], codex_manifest["version"])
+        self.assertEqual(claude_manifest["author"], codex_manifest["author"])
+        self.assertEqual(claude_manifest["skills"], "./skills/")
+        self.assertTrue((ROOT / "skills" / "aletheia-bootstrap" / "SKILL.md").exists())
+        self.assertFalse((ROOT / ".claude-plugin" / "skills").exists())
+
     def test_package_output_uses_manifest_name(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             result = subprocess.run(
@@ -38,7 +50,19 @@ class PluginManifestTests(unittest.TestCase):
             )
 
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            release_root = Path(tmp) / "aletheia-os"
             self.assertEqual([path.name for path in Path(tmp).iterdir()], ["aletheia-os"])
+            self.assertTrue((release_root / ".codex-plugin" / "plugin.json").exists())
+            self.assertTrue((release_root / ".claude-plugin" / "plugin.json").exists())
+
+    def test_readme_documents_claude_code_installation(self) -> None:
+        readme = (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
+
+        self.assertFalse((ROOT / ("README" + ".md")).exists())
+        self.assertIn(".claude-plugin/plugin.json", readme)
+        self.assertIn("claude --plugin-dir .", readme)
+        self.assertIn("claude --plugin-dir /tmp/aletheia-os-dist/aletheia-os", readme)
+        self.assertIn("/plugin", readme)
 
 
 if __name__ == "__main__":

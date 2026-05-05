@@ -59,6 +59,62 @@ scripts/
   package_plugin.py
 ```
 
+## 安装
+
+### Claude Code 本地开发安装
+
+Claude Code 插件要求插件根目录包含 `.claude-plugin/plugin.json`，技能等组件放在插件根目录下的 `skills/` 等常规目录中。AletheiaOS 同时保留 `.codex-plugin/plugin.json` 和 `.claude-plugin/plugin.json`，因此同一个发布目录可以被 Codex 和 Claude Code 使用。
+
+从本仓库直接测试：
+
+```bash
+cd /Users/joeslee/Projects/GitHub/aletheia-os
+claude --plugin-dir .
+```
+
+从发布目录测试：
+
+```bash
+python3 scripts/package_plugin.py --output /tmp/aletheia-os-dist
+claude --plugin-dir /tmp/aletheia-os-dist/aletheia-os
+```
+
+启动 Claude Code 后，可在目标仓库中要求 Claude 使用 `aletheia-bootstrap` 初始化 `.aletheia/` 控制平面。
+
+### Claude Code Marketplace 安装
+
+如果要通过 Claude Code marketplace 分发，需要把发布后的 `aletheia-os/` 目录加入你的 plugin marketplace。Marketplace entry 的 `name` 应为 `aletheia-os`，本地 source path 应指向该插件目录。
+
+示例：
+
+```json
+{
+  "name": "aletheia-os",
+  "source": {
+    "source": "local",
+    "path": "./plugins/aletheia-os"
+  }
+}
+```
+
+插件目录准备好后，在 Claude Code 中添加对应 marketplace，再从 `/plugin` 菜单安装 `aletheia-os`。
+
+### Codex 本地安装
+
+Codex 使用 `.codex-plugin/plugin.json` 作为 manifest。发布目录同样由打包脚本生成：
+
+```bash
+python3 scripts/package_plugin.py --output /tmp/aletheia-os-dist
+```
+
+输出：
+
+```text
+/tmp/aletheia-os-dist/aletheia-os/
+```
+
+该目录包含 `.codex-plugin/`、`.claude-plugin/`、`skills/`、`assets/`、`scripts/` 和 `README.zh-CN.md`。
+
 ## 快速开始
 
 ### 初始化目标仓库
@@ -83,18 +139,6 @@ BOOTSTRAP.md
 
 ```bash
 python3 scripts/validate_scaffold.py assets/scaffold
-```
-
-### 生成发布目录
-
-```bash
-python3 scripts/package_plugin.py --output /tmp/aletheia-os-dist
-```
-
-输出：
-
-```text
-/tmp/aletheia-os-dist/aletheia-os/
 ```
 
 ## `.aletheia/` 中有什么

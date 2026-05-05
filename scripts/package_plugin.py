@@ -11,6 +11,7 @@ EXPECTED_PLUGIN_NAME = "aletheia-os"
 
 REQUIRED = [
     ".codex-plugin/plugin.json",
+    ".claude-plugin/plugin.json",
     "README.zh-CN.md",
     "scripts/aletheia_scaffold.py",
     "scripts/init_aletheia.py",
@@ -62,6 +63,7 @@ REQUIRED = [
 
 PACKAGE_DIRS = [
     ".codex-plugin",
+    ".claude-plugin",
     "skills",
     "assets",
     "scripts",
@@ -112,6 +114,18 @@ def validate_manifest(manifest: dict) -> list[str]:
     return errors
 
 
+def validate_claude_manifest(codex_manifest: dict, claude_manifest: dict) -> list[str]:
+    errors: list[str] = []
+    for key in ["name", "version", "description", "author", "homepage", "repository", "license"]:
+        if claude_manifest.get(key) != codex_manifest.get(key):
+            errors.append(f"Claude plugin manifest field must match Codex manifest: {key}")
+
+    if claude_manifest.get("skills") != "./skills/":
+        errors.append('Claude plugin manifest must set skills to "./skills/"')
+
+    return errors
+
+
 def copy_release(root: Path, output: Path, plugin_name: str) -> Path:
     release_root = output / plugin_name
     if release_root.exists():
@@ -142,7 +156,8 @@ def main() -> int:
         return 1
 
     manifest = json.loads((root / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
-    manifest_errors = validate_manifest(manifest)
+    claude_manifest = json.loads((root / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))
+    manifest_errors = validate_manifest(manifest) + validate_claude_manifest(manifest, claude_manifest)
     if manifest_errors:
         for error in manifest_errors:
             print(error)

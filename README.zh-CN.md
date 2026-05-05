@@ -137,7 +137,26 @@ python3 scripts/package_plugin.py --output /tmp/aletheia-os-dist
 /tmp/aletheia-os-dist/aletheia-os/
 ```
 
-该目录包含 `.codex-plugin/`、`.claude-plugin/`、`skills/`、`assets/`、`scripts/` 和 `README.zh-CN.md`。
+该目录包含 `.codex-plugin/`、`.claude-plugin/`、`agents/`、`codex-agents/`、`skills/`、`assets/`、`scripts/` 和 `README.zh-CN.md`。
+
+## 可选 subagents
+
+AletheiaOS 提供 3 个可选的真相层审阅 subagents，不改变核心闭环，也不会写入目标仓库的默认 scaffold：
+
+- `truth-auditor`：检查变更是否仍符合 `.aletheia/` 中的 mission、active state、system graph、active node、约束和 checkpoint 要求。
+- `evidence-curator`：检查 claim、hypothesis、evidence、decision 之间的证据链，标出缺失证据、弱推翻标准和过度推断。
+- `architecture-reviewer`：检查 node 边界、contracts、decisions、skeleton 和实现之间是否漂移。
+
+Claude Code 插件可以直接读取插件根目录下的 `agents/`。安装插件后，这 3 个 profiles 会随插件目录一起提供。
+
+Codex 的自定义 agent 当前以项目级 `.codex/agents/` 或个人级 `~/.codex/agents/` TOML 文件加载。插件发布包提供同语义的 `codex-agents/` profiles；需要在某个目标仓库使用时，将它们放入该仓库的 `.codex/agents/`：
+
+```bash
+mkdir -p /path/to/target-repo/.codex/agents
+cp /tmp/aletheia-os-dist/aletheia-os/codex-agents/*.toml /path/to/target-repo/.codex/agents/
+```
+
+这 3 个 subagents 只用于读取与审阅 `.aletheia/` truth layer，不承担实现、排期、发布或流程编排职责。
 
 ## 快速开始
 

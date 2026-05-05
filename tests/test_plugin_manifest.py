@@ -91,6 +91,8 @@ class PluginManifestTests(unittest.TestCase):
         checked_roots = [
             ROOT / "README.zh-CN.md",
             ROOT / "skills",
+            ROOT / "agents",
+            ROOT / "codex-agents",
             ROOT / "assets" / "scaffold",
             ROOT / ".codex-plugin" / "plugin.json",
             ROOT / ".claude-plugin" / "plugin.json",

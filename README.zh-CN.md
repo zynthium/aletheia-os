@@ -52,6 +52,8 @@ AletheiaOS 维护它们共同依赖的 project-level truth。
 
 AletheiaOS 不争夺流程入口。它提供 `.aletheia/` 事实层，让不同 agent、技能和工作流在同一份当前事实上 orient、执行、验证和 checkpoint。
 
+延伸阅读：[AletheiaOS：面向 AI 辅助研究与工程的仓库原生事实层](docs/articles/aletheia-os-project-introduction.zh-CN.md)。
+
 ## 核心模型
 
 AletheiaOS 将项目表示为一个受约束治理的系统图：

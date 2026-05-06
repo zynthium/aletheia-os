@@ -253,7 +253,6 @@ def cmd_stage(args) -> int:
     sources_dir = run_dir / "sources"
     sources_dir.mkdir(parents=True, exist_ok=True)
     manifest: list[dict] = []
-    chunk_index: list[dict] = []
     seen_this_run: set[str] = set()
 
     for file_path in sorted(path for path in inbox.rglob("*") if path.is_file() and path.name != ".gitkeep"):
@@ -297,8 +296,6 @@ def cmd_stage(args) -> int:
             existing_hashes = set(source.get("chunk_hashes", []))
             for chunk in chunks:
                 existing_hashes.add(chunk["canonical_hash"])
-                if source_id not in seen_this_run:
-                    chunk_index.append({"source_id": source_id, **chunk})
             source["chunk_hashes"] = sorted(existing_hashes)
 
             if not sensitive and source_id not in seen_this_run:
@@ -317,10 +314,6 @@ def cmd_stage(args) -> int:
             seen_this_run.add(source_id)
 
     (run_dir / "source_manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    (run_dir / "chunk_index.json").write_text(
-        json.dumps({"run_id": rid, "chunks": chunk_index}, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
     state["status"] = "staged"
     state["staged_sources"] = [item["source_id"] for item in manifest]
     save_run_state(root, rid, state)
@@ -336,37 +329,17 @@ def cmd_digest_plan(args) -> int:
     state = load_run_state(root, rid)
     registry = load_registry(root)
     run_dir = intake_root(root) / "runs" / rid
-    digest_dir = run_dir / "digests"
-    digest_dir.mkdir(parents=True, exist_ok=True)
-    chunk_index_path = run_dir / "chunk_index.json"
-    chunk_index = json.loads(chunk_index_path.read_text(encoding="utf-8")) if chunk_index_path.exists() else {"chunks": []}
     pending = []
     for source_id in state.get("staged_sources", []):
         source = registry["sources"].get(source_id, {})
         if source.get("status") in {"pending_digest", "revision"}:
             pending.append(source_id)
-            chunks = [
-                chunk["chunk_id"]
-                for chunk in chunk_index.get("chunks", [])
-                if chunk.get("source_id") == source_id
-            ]
-            template = root / ".aletheia" / "templates" / "CONVERSATION_DIGEST.md"
-            draft_path = digest_dir / f"{source_id}.md"
-            if not draft_path.exists():
-                text = template.read_text(encoding="utf-8")
-                text = text.replace("<source title>", source_id)
-                text = text.replace("<source id>", source_id)
-                text = text.replace("<run id>", rid)
-                text = text.replace("<chunk ids>", ", ".join(chunks) or "none")
-                draft_path.write_text(text, encoding="utf-8")
-            source["status"] = "digest_planned"
     lines = ["# Digest Plan", "", f"Run id: {rid}", "", "## Pending Sources", ""]
     for source_id in sorted(set(pending)):
         lines.append(f"- {source_id}")
     if not pending:
         lines.append("None.")
     (run_dir / "digest_plan.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    save_registry(root, registry)
     print(f"wrote {run_dir / 'digest_plan.md'}")
     return 0
 

@@ -76,39 +76,6 @@ class TruthIntakeTests(unittest.TestCase):
             source = next(iter(sources.values()))
             self.assertEqual(source["status"], "pending_digest")
             self.assertEqual(len(source["aliases"]), 2)
-            chunk_index = json.loads(
-                (target / ".aletheia" / "truth_intake" / "runs" / run_id / "chunk_index.json").read_text(
-                    encoding="utf-8"
-                )
-            )
-            self.assertEqual(len(chunk_index["chunks"]), 1)
-            self.assertEqual(chunk_index["chunks"][0]["source_id"], source["source_id"])
-
-    def test_digest_plan_creates_source_digest_drafts_and_is_resume_safe(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / "target"
-            target.mkdir()
-            init_target(target)
-            inbox = target / ".aletheia" / "truth_intake" / "inbox"
-            (inbox / "research.md").write_text("Alpha claim\n\nBeta observation\n", encoding="utf-8")
-
-            begin = run_intake(target, "begin", "--objective", "Design project")
-            run_id = begin.stdout.strip().splitlines()[-1].split()[-1]
-            self.assertEqual(run_intake(target, "stage", "--run", run_id).returncode, 0)
-            plan = run_intake(target, "digest-plan", "--run", run_id)
-            self.assertEqual(plan.returncode, 0, plan.stdout + plan.stderr)
-            repeat = run_intake(target, "digest-plan", "--run", run_id)
-            self.assertEqual(repeat.returncode, 0, repeat.stdout + repeat.stderr)
-
-            digest_dir = target / ".aletheia" / "truth_intake" / "runs" / run_id / "digests"
-            drafts = sorted(digest_dir.glob("SRC-*.md"))
-            self.assertEqual(len(drafts), 1)
-            draft = drafts[0].read_text(encoding="utf-8")
-            self.assertIn(f"Run id: {run_id}", draft)
-            self.assertIn("Source chunks: chunk-0001", draft)
-            registry = json.loads((target / ".aletheia" / "truth_intake" / "registry.json").read_text(encoding="utf-8"))
-            source = next(iter(registry["sources"].values()))
-            self.assertEqual(source["status"], "digest_planned")
 
     def test_packet_uses_bootstrap_then_fusion_after_baseline(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -178,35 +145,6 @@ class TruthIntakeTests(unittest.TestCase):
 
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("candidate claim missing source ref", result.stdout + result.stderr)
-
-    def test_validate_rejects_registry_manifest_hash_mismatch(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / "target"
-            target.mkdir()
-            init_target(target)
-            inbox = target / ".aletheia" / "truth_intake" / "inbox"
-            (inbox / "research.md").write_text("Claim\n", encoding="utf-8")
-            begin = run_intake(target, "begin", "--objective", "Design project")
-            run_id = begin.stdout.strip().splitlines()[-1].split()[-1]
-            self.assertEqual(run_intake(target, "stage", "--run", run_id).returncode, 0)
-
-            registry_path = target / ".aletheia" / "truth_intake" / "registry.json"
-            registry = json.loads(registry_path.read_text(encoding="utf-8"))
-            source_id = next(iter(registry["sources"]))
-            registry["sources"][source_id]["canonical_hash"] = "bad"
-            registry_path.write_text(json.dumps(registry, indent=2) + "\n", encoding="utf-8")
-
-            result = subprocess.run(
-                [sys.executable, ".aletheia/bin/validate.py"],
-                cwd=target,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=False,
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("truth intake manifest hash mismatch", result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

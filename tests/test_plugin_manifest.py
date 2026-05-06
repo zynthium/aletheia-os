@@ -115,6 +115,10 @@ class PluginManifestTests(unittest.TestCase):
         self.assertIn("不是安全沙箱", readme)
         self.assertIn("Claude Code 通过 hooks 自动执行门禁", readme)
         self.assertIn("Codex 当前以 skills、显式命令和可选 subagents 执行同一协议", readme)
+        self.assertIn("### 新项目", readme)
+        self.assertIn("### 已有项目", readme)
+        self.assertIn("python3 /path/to/aletheia-os/scripts/init_aletheia.py .", readme)
+        self.assertIn("git status --short", readme)
 
     def test_plugin_content_avoids_migration_and_compatibility_language(self) -> None:
         banned_patterns = [

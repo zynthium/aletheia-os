@@ -185,6 +185,57 @@ cp /tmp/aletheia-os-dist/aletheia-os/codex-agents/*.toml /path/to/target-repo/.c
 5. 更新受影响的 truth records。
 6. validate 并 checkpoint。
 
+### 新项目
+
+新项目可以先创建一个普通 git 仓库，再加入 AletheiaOS truth layer：
+
+```bash
+mkdir my-project
+cd my-project
+git init
+python3 /path/to/aletheia-os/scripts/init_aletheia.py .
+```
+
+也可以在项目级安装插件时直接生成 `.aletheia/`：
+
+```bash
+python3 /path/to/aletheia-os/scripts/install_aletheia.py --host both --scope project --project . --with-codex-agents --init-project
+```
+
+然后让 AI assistant 按 `BOOTSTRAP.md` 完成第一轮项目事实综合：
+
+```bash
+python3 .aletheia/bin/model_gate.py --task-class bootstrap_finalize --provider <provider> --model-id <model_id> --tier C3 --operator-approved --record --objective "Initialize AletheiaOS"
+python3 .aletheia/bin/source_inventory.py
+python3 .aletheia/bin/guided_bootstrap.py --objective "Initialize AletheiaOS"
+python3 .aletheia/bin/bootstrap_finalize.py
+```
+
+新项目不要让 agent 编造使命、领域事实或架构结论。先写清楚项目意图、约束、已知边界和第一批候选方向，再把它们综合到 `.aletheia/governance/`、`.aletheia/state/`、`.aletheia/nodes/`、`.aletheia/evidence/`、`.aletheia/decisions/`、`.aletheia/contracts/` 和 `.aletheia/risks/`。
+
+### 已有项目
+
+已有项目可以直接加入 AletheiaOS。建议先确认当前工作树状态，再执行初始化：
+
+```bash
+cd /path/to/existing-project
+git status --short
+python3 /path/to/aletheia-os/scripts/init_aletheia.py .
+```
+
+初始化会新增 AletheiaOS 控制平面，不会替换已有源码、测试、构建配置和公开文档。随后让 AI assistant 按已有材料建立第一版项目事实：
+
+```bash
+python3 .aletheia/bin/model_gate.py --task-class bootstrap_finalize --provider <provider> --model-id <model_id> --tier C3 --operator-approved --record --objective "Initialize AletheiaOS"
+python3 .aletheia/bin/source_inventory.py
+python3 .aletheia/bin/guided_bootstrap.py --objective "Initialize AletheiaOS"
+python3 .aletheia/bin/orient.py
+python3 .aletheia/bin/validate.py
+python3 .aletheia/bin/bootstrap_finalize.py
+```
+
+已有项目的关键不是把所有材料一次性塞进 `.aletheia/`，而是先建立可审查的事实骨架：当前使命、系统图、项目骨架、active state、重要决策、边界契约、已有证据和主要风险。源码仍然是实现与数据平面；`.aletheia/` 只保存能指导后续 agent 工作的长期项目事实。
+
 ### 初始化目标仓库
 
 ```bash

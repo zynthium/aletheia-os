@@ -65,6 +65,30 @@ class PluginManifestTests(unittest.TestCase):
             self.assertEqual([path.name for path in Path(tmp).iterdir()], ["aletheia-os"])
             self.assertTrue((release_root / ".codex-plugin" / "plugin.json").exists())
             self.assertTrue((release_root / ".claude-plugin" / "plugin.json").exists())
+            self.assertTrue((release_root / "skills" / "aletheia-promote" / "SKILL.md").exists())
+
+    def test_package_checks_wiki_handoff_promotion_protocol(self) -> None:
+        result = subprocess.run(
+            [sys.executable, "scripts/package_plugin.py"],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue((ROOT / "skills" / "aletheia-promote" / "SKILL.md").exists())
+        self.assertTrue(
+            (
+                ROOT
+                / "assets"
+                / "scaffold"
+                / ".aletheia"
+                / "playbooks"
+                / "wiki_handoff_promotion.md"
+            ).exists()
+        )
 
     def test_readme_documents_simple_installation(self) -> None:
         readme = (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")

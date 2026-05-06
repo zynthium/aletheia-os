@@ -30,6 +30,7 @@ REQUIRED_PATHS = [
     ".aletheia/evidence/INDEX.md",
     ".aletheia/nodes/ROOT.yaml",
     ".aletheia/playbooks/external_llm_wiki_handoff.md",
+    ".aletheia/playbooks/wiki_handoff_promotion.md",
     ".aletheia/bin/orient.py",
     ".aletheia/bin/context_pack.py",
     ".aletheia/bin/model_gate.py",

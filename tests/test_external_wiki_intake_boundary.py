@@ -32,6 +32,7 @@ class ExternalWikiIntakeBoundaryTests(unittest.TestCase):
         self.assertTrue(protocol.exists())
         self.assertIn("外部 LLM Wiki", readme)
         self.assertIn("AletheiaOS Wiki Handoff", readme)
+        self.assertIn("aletheia-promote", readme)
         self.assertIn("外部 LLM Wiki 负责资料编译", protocol.read_text(encoding="utf-8"))
         self.assertNotIn("truth_intake.py", readme)
         self.assertNotIn("digest-plan", readme)

@@ -31,7 +31,7 @@ decisions, contracts, or risks directly.
 2. Ask the wiki tool to preserve source references for every claim.
 3. Ask for the handoff packet below.
 4. Review candidate claims with the user.
-5. Promote only confirmed items into durable AletheiaOS truth records.
+5. Use `.aletheia/playbooks/wiki_handoff_promotion.md` to promote only confirmed items into durable AletheiaOS truth records.
 6. Run `python3 .aletheia/bin/validate.py`.
 7. Run `python3 .aletheia/bin/checkpoint.py`.
 

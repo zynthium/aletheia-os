@@ -131,6 +131,74 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("skeleton reference target missing: .aletheia/decisions/missing.md", output)
             self.assertIn("skeleton reference target missing: .aletheia/evidence/missing.md", output)
 
+    def test_validate_rejects_evidence_record_missing_source_refs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            evidence = target / ".aletheia" / "evidence" / "EV-0001.md"
+            evidence.write_text(
+                "# Evidence: missing source refs\n\n"
+                "## Method\n\nObserved behavior.\n\n"
+                "## Result\n\nResult.\n\n"
+                "## Limitations\n\nLimited sample.\n\n"
+                "## Invalidation criteria\n\nContradicting run.\n\n"
+                "## Confidence impact\n\nRaises confidence.\n",
+                encoding="utf-8",
+            )
+
+            result = validate_target(target)
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn("evidence record missing required section: .aletheia/evidence/EV-0001.md Source refs", output)
+
+    def test_validate_rejects_hypothesis_missing_invalidation_criteria(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            hypothesis = target / ".aletheia" / "hypotheses" / "HYP-0001.md"
+            hypothesis.write_text(
+                "# Hypothesis: missing invalidation\n\n"
+                "## Claim\n\nA possible explanation.\n\n"
+                "## Evidence Needed\n\nA test.\n",
+                encoding="utf-8",
+            )
+
+            result = validate_target(target)
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn(
+                "hypothesis record missing required section: .aletheia/hypotheses/HYP-0001.md Invalidation criteria",
+                output,
+            )
+
+    def test_validate_rejects_accepted_decision_without_evidence_links(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            decision = target / ".aletheia" / "decisions" / "DEC-0001.md"
+            decision.write_text(
+                "# Decision: missing evidence\n\n"
+                "Status: accepted\n\n"
+                "## Context\n\nContext.\n\n"
+                "## Decision\n\nChosen path.\n\n"
+                "## Evidence links\n\n",
+                encoding="utf-8",
+            )
+
+            result = validate_target(target)
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn(
+                "accepted decision missing evidence links: .aletheia/decisions/DEC-0001.md",
+                output,
+            )
+
     def test_orient_outputs_truth_layer_sections(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
@@ -185,7 +253,7 @@ class RuntimeValidateTests(unittest.TestCase):
     def test_truth_templates_keep_traceability_fields(self) -> None:
         template_root = ROOT / "assets" / "scaffold" / ".aletheia" / "templates"
         expectations = {
-            "EVIDENCE.md": ["Linked node", "Limitations", "Confidence impact"],
+            "EVIDENCE.md": ["Linked node", "Source refs", "Limitations", "Confidence impact"],
             "DECISION.md": ["Affected nodes", "Affected contracts", "Evidence links", "Review trigger"],
             "CONTRACT.md": ["Serves nodes", "Upstream assumptions", "Invariants", "Validation"],
             "SESSION_NOTE.md": ["Active node", "Files changed", "Truth records updated", "Checkpoint"],

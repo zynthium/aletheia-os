@@ -5,6 +5,10 @@ Evidence type: observation | experiment | simulation | proof | field_feedback | 
 Claim tested: <claim>
 Linked node: <node id>
 
+## Source refs
+
+List source refs, wiki handoff refs, experiment artifacts, commits, or state that this evidence depends on.
+
 ## Method
 
 Describe how evidence was produced.

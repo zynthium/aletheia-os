@@ -199,6 +199,51 @@ def resolve_truth_ref(root: Path, ref: str) -> Path | None:
     return None
 
 
+def section_body(text: str, section_name: str) -> str | None:
+    pattern = re.compile(rf"(?ims)^##\s+{re.escape(section_name)}\s*\n(.*?)(?=^##\s+|\Z)")
+    match = pattern.search(text)
+    if not match:
+        return None
+    return match.group(1).strip()
+
+
+def has_nonempty_section(text: str, section_name: str) -> bool:
+    body = section_body(text, section_name)
+    return body is not None and bool(body.strip())
+
+
+def truth_record_files(root: Path, rel: str) -> list[Path]:
+    directory = root / ".aletheia" / rel
+    if not directory.exists():
+        return []
+    return sorted(
+        path
+        for path in directory.glob("*.md")
+        if path.is_file() and path.name != "INDEX.md" and path.name != ".gitkeep"
+    )
+
+
+def validate_truth_record_semantics(root: Path, errors: list[str]) -> None:
+    for path in truth_record_files(root, "evidence"):
+        text = path.read_text(encoding="utf-8")
+        for section in ["Source refs", "Limitations", "Invalidation criteria", "Confidence impact"]:
+            if not has_nonempty_section(text, section):
+                rel = path.relative_to(root).as_posix()
+                errors.append(f"evidence record missing required section: {rel} {section}")
+
+    for path in truth_record_files(root, "hypotheses"):
+        text = path.read_text(encoding="utf-8")
+        if not (has_nonempty_section(text, "Invalidation Criteria") or has_nonempty_section(text, "Invalidation criteria")):
+            rel = path.relative_to(root).as_posix()
+            errors.append(f"hypothesis record missing required section: {rel} Invalidation criteria")
+
+    for path in truth_record_files(root, "decisions"):
+        text = path.read_text(encoding="utf-8")
+        if re.search(r"(?im)^Status:\s*accepted\s*$", text) and not has_nonempty_section(text, "Evidence links"):
+            rel = path.relative_to(root).as_posix()
+            errors.append(f"accepted decision missing evidence links: {rel}")
+
+
 def validate_claude_settings(root: Path, errors: list[str]) -> None:
     path = root / ".claude" / "settings.json"
     if not path.exists():
@@ -296,6 +341,7 @@ def main() -> int:
     validate_claude_settings(root, errors)
     validate_model_registry(root, errors, warnings)
     validate_graph_and_skeleton(root, errors, warnings, bootstrap_mode)
+    validate_truth_record_semantics(root, errors)
 
     for path in root.rglob("*"):
         if not path.is_file():

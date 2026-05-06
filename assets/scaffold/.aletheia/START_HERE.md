@@ -14,6 +14,9 @@ Read order:
 8. `.aletheia/state/RISK_REGISTER.md`
 9. `.aletheia/state/FRONTIER_BOARD.md`, `.aletheia/state/DOMAIN_PROFILE.md`, and relevant decisions, evidence, contracts, risks, nodes, and source files.
 
+For large conversation exports or scattered research material, use
+`.aletheia/playbooks/external_llm_wiki_handoff.md` before writing durable truth.
+
 Before durable writes, run `.aletheia/bin/model_gate.py` with the correct task class:
 
 ```bash
@@ -25,7 +28,7 @@ Useful runtime commands:
 ```bash
 python3 .aletheia/bin/orient.py
 python3 .aletheia/bin/context_pack.py
-python3 .aletheia/bin/intake_inventory.py
+python3 .aletheia/bin/source_inventory.py
 python3 .aletheia/bin/guided_bootstrap.py --objective "Initialize AletheiaOS"
 python3 .aletheia/bin/overview.py
 python3 .aletheia/bin/validate.py

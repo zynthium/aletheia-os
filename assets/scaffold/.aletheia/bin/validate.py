@@ -17,7 +17,7 @@ REQUIRED_PATHS = [
     ".aletheia/governance/ATTENTION_POLICY.md",
     ".aletheia/governance/MODEL_GOVERNANCE.md",
     ".aletheia/governance/GIT_POLICY.md",
-    ".aletheia/governance/INTAKE_POLICY.md",
+    ".aletheia/governance/SOURCE_POLICY.md",
     ".aletheia/governance/model_registry.json",
     ".aletheia/state/ACTIVE_STATE.md",
     ".aletheia/state/SYSTEM_GRAPH.yaml",
@@ -29,6 +29,7 @@ REQUIRED_PATHS = [
     ".aletheia/contracts/INDEX.md",
     ".aletheia/evidence/INDEX.md",
     ".aletheia/nodes/ROOT.yaml",
+    ".aletheia/playbooks/external_llm_wiki_handoff.md",
     ".aletheia/bin/orient.py",
     ".aletheia/bin/context_pack.py",
     ".aletheia/bin/model_gate.py",
@@ -36,7 +37,7 @@ REQUIRED_PATHS = [
     ".aletheia/bin/checkpoint.py",
     ".aletheia/bin/overview.py",
     ".aletheia/bin/bootstrap_finalize.py",
-    ".aletheia/bin/intake_inventory.py",
+    ".aletheia/bin/source_inventory.py",
     ".aletheia/bin/guided_bootstrap.py",
     ".aletheia/bin/change_hook.py",
     ".aletheia/bin/stop_hook.py",
@@ -50,7 +51,7 @@ REQUIRED_PATHS = [
     ".aletheia/templates/TASK_CARD.md",
     ".aletheia/templates/AGENT_RUN.json",
     ".aletheia/templates/TRUTH_INVENTORY_REPORT.md",
-    ".aletheia/templates/TRUTH_INTAKE_MANIFEST.yaml",
+    ".aletheia/templates/SOURCE_INVENTORY_MANIFEST.yaml",
 ]
 
 REQUIRED_DIRS = [

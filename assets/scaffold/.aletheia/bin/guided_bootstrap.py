@@ -48,10 +48,10 @@ def main() -> int:
             root,
         )
     if not args.skip_inventory:
-        run(["python3", ".aletheia/bin/intake_inventory.py"], root)
+        run(["python3", ".aletheia/bin/source_inventory.py"], root)
 
-    intake_dir = root / ".aletheia" / "truth_intake"
-    inventory_path = intake_dir / "inventory.json"
+    inventory_dir = root / ".aletheia" / "source_inventory"
+    inventory_path = inventory_dir / "inventory.json"
     inventory = json.loads(inventory_path.read_text(encoding="utf-8")) if inventory_path.exists() else {"items": []}
     items = inventory.get("items", [])
     mode = infer_mode(items)
@@ -96,9 +96,9 @@ TBD - assistant must fill after synthesis.
 
 TBD - assistant must fill after synthesis.
 """
-    intake_dir.mkdir(parents=True, exist_ok=True)
-    (intake_dir / "TRUTH_INVENTORY_REPORT.md").write_text(report, encoding="utf-8")
-    print(f"wrote {intake_dir / 'TRUTH_INVENTORY_REPORT.md'}")
+    inventory_dir.mkdir(parents=True, exist_ok=True)
+    (inventory_dir / "TRUTH_INVENTORY_REPORT.md").write_text(report, encoding="utf-8")
+    print(f"wrote {inventory_dir / 'TRUTH_INVENTORY_REPORT.md'}")
     return 0
 
 

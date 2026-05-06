@@ -1,4 +1,4 @@
-# Intake Policy
+# Source Policy
 
 Existing material is not automatically true. During bootstrap, inventory prior
 materials, classify reliability and sensitivity, and synthesize durable state
@@ -17,7 +17,8 @@ with provenance.
 
 ## Required Output
 
-Bootstrap must write `.aletheia/bootstrap_intake/IMPORT_REPORT.md` with:
+Bootstrap source inventory must write `.aletheia/source_inventory/TRUTH_INVENTORY_REPORT.md`
+with:
 
 - initialization mode;
 - inventory summary;

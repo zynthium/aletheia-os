@@ -62,7 +62,7 @@ mission -> system graph -> skeleton -> contracts -> evidence -> decisions -> cod
 
 其中：
 
-- `governance/` 保存 charter、attention policy、model governance、model registry、git policy 和 intake policy；
+- `governance/` 保存 charter、attention policy、model governance、model registry、git policy 和 source policy；
 - `state/` 保存 active state、system graph、project skeleton、frontier board、glossary、domain profile 和 risk register；
 - `nodes/` 保存可下钻的系统节点事实；
 - `evidence/` 保存实验、验证、观察、推理和解释记录；
@@ -80,6 +80,7 @@ mission -> system graph -> skeleton -> contracts -> evidence -> decisions -> cod
 - 在 durable writes 前执行模型能力门控和 agent attribution。
 - 记录 evidence、decisions、contracts、risks 和 session notes。
 - 支持复杂项目的架构演进、约束追踪和逐层展开。
+- 在大量资料场景下，引导 agent 使用外部 LLM Wiki 编译研究空间，再将确认结果沉淀为项目事实。
 - 提供 repo-native validation、overview、bootstrap finalize 和 checkpoint runtime。
 - 通过 model registry 管理 task class、能力层级、注册模型和 denylist。
 
@@ -222,7 +223,54 @@ python3 scripts/validate_scaffold.py assets/scaffold
   bin/
 ```
 
-`bin/` 提供 orient、context pack、model gate、intake inventory、guided bootstrap、overview、validate、bootstrap finalize、checkpoint 和 Claude hook runtime。
+`bin/` 提供 orient、context pack、model gate、source inventory、guided bootstrap、overview、validate、bootstrap finalize、checkpoint 和 Claude hook runtime。
+
+## 外部 LLM Wiki 资料摄入
+
+AletheiaOS core 不内置资料摄入系统。大量非结构化资料先交给外部 LLM Wiki 做编译、去重、主题聚合、概念关系和来源导航；AletheiaOS 只接收经过审查后要沉淀的 project truth。
+
+```text
+ChatGPT / Claude / Codex 对话资料
+-> 外部 LLM Wiki 编译成可审查研究空间
+-> AletheiaOS Wiki Handoff
+-> evidence / hypothesis / decision / contract / risk / node / state
+-> validate
+-> checkpoint
+```
+
+当 agent 发现资料来自长对话、多来源研究或互相冲突的观察时，应引导用户先使用外部 LLM Wiki，并要求输出固定交接包：
+
+```markdown
+# AletheiaOS Wiki Handoff
+
+Objective:
+Wiki location:
+Source corpus:
+Source index:
+
+## Candidate Project Skeleton
+
+## Key Claims
+- Claim:
+  Source refs:
+  Confidence:
+  Limitations:
+  Promote to: evidence | hypothesis | decision | contract | risk | node | state
+
+## Evidence Map
+
+## Conflicts
+
+## Hypotheses
+
+## Architecture Candidates
+
+## Open Questions
+
+## Suggested Promotions
+```
+
+详细规则见 `.aletheia/playbooks/external_llm_wiki_handoff.md`。Wiki 页面只是 compiled research；只有晋升到 `.aletheia/evidence/`、`.aletheia/decisions/`、`.aletheia/hypotheses/`、`.aletheia/contracts/`、`.aletheia/risks/`、`.aletheia/nodes/` 或 `.aletheia/state/` 的内容才是 durable project truth。
 
 ## 推荐闭环
 
@@ -252,7 +300,7 @@ python3 .aletheia/bin/bootstrap_finalize.py
 python3 .aletheia/bin/orient.py
 python3 .aletheia/bin/context_pack.py
 python3 .aletheia/bin/model_gate.py --task-class <task_class> --provider <provider> --model-id <model_id> --record --objective "<objective>"
-python3 .aletheia/bin/intake_inventory.py
+python3 .aletheia/bin/source_inventory.py
 python3 .aletheia/bin/guided_bootstrap.py --objective "<objective>"
 python3 .aletheia/bin/overview.py
 python3 .aletheia/bin/validate.py

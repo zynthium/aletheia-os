@@ -38,7 +38,7 @@ REQUIRED = [
     "assets/scaffold/.claude/settings.json",
     "assets/scaffold/BOOTSTRAP.md",
     "assets/scaffold/.aletheia/governance/model_registry.json",
-    "assets/scaffold/.aletheia/governance/INTAKE_POLICY.md",
+    "assets/scaffold/.aletheia/governance/SOURCE_POLICY.md",
     "assets/scaffold/.aletheia/state/RISK_REGISTER.md",
     "assets/scaffold/.aletheia/state/FRONTIER_BOARD.md",
     "assets/scaffold/.aletheia/state/GLOSSARY.md",
@@ -47,6 +47,7 @@ REQUIRED = [
     "assets/scaffold/.aletheia/evidence/INDEX.md",
     "assets/scaffold/.aletheia/hypotheses/.gitkeep",
     "assets/scaffold/.aletheia/nodes/ROOT.yaml",
+    "assets/scaffold/.aletheia/playbooks/external_llm_wiki_handoff.md",
     "assets/scaffold/.aletheia/playbooks/guided_bootstrap.md",
     "assets/scaffold/.aletheia/bin/orient.py",
     "assets/scaffold/.aletheia/bin/context_pack.py",
@@ -55,7 +56,7 @@ REQUIRED = [
     "assets/scaffold/.aletheia/bin/checkpoint.py",
     "assets/scaffold/.aletheia/bin/overview.py",
     "assets/scaffold/.aletheia/bin/bootstrap_finalize.py",
-    "assets/scaffold/.aletheia/bin/intake_inventory.py",
+    "assets/scaffold/.aletheia/bin/source_inventory.py",
     "assets/scaffold/.aletheia/bin/guided_bootstrap.py",
     "assets/scaffold/.aletheia/bin/change_hook.py",
     "assets/scaffold/.aletheia/bin/stop_hook.py",
@@ -69,7 +70,7 @@ REQUIRED = [
     "assets/scaffold/.aletheia/templates/TASK_CARD.md",
     "assets/scaffold/.aletheia/templates/AGENT_RUN.json",
     "assets/scaffold/.aletheia/templates/TRUTH_INVENTORY_REPORT.md",
-    "assets/scaffold/.aletheia/templates/TRUTH_INTAKE_MANIFEST.yaml",
+    "assets/scaffold/.aletheia/templates/SOURCE_INVENTORY_MANIFEST.yaml",
 ]
 
 PACKAGE_DIRS = [

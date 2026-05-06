@@ -22,6 +22,11 @@ def run_script(script: str, *args: str) -> subprocess.CompletedProcess[str]:
 
 
 class CheckpointTests(unittest.TestCase):
+    def test_checkpoint_does_not_treat_public_overview_as_durable_state(self) -> None:
+        text = (ROOT / "assets" / "scaffold" / ".aletheia" / "bin" / "checkpoint.py").read_text(encoding="utf-8")
+
+        self.assertNotIn('"docs/overview/"', text)
+
     def test_checkpoint_dry_run_reports_agent_attribution(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

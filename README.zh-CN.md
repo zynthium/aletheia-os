@@ -310,11 +310,14 @@ python3 .aletheia/bin/model_gate.py --task-class bootstrap_finalize --provider <
 python3 .aletheia/bin/source_inventory.py
 python3 .aletheia/bin/guided_bootstrap.py --objective "<objective>"
 python3 .aletheia/bin/overview.py
+python3 .aletheia/bin/overview.py --public-docs
 python3 .aletheia/bin/validate.py
 python3 .aletheia/bin/checkpoint.py
 ```
 
 首次 bootstrap 可以用 `--operator-approved` 明确授权当前模型完成初始化；项目固定后，应把可信模型登记到 `.aletheia/governance/model_registry.json`，后续 durable writes 由 registry 决定。
+
+`overview.py` 和 `source_inventory.py` 默认写入 `.aletheia/` 下的 generated/intermediate 目录，不属于 durable project truth；只有显式使用 `--public-docs` 时才生成 `docs/overview/`。
 
 ## 设计原则
 

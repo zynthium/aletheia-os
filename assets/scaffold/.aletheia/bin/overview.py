@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 import json
 import subprocess
 import sys
@@ -93,8 +94,12 @@ def validation_state(root: Path) -> dict:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Generate an AletheiaOS overview.")
+    parser.add_argument("--public-docs", action="store_true", help="Write overview to docs/overview instead of .aletheia/overview")
+    args = parser.parse_args()
+
     root = repo_root()
-    output = root / "docs" / "overview"
+    output = root / "docs" / "overview" if args.public_docs else root / ".aletheia" / "overview"
     output.mkdir(parents=True, exist_ok=True)
     status = {
         "generated_at": datetime.now(timezone.utc).isoformat(),

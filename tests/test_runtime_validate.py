@@ -39,6 +39,46 @@ def validate_target(target: Path) -> subprocess.CompletedProcess[str]:
 
 
 class RuntimeValidateTests(unittest.TestCase):
+    def test_overview_defaults_to_aletheia_generated_output_and_can_export_public_docs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/overview.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertTrue((target / ".aletheia" / "overview" / "status.json").exists())
+            self.assertTrue((target / ".aletheia" / "overview" / "index.html").exists())
+            self.assertFalse((target / "docs" / "overview" / "status.json").exists())
+
+            public = subprocess.run(
+                [sys.executable, ".aletheia/bin/overview.py", "--public-docs"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            public_output = public.stdout + public.stderr
+            self.assertEqual(public.returncode, 0, public_output)
+            self.assertTrue((target / "docs" / "overview" / "status.json").exists())
+
+    def test_scaffold_gitignore_marks_generated_aletheia_outputs(self) -> None:
+        ignore = (ROOT / "assets" / "scaffold" / ".aletheia" / ".gitignore").read_text(encoding="utf-8")
+
+        for pattern in ["/runtime/", "/overview/", "/source_inventory/"]:
+            self.assertIn(pattern, ignore)
+
     def test_validate_rejects_missing_claude_settings(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

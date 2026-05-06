@@ -22,7 +22,6 @@ STATE_PATTERNS = [
     "BOOTSTRAP.md",
     ".claude/settings.json",
     ".aletheia/",
-    "docs/overview/",
 ]
 
 

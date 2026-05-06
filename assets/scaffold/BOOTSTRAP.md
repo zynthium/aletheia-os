@@ -16,6 +16,8 @@ Bootstrap is model-led. The AI assistant should orchestrate the sequence; the op
 8. Run `python3 .aletheia/bin/orient.py` and `python3 .aletheia/bin/validate.py`.
 9. Finalize with `python3 .aletheia/bin/bootstrap_finalize.py`.
 
+Bootstrap finalize installs AletheiaOS Git hooks and points this repository's `core.hooksPath` at `.aletheia/hooks`.
+
 Do not write production code, copy secrets into `.aletheia/`, treat existing material as automatically true, or skip the initial checkpoint during bootstrap.
 
 After bootstrap, register trusted models in `.aletheia/governance/model_registry.json` so future durable writes do not depend on one-off operator approval.

@@ -110,6 +110,11 @@ class PluginManifestTests(unittest.TestCase):
         self.assertIn("日常闭环", readme)
         self.assertIn("orient -> work -> update truth -> validate -> checkpoint", readme)
         self.assertIn("运行时参考", readme)
+        self.assertIn("bootstrap finalize 会安装 AletheiaOS Git hooks", readme)
+        self.assertIn("治理、归因和审计边界", readme)
+        self.assertIn("不是安全沙箱", readme)
+        self.assertIn("Claude Code 通过 hooks 自动执行门禁", readme)
+        self.assertIn("Codex 当前以 skills、显式命令和可选 subagents 执行同一协议", readme)
 
     def test_plugin_content_avoids_migration_and_compatibility_language(self) -> None:
         banned_patterns = [

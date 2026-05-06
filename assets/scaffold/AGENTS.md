@@ -18,4 +18,6 @@ python3 .aletheia/bin/model_gate.py --task-class <task_class> --record --objecti
 
 Claude Code hooks are mandatory for this scaffold and should point to `.aletheia/bin/`.
 
+Model gate is a governance, attribution, and audit boundary; it is not a security sandbox.
+
 For non-trivial completion, update affected `.aletheia/` truth records, run validation, and create or explicitly defer a checkpoint.

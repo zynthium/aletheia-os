@@ -47,6 +47,8 @@ python3 .aletheia/bin/model_gate.py --task-class bootstrap_finalize --provider <
 
 After bootstrap, register trusted models in `.aletheia/governance/model_registry.json`.
 
+`model_gate.py` is a governance, attribution, and audit boundary. It is not a security sandbox.
+
 ## Bootstrap Commands
 
 Run the first-run bootstrap model gate command above before guided bootstrap. `guided_bootstrap.py` verifies that recorded gate instead of creating a new one.

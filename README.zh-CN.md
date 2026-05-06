@@ -201,6 +201,8 @@ BOOTSTRAP.md
 
 `.claude/settings.json` 会配置 SessionStart、PreToolUse、PostToolUse 和 Stop hooks，用 `.aletheia/bin/model_gate.py`、`change_hook.py` 和 `stop_hook.py` 执行强制门禁与审计。
 
+`bootstrap_finalize.py` 会安装 AletheiaOS Git hooks，并把目标仓库的 `core.hooksPath` 指向 `.aletheia/hooks`。也就是说，bootstrap finalize 会安装 AletheiaOS Git hooks；这是默认强约束，用于让后续提交继续经过 `.aletheia/bin/validate.py`。
+
 ### 验证插件自带 scaffold
 
 ```bash
@@ -316,6 +318,12 @@ python3 .aletheia/bin/checkpoint.py
 ```
 
 首次 bootstrap 可以用 `--operator-approved` 明确授权当前模型完成初始化；项目固定后，应把可信模型登记到 `.aletheia/governance/model_registry.json`，后续 durable writes 由 registry 决定。
+
+`model_gate.py` 是治理、归因和审计边界，不是安全沙箱，也不是不可绕过的权限系统。它用于让 agent 在写入前显式声明 task class、model、tier 和 objective，并留下可审查记录。
+
+Claude Code 通过 hooks 自动执行门禁和审计；Codex 当前以 skills、显式命令和可选 subagents 执行同一协议，不宣称拥有等同的自动 hook enforcement。
+
+`checkpoint.py` 默认只提交 AletheiaOS state/control-plane 路径；只有显式传入 `--include-worktree` 时才 stage 整个工作树。
 
 `guided_bootstrap.py` 会验证已经记录的 bootstrap gate，不会自行创建新的模型授权。`source_inventory.py` 默认跳过 `.aletheia/`、`.claude/` 和初始化根部控制文件，只扫描项目自身资料。
 

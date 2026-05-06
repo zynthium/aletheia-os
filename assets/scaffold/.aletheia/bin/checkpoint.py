@@ -162,7 +162,7 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--no-model-gate", action="store_true")
     parser.add_argument("--state-only", action="store_true")
-    parser.add_argument("--include-worktree", action="store_true", help="Deprecated: full worktree is the default.")
+    parser.add_argument("--include-worktree", action="store_true", help="Stage the full worktree instead of only AletheiaOS state paths.")
     args = parser.parse_args()
 
     root = repo_root()
@@ -222,15 +222,15 @@ def main() -> int:
             print("checkpoint skipped by user")
             return 0
 
-    if args.state_only:
-        rc = stage_state_paths(root)
-        if rc != 0:
-            return rc
-    else:
+    if args.include_worktree:
         add = run(["git", "add", "-A"], root, capture=True)
         if add.returncode != 0:
             print(add.stderr, end="")
             return add.returncode
+    else:
+        rc = stage_state_paths(root)
+        if rc != 0:
+            return rc
 
     commit = run(["git", "commit", "-m", message + attribution_trailers(run_data)], root, capture=True)
     print(commit.stdout, end="")

@@ -300,12 +300,15 @@ python3 .aletheia/bin/bootstrap_finalize.py
 python3 .aletheia/bin/orient.py
 python3 .aletheia/bin/context_pack.py
 python3 .aletheia/bin/model_gate.py --task-class <task_class> --provider <provider> --model-id <model_id> --record --objective "<objective>"
+python3 .aletheia/bin/model_gate.py --task-class bootstrap_finalize --provider <provider> --model-id <model_id> --tier C3 --operator-approved --record --objective "Initialize AletheiaOS"
 python3 .aletheia/bin/source_inventory.py
 python3 .aletheia/bin/guided_bootstrap.py --objective "<objective>"
 python3 .aletheia/bin/overview.py
 python3 .aletheia/bin/validate.py
 python3 .aletheia/bin/checkpoint.py
 ```
+
+首次 bootstrap 可以用 `--operator-approved` 明确授权当前模型完成初始化；项目固定后，应把可信模型登记到 `.aletheia/governance/model_registry.json`，后续 durable writes 由 registry 决定。
 
 ## 设计原则
 

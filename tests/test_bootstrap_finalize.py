@@ -22,6 +22,27 @@ def run_script(script: str, *args: str) -> subprocess.CompletedProcess[str]:
 
 
 class BootstrapFinalizeTests(unittest.TestCase):
+    def test_guided_bootstrap_stops_when_model_gate_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/guided_bootstrap.py", "--objective", "Initialize AletheiaOS"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn("model gate failed", output)
+            self.assertFalse((target / ".aletheia" / "source_inventory" / "TRUTH_INVENTORY_REPORT.md").exists())
+
     def test_bootstrap_finalize_blocks_without_allowed_agent_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

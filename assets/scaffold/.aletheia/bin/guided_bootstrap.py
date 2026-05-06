@@ -17,6 +17,12 @@ def run(cmd: list[str], root: Path) -> int:
     return subprocess.run(cmd, cwd=root, check=False).returncode
 
 
+def run_required(cmd: list[str], root: Path, label: str) -> None:
+    rc = run(cmd, root)
+    if rc != 0:
+        raise SystemExit(f"{label} failed with exit code {rc}")
+
+
 def infer_mode(items: list[dict]) -> str:
     code_count = sum(1 for item in items if item.get("kind") == "implementation_code")
     doc_count = sum(1 for item in items if "document" in item.get("kind", "") or "design" in item.get("kind", ""))
@@ -35,7 +41,7 @@ def main() -> int:
 
     root = repo_root()
     if not args.skip_gate:
-        run(
+        run_required(
             [
                 "python3",
                 ".aletheia/bin/model_gate.py",
@@ -46,9 +52,10 @@ def main() -> int:
                 args.objective,
             ],
             root,
+            "model gate",
         )
     if not args.skip_inventory:
-        run(["python3", ".aletheia/bin/source_inventory.py"], root)
+        run_required(["python3", ".aletheia/bin/source_inventory.py"], root, "source inventory")
 
     inventory_dir = root / ".aletheia" / "source_inventory"
     inventory_path = inventory_dir / "inventory.json"

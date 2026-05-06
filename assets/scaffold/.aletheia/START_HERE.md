@@ -21,7 +21,10 @@ Before durable writes, run `.aletheia/bin/model_gate.py` with the correct task c
 
 ```bash
 python3 .aletheia/bin/model_gate.py --task-class <task_class> --provider <provider> --model-id <model_id> --record --objective "<short objective>"
+python3 .aletheia/bin/model_gate.py --task-class bootstrap_finalize --provider <provider> --model-id <model_id> --tier C3 --operator-approved --record --objective "Initialize AletheiaOS"
 ```
+
+Use the operator-approved bootstrap command only for first-run project setup. After bootstrap, register trusted models in `.aletheia/governance/model_registry.json`.
 
 Useful runtime commands:
 

@@ -4,6 +4,12 @@ Before non-trivial work, read `.aletheia/START_HERE.md`.
 
 The repository is the durable project truth source. Chat history is not durable memory.
 
+Daily loop:
+
+```text
+orient -> work -> update truth -> validate -> checkpoint
+```
+
 Before durable writes, run or verify:
 
 ```bash

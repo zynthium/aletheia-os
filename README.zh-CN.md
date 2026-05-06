@@ -176,6 +176,13 @@ cp /tmp/aletheia-os-dist/aletheia-os/codex-agents/*.toml /path/to/target-repo/.c
 
 ## 快速开始
 
+1. 安装插件。
+2. 初始化目标仓库的 `.aletheia/`。
+3. 让 agent orient 当前项目事实。
+4. 执行当前任务。
+5. 更新受影响的 truth records。
+6. validate 并 checkpoint。
+
 ### 初始化目标仓库
 
 ```bash
@@ -199,6 +206,14 @@ BOOTSTRAP.md
 ```bash
 python3 scripts/validate_scaffold.py assets/scaffold
 ```
+
+## 日常闭环
+
+```text
+orient -> work -> update truth -> validate -> checkpoint
+```
+
+日常使用时，agent 应先读取 `.aletheia/START_HERE.md`，再围绕当前 active node 工作。完成非平凡任务后，更新 evidence、decision、contract、risk、node、session note 或 active state，再运行验证和 checkpoint。
 
 ## `.aletheia/` 中有什么
 
@@ -273,17 +288,6 @@ Source index:
 
 详细规则见 `.aletheia/playbooks/external_llm_wiki_handoff.md` 和 `.aletheia/playbooks/wiki_handoff_promotion.md`。Wiki 页面只是 compiled research；使用 `aletheia-promote` 审查 handoff 后，只有晋升到 `.aletheia/evidence/`、`.aletheia/decisions/`、`.aletheia/hypotheses/`、`.aletheia/contracts/`、`.aletheia/risks/`、`.aletheia/nodes/` 或 `.aletheia/state/` 的内容才是 durable project truth。
 
-## 推荐闭环
-
-```text
-orient on project truth
--> model gate
--> execute
--> update evidence / decision / contract / risk / active state
--> validate truth layer
--> checkpoint
-```
-
 `orient` 会输出固定的 Global View Checksum，帮助 agent 在动手前明确 active node、父级约束、成功标准、推翻标准、需要更新的 truth records、验证路径和 checkpoint 计划。
 
 对应的 plugin skills：
@@ -295,7 +299,7 @@ orient on project truth
 - `aletheia-architecture-evolution`：支持架构决策、契约变更和 skeleton traversal。
 - `aletheia-promote`：把外部 LLM Wiki handoff 中已确认的 findings 晋升为 durable truth records。
 
-关键 runtime：
+## 运行时参考
 
 ```bash
 python3 .aletheia/bin/bootstrap_finalize.py

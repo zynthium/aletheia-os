@@ -107,6 +107,9 @@ class PluginManifestTests(unittest.TestCase):
         self.assertIn("codex plugin marketplace add zynthium/aletheia-os", readme)
         self.assertIn("/plugin", readme)
         self.assertIn("/plugins", readme)
+        self.assertIn("日常闭环", readme)
+        self.assertIn("orient -> work -> update truth -> validate -> checkpoint", readme)
+        self.assertIn("运行时参考", readme)
 
     def test_plugin_content_avoids_migration_and_compatibility_language(self) -> None:
         banned_patterns = [

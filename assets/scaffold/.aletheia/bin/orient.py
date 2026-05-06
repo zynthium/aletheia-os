@@ -41,10 +41,27 @@ def active_nodes(active_text: str) -> list[str]:
 
 
 def skeleton_refs(skeleton_text: str, ref_name: str) -> list[str]:
-    match = re.search(rf"(?ms)^\s{{4}}{re.escape(ref_name)}:\s*\n((?:\s{{6}}- .+\n)+)", skeleton_text)
-    if not match:
-        return []
-    return [line.split("-", 1)[1].strip() for line in match.group(1).splitlines() if "-" in line]
+    refs: list[str] = []
+    in_refs = False
+    for line in skeleton_text.splitlines():
+        field = re.match(r"^\s{4}([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$", line)
+        if field:
+            if in_refs:
+                break
+            if field.group(1) == ref_name:
+                in_refs = True
+                inline = field.group(2).strip()
+                if inline and inline != "[]":
+                    refs.append(inline.strip("\"'"))
+            continue
+        if in_refs:
+            item = re.match(r"^\s{6}-\s+(.+?)\s*$", line)
+            if item:
+                refs.append(item.group(1).strip().strip("\"'"))
+                continue
+            if line.strip():
+                break
+    return refs
 
 
 def print_block(title: str, content: str) -> None:

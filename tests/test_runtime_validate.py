@@ -286,6 +286,47 @@ class RuntimeValidateTests(unittest.TestCase):
             ]:
                 self.assertIn(field, output)
 
+    def test_orient_does_not_treat_following_skeleton_lists_as_refs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            evidence = target / ".aletheia" / "evidence" / "behavior.md"
+            evidence.write_text(
+                "# Evidence: behavior\n\n"
+                "## Source refs\n\n- `README.md`\n\n"
+                "## Method\n\nRead docs.\n\n"
+                "## Result\n\nObserved behavior.\n\n"
+                "## Limitations\n\nSingle sample.\n\n"
+                "## Invalidation criteria\n\nContradicting evidence.\n\n"
+                "## Confidence impact\n\nRaises confidence.\n",
+                encoding="utf-8",
+            )
+            skeleton = target / ".aletheia" / "state" / "SKELETON.yaml"
+            skeleton.write_text(
+                skeleton.read_text(encoding="utf-8").replace(
+                    "    evidence_refs: []",
+                    '    evidence_refs:\n      - ".aletheia/evidence/behavior.md"',
+                ),
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/orient.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            linked_evidence = output.split("## Linked Evidence", 1)[1].split("## Linked Contracts", 1)[0]
+            self.assertIn(".aletheia/evidence/behavior.md", linked_evidence)
+            self.assertNotIn("The task changes project objectives", linked_evidence)
+            self.assertNotIn("The active task can be answered", linked_evidence)
+
     def test_scaffold_attention_policy_contains_minimal_context_protocol(self) -> None:
         policy = (ROOT / "assets" / "scaffold" / ".aletheia" / "governance" / "ATTENTION_POLICY.md").read_text(
             encoding="utf-8"

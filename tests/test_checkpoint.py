@@ -197,6 +197,57 @@ class CheckpointTests(unittest.TestCase):
             )
             self.assertIn("?? src/", status.stdout)
 
+    def test_checkpoint_default_output_reports_only_state_candidates(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-test",
+                        "provider": "test",
+                        "model_id": "test-model",
+                        "capability_tier": "C3",
+                        "task_class": "research_design",
+                        "gate_status": "allowed",
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(active_state.read_text(encoding="utf-8") + "\nState checkpoint note.\n", encoding="utf-8")
+            (target / "__pycache__").mkdir()
+            (target / "__pycache__" / "sample.pyc").write_bytes(b"cache")
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/checkpoint.py", "--auto", "--dry-run", "--message", "state: dry run"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            candidate_block = output.split("checkpoint candidate:", 1)[1].split(
+                "non-checkpoint worktree changes remain:",
+                1,
+            )[0]
+            self.assertIn(".aletheia/", candidate_block)
+            self.assertIn(".claude/settings.json", candidate_block)
+            self.assertNotIn("__pycache__/", candidate_block)
+            self.assertIn("non-checkpoint worktree changes remain", output)
+            self.assertIn("__pycache__/", output)
+
     def test_checkpoint_include_worktree_stages_project_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

@@ -75,6 +75,23 @@ def has_state_update(files: list[str]) -> bool:
     return False
 
 
+def state_files(root: Path, files: list[str]) -> list[str]:
+    state: list[str] = []
+    for file in files:
+        for pattern in STATE_PATTERNS:
+            if pattern.endswith("/"):
+                if file.startswith(pattern):
+                    state.append(file)
+                    break
+            elif file == pattern:
+                state.append(file)
+                break
+            elif file.endswith("/") and pattern.startswith(file) and (root / pattern).exists():
+                state.append(pattern)
+                break
+    return state
+
+
 def protected_files(files: list[str]) -> list[str]:
     return [file for file in files if any(pattern.search(file) for pattern in PROTECTED_PATTERNS)]
 
@@ -202,10 +219,16 @@ def main() -> int:
         print(f"  gate_status: {run_data.get('gate_status')}")
         return 5
 
-    message = args.message or infer_message(files)
+    candidate_files = files if args.include_worktree else state_files(root, files)
+    non_checkpoint_files = [] if args.include_worktree else [file for file in files if file not in set(candidate_files)]
+    message = args.message or infer_message(candidate_files or files)
     print("checkpoint candidate:")
-    for file in files:
+    for file in candidate_files:
         print(f"  - {file}")
+    if non_checkpoint_files:
+        print("non-checkpoint worktree changes remain:")
+        for file in non_checkpoint_files:
+            print(f"  - {file}")
     print(f"message: {message}")
     if run_data:
         print(

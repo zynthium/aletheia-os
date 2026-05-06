@@ -21,6 +21,51 @@ def run_script(script: str, *args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def replace_text(path: Path, old: str, new: str) -> None:
+    text = path.read_text(encoding="utf-8")
+    path.write_text(text.replace(old, new), encoding="utf-8")
+
+
+def customize_minimal_project_truth(target: Path) -> None:
+    replace_text(
+        target / ".aletheia" / "governance" / "CHARTER.md",
+        "TBD. Define the durable project mission in one paragraph.",
+        "Maintain a deterministic local utility with reviewable project truth in git.",
+    )
+    replace_text(
+        target / ".aletheia" / "state" / "SYSTEM_GRAPH.yaml",
+        'title: "TBD Project Root"',
+        'title: "Local Utility"',
+    )
+    replace_text(
+        target / ".aletheia" / "state" / "SYSTEM_GRAPH.yaml",
+        'thesis: "TBD: define the governing project thesis."',
+        'thesis: "A small local utility can remain understandable through explicit truth records."',
+    )
+    replace_text(
+        target / ".aletheia" / "state" / "ACTIVE_STATE.md",
+        "- Domain: TBD\n- Mission: TBD",
+        "- Domain: local developer tooling\n- Mission: Maintain a deterministic local utility.",
+    )
+    replace_text(
+        target / ".aletheia" / "state" / "ACTIVE_STATE.md",
+        "Bootstrap AletheiaOS | root | active | project owner + AI | TBD",
+        "Bootstrap AletheiaOS | root | active | project owner + Codex | `.aletheia/source_inventory/TRUTH_INVENTORY_REPORT.md`",
+    )
+    (target / ".aletheia" / "state" / "DOMAIN_PROFILE.md").write_text(
+        "# Domain Profile\n\n"
+        "## Domain\n\n"
+        "Local developer tooling.\n\n"
+        "## Objective Function\n\n"
+        "Optimize for deterministic behavior, simple review, and explicit project truth.\n\n"
+        "## Evidence Standards\n\n"
+        "Behavioral claims should be backed by tests, source inspection, or explicit observations.\n\n"
+        "## Failure Modes\n\n"
+        "The project fails if local behavior becomes unclear or project facts drift from source behavior.\n",
+        encoding="utf-8",
+    )
+
+
 class BootstrapFinalizeTests(unittest.TestCase):
     def test_guided_bootstrap_stops_without_recorded_bootstrap_gate(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -187,6 +232,101 @@ class BootstrapFinalizeTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0, output)
             self.assertIn("critical files still contain TBD markers", output)
             self.assertTrue((target / "BOOTSTRAP.md").exists())
+
+    def test_existing_project_bootstrap_finalize_creates_truth_checkpoint_without_touching_source(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=False)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=target, check=False)
+            (target / "README.md").write_text("# Existing Utility\n\nA local utility.\n", encoding="utf-8")
+            (target / "utility.py").write_text("def run():\n    return 'ok'\n", encoding="utf-8")
+            subprocess.run(["git", "add", "README.md", "utility.py"], cwd=target, check=False)
+            initial = subprocess.run(
+                ["git", "commit", "-m", "initial utility"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(initial.returncode, 0, initial.stdout + initial.stderr)
+            original_readme = (target / "README.md").read_text(encoding="utf-8")
+            original_source = (target / "utility.py").read_text(encoding="utf-8")
+
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            gate = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "bootstrap_finalize",
+                    "--provider",
+                    "openai",
+                    "--model-id",
+                    "codex-e2e",
+                    "--tier",
+                    "C3",
+                    "--operator-approved",
+                    "--record",
+                    "--objective",
+                    "Initialize AletheiaOS",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+            inventory = subprocess.run(
+                [sys.executable, ".aletheia/bin/source_inventory.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(inventory.returncode, 0, inventory.stdout + inventory.stderr)
+            customize_minimal_project_truth(target)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/bootstrap_finalize.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertFalse((target / "BOOTSTRAP.md").exists())
+            self.assertEqual((target / "README.md").read_text(encoding="utf-8"), original_readme)
+            self.assertEqual((target / "utility.py").read_text(encoding="utf-8"), original_source)
+            hooks_path = subprocess.run(
+                ["git", "config", "core.hooksPath"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(hooks_path.stdout.strip(), ".aletheia/hooks")
+            committed = subprocess.run(
+                ["git", "show", "--name-only", "--format=%B", "HEAD"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertIn("bootstrap: initialize AletheiaOS", committed.stdout)
+            self.assertIn("AIOS-Agent-Model: codex-e2e", committed.stdout)
+            self.assertIn(".aletheia/governance/CHARTER.md", committed.stdout)
+            self.assertNotIn("utility.py", committed.stdout)
 
 
 if __name__ == "__main__":

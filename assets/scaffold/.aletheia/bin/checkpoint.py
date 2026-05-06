@@ -99,19 +99,6 @@ def load_current_agent_run(root: Path) -> dict:
     run_data = load_json(root / ".aletheia" / "runtime" / "current_agent_run.json")
     if run_data:
         return run_data
-    provider = os.environ.get("AIOS_AGENT_PROVIDER") or os.environ.get("AIOS_PROVIDER")
-    model = os.environ.get("AIOS_MODEL_ID") or os.environ.get("AIOS_MODEL")
-    tier = os.environ.get("AIOS_MODEL_TIER") or os.environ.get("AIOS_CAPABILITY_TIER")
-    task_class = os.environ.get("AIOS_TASK_CLASS")
-    if provider or model or tier or task_class:
-        return {
-            "run_id": os.environ.get("AIOS_AGENT_RUN_ID", "unrecorded-env"),
-            "provider": provider or "unknown",
-            "model_id": model or "unknown",
-            "capability_tier": tier or "unknown",
-            "task_class": task_class or "unknown",
-            "gate_status": os.environ.get("AIOS_GATE_STATUS", "unrecorded"),
-        }
     return {}
 
 
@@ -209,7 +196,7 @@ def main() -> int:
         print("checkpoint blocked: no current AI agent run attribution found")
         print('Run: python3 .aletheia/bin/model_gate.py --task-class <task_class> --record --objective "..."')
         return 4
-    if run_data and run_data.get("gate_status") not in {"allowed", "unrecorded"} and not allow_unattributed:
+    if run_data and run_data.get("gate_status") != "allowed" and not allow_unattributed:
         print("checkpoint blocked: current AI agent run was not allowed by model gate")
         print(f"  run_id: {run_data.get('run_id')}")
         print(f"  gate_status: {run_data.get('gate_status')}")

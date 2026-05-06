@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 import tempfile
@@ -78,6 +79,55 @@ class RuntimeValidateTests(unittest.TestCase):
 
         for pattern in ["/runtime/", "/overview/", "/source_inventory/"]:
             self.assertIn(pattern, ignore)
+
+    def test_source_inventory_excludes_aletheia_control_plane_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/source_inventory.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            inventory = json.loads((target / ".aletheia" / "source_inventory" / "inventory.json").read_text(encoding="utf-8"))
+            paths = {item["path"] for item in inventory["items"]}
+            self.assertNotIn("AGENTS.md", paths)
+            self.assertNotIn("START_HERE.md", paths)
+            self.assertNotIn("BOOTSTRAP.md", paths)
+            self.assertFalse(any(path.startswith(".aletheia/") for path in paths))
+            self.assertFalse(any(path.startswith(".claude/") for path in paths))
+
+    def test_guided_bootstrap_detects_existing_repository_from_real_project_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            src = target / "src"
+            src.mkdir()
+            for name in ["alpha.py", "beta.py", "gamma.py"]:
+                (src / name).write_text("print('project code')\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/guided_bootstrap.py", "--skip-gate", "--objective", "Initialize AletheiaOS"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            report = (target / ".aletheia" / "source_inventory" / "TRUTH_INVENTORY_REPORT.md").read_text(encoding="utf-8")
+            self.assertIn("Initialization mode: existing repository", report)
 
     def test_validate_rejects_missing_claude_settings(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

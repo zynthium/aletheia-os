@@ -317,6 +317,8 @@ python3 .aletheia/bin/checkpoint.py
 
 首次 bootstrap 可以用 `--operator-approved` 明确授权当前模型完成初始化；项目固定后，应把可信模型登记到 `.aletheia/governance/model_registry.json`，后续 durable writes 由 registry 决定。
 
+`guided_bootstrap.py` 会验证已经记录的 bootstrap gate，不会自行创建新的模型授权。`source_inventory.py` 默认跳过 `.aletheia/`、`.claude/` 和初始化根部控制文件，只扫描项目自身资料。
+
 `overview.py` 和 `source_inventory.py` 默认写入 `.aletheia/` 下的 generated/intermediate 目录，不属于 durable project truth；只有显式使用 `--public-docs` 时才生成 `docs/overview/`。
 
 ## 设计原则

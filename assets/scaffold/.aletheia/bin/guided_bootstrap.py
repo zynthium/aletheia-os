@@ -7,6 +7,8 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+TIER_RANK = {"C0": 0, "C1": 1, "C2": 2, "C3": 3, "C4": 4}
+
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
@@ -32,6 +34,45 @@ def infer_mode(items: list[dict]) -> str:
     return "new repository"
 
 
+def tier_rank(tier: str | None) -> int:
+    return TIER_RANK.get(str(tier or ""), -1)
+
+
+def load_current_run(root: Path) -> dict:
+    path = root / ".aletheia" / "runtime" / "current_agent_run.json"
+    if not path.exists():
+        raise SystemExit(
+            "no bootstrap model gate run recorded. Run: "
+            'python3 .aletheia/bin/model_gate.py --task-class bootstrap_finalize --provider <provider> '
+            '--model-id <model_id> --tier C3 --operator-approved --record --objective "Initialize AletheiaOS"'
+        )
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise SystemExit(f"bootstrap model gate run is invalid: {exc}") from exc
+    if not isinstance(data, dict):
+        raise SystemExit("bootstrap model gate run is invalid: expected JSON object")
+    return data
+
+
+def require_bootstrap_gate(root: Path) -> None:
+    run_data = load_current_run(root)
+    if run_data.get("gate_status") != "allowed":
+        raise SystemExit(f"bootstrap model gate was not allowed: {run_data.get('reason', 'gate rejected')}")
+    if run_data.get("task_class") != "bootstrap_finalize":
+        raise SystemExit(
+            "current model gate run is not task_class=bootstrap_finalize: "
+            f"{run_data.get('task_class', 'unknown')}"
+        )
+    if tier_rank(run_data.get("capability_tier")) < tier_rank("C3"):
+        raise SystemExit(
+            "bootstrap model gate requires capability tier C3 or higher: "
+            f"{run_data.get('capability_tier', 'unknown')}"
+        )
+    if run_data.get("write_allowed") is not True:
+        raise SystemExit("current bootstrap model gate run does not allow bootstrap writes")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Prepare an AletheiaOS guided project truth inventory report.")
     parser.add_argument("--objective", default="Initialize AletheiaOS")
@@ -41,19 +82,7 @@ def main() -> int:
 
     root = repo_root()
     if not args.skip_gate:
-        run_required(
-            [
-                "python3",
-                ".aletheia/bin/model_gate.py",
-                "--task-class",
-                "bootstrap_finalize",
-                "--record",
-                "--objective",
-                args.objective,
-            ],
-            root,
-            "model gate",
-        )
+        require_bootstrap_gate(root)
     if not args.skip_inventory:
         run_required(["python3", ".aletheia/bin/source_inventory.py"], root, "source inventory")
 

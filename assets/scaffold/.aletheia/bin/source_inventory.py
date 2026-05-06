@@ -12,6 +12,10 @@ EXCLUDED_DIRS = {
     ".git",
     ".hg",
     ".svn",
+    ".agents",
+    ".aletheia",
+    ".claude",
+    ".codex",
     ".venv",
     "venv",
     "env",
@@ -27,6 +31,7 @@ EXCLUDED_DIRS = {
     "vendor",
     "target",
 }
+EXCLUDED_ROOT_FILES = {"AGENTS.md", "START_HERE.md", "BOOTSTRAP.md"}
 SENSITIVE_PATTERNS = [
     re.compile(pattern, re.I)
     for pattern in [
@@ -117,6 +122,8 @@ def iter_files(root: Path):
             path = base_path / name
             rel = path.relative_to(root)
             if rel.parts and rel.parts[0] in EXCLUDED_DIRS:
+                continue
+            if len(rel.parts) == 1 and rel.name in EXCLUDED_ROOT_FILES:
                 continue
             yield rel
 

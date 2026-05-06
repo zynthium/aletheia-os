@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import secrets
+import shlex
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -52,6 +53,7 @@ READ_ONLY_BASH_PREFIXES = (
     "python3 .aletheia/bin/context_pack.py",
     "python3 .aletheia/bin/validate.py",
 )
+SHELL_CONTROL_TOKENS = ("&&", "||", ";", "|", ">", "<", "\n", "`", "$(")
 
 
 def repo_root() -> Path:
@@ -254,6 +256,30 @@ def payload_has_write_intent(payload: dict[str, Any]) -> bool:
     return False
 
 
+def standalone_model_gate_record_command(command: str) -> bool:
+    stripped = command.strip()
+    if any(token in stripped for token in SHELL_CONTROL_TOKENS):
+        return False
+    try:
+        parts = shlex.split(stripped)
+    except ValueError:
+        return False
+    if len(parts) < 3:
+        return False
+    if parts[0] != "python3" or parts[1] != ".aletheia/bin/model_gate.py":
+        return False
+    if "--hook-mode" in parts:
+        return False
+    return "--record" in parts
+
+
+def payload_is_standalone_model_gate_record(payload: dict[str, Any]) -> bool:
+    if payload.get("tool_name") != "Bash":
+        return False
+    command = str((payload.get("tool_input") or {}).get("command", ""))
+    return standalone_model_gate_record_command(command)
+
+
 def hook_deny(reason: str) -> int:
     print(
         json.dumps(
@@ -291,11 +317,24 @@ def pre_tool_use(args: argparse.Namespace) -> int:
         payload = {}
     if not payload_has_write_intent(payload):
         return 0
+    if payload_is_standalone_model_gate_record(payload):
+        return 0
     current = load_current_run(repo_root())
     if not current:
+        command = str((payload.get("tool_input") or {}).get("command", ""))
+        if "model_gate.py" in command:
+            return hook_deny(
+                "AletheiaOS model gate blocked this command. Before a current agent run exists, "
+                "only a standalone model gate record command is allowed."
+            )
         return hook_deny("AletheiaOS model gate blocked a write-capable tool call because no current agent run is recorded.")
     if current.get("gate_status") != "allowed":
         return hook_deny(f"AletheiaOS model gate blocked a write-capable tool call: {current.get('reason', 'gate rejected')}")
+    if current.get("write_allowed") is not True:
+        return hook_deny(
+            "AletheiaOS model gate blocked a write-capable tool call because "
+            f"task_class={current.get('task_class', 'unknown')} does not allow write-capable tool calls."
+        )
     return 0
 
 

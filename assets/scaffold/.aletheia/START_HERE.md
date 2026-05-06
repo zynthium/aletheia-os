@@ -49,6 +49,8 @@ After bootstrap, register trusted models in `.aletheia/governance/model_registry
 
 ## Bootstrap Commands
 
+Run the first-run bootstrap model gate command above before guided bootstrap. `guided_bootstrap.py` verifies that recorded gate instead of creating a new one.
+
 ```bash
 python3 .aletheia/bin/source_inventory.py
 python3 .aletheia/bin/guided_bootstrap.py --objective "Initialize AletheiaOS"

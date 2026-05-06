@@ -31,10 +31,6 @@ REQUIRED_PATHS = [
     ".aletheia/contracts/INDEX.md",
     ".aletheia/evidence/INDEX.md",
     ".aletheia/hypotheses/.gitkeep",
-    ".aletheia/truth_intake/inbox/.gitkeep",
-    ".aletheia/truth_intake/runs/.gitkeep",
-    ".aletheia/truth_intake/registry.json",
-    ".aletheia/truth_intake/PROMOTION_LOG.md",
     ".aletheia/nodes/ROOT.yaml",
     ".aletheia/playbooks/guided_bootstrap.md",
     ".aletheia/bin/orient.py",
@@ -46,7 +42,6 @@ REQUIRED_PATHS = [
     ".aletheia/bin/bootstrap_finalize.py",
     ".aletheia/bin/intake_inventory.py",
     ".aletheia/bin/guided_bootstrap.py",
-    ".aletheia/bin/truth_intake.py",
     ".aletheia/bin/change_hook.py",
     ".aletheia/bin/stop_hook.py",
     ".aletheia/templates/DECISION.md",
@@ -60,10 +55,6 @@ REQUIRED_PATHS = [
     ".aletheia/templates/AGENT_RUN.json",
     ".aletheia/templates/TRUTH_INVENTORY_REPORT.md",
     ".aletheia/templates/TRUTH_INTAKE_MANIFEST.yaml",
-    ".aletheia/templates/CONVERSATION_DIGEST.md",
-    ".aletheia/templates/BOOTSTRAP_SYNTHESIS_PACKET.md",
-    ".aletheia/templates/FUSION_PACKET.md",
-    ".aletheia/templates/PROMOTION_LOG.md",
 ]
 
 REQUIRED_SKELETON_ROOT_FIELDS = [

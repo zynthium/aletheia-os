@@ -1,8 +1,8 @@
 # Intake Policy
 
-Existing material is not automatically true. During bootstrap or research
-intake, inventory source material, classify reliability and sensitivity, and
-synthesize candidate truth with provenance before promotion.
+Existing material is not automatically true. During bootstrap, inventory prior
+materials, classify reliability and sensitivity, and synthesize durable state
+with provenance.
 
 ## Categories
 
@@ -17,19 +17,11 @@ synthesize candidate truth with provenance before promotion.
 
 ## Required Output
 
-Research intake must write or update `.aletheia/truth_intake/registry.json`
-and use `.aletheia/truth_intake/runs/<run_id>/` for temporary intake work.
-The completed run workspace should be removed by
-`.aletheia/bin/truth_intake.py finish` after the final checkpoint.
-
-Bootstrap or fusion packets must include:
+Bootstrap must write `.aletheia/bootstrap_intake/IMPORT_REPORT.md` with:
 
 - initialization mode;
 - inventory summary;
 - classification summary;
 - sensitive exclusions;
-- candidate truth records;
+- durable records created or updated;
 - unresolved questions.
-
-Promoted items must be recorded in `.aletheia/truth_intake/PROMOTION_LOG.md`
-and linked from the durable truth records they update.

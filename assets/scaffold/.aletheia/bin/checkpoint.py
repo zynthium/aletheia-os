@@ -135,21 +135,6 @@ def infer_message(files: list[str]) -> str:
         return "bootstrap: initialize AletheiaOS"
     if any(file.startswith(".aletheia/evidence/") for file in files):
         return "evidence: update evidence ledger"
-    if any(
-        file.startswith(".aletheia/truth_intake/runs/") and ("source_manifest" in file or file.endswith("/"))
-        for file in files
-    ):
-        return "intake: stage research sources"
-    if any(file.startswith(".aletheia/truth_intake/runs/") and "digest" in file for file in files):
-        return "intake: digest research sources"
-    if any(file.startswith(".aletheia/truth_intake/runs/") and "PACKET" in file for file in files):
-        return "intake: synthesize candidate truth packet"
-    if any(file == ".aletheia/truth_intake/PROMOTION_LOG.md" for file in files):
-        return "truth: promote research synthesis"
-    if any(file.startswith(".aletheia/truth_intake/") for file in files):
-        if any(file.startswith(".aletheia/truth_intake/runs/") for file in files):
-            return "intake: finish and clean research intake"
-        return "intake: stage research sources"
     if any(file.startswith(".aletheia/decisions/") for file in files):
         return "decision: update decision records"
     if any(file.startswith(".aletheia/contracts/") for file in files):

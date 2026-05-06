@@ -222,38 +222,7 @@ python3 scripts/validate_scaffold.py assets/scaffold
   bin/
 ```
 
-`bin/` 提供 orient、context pack、model gate、truth intake、intake inventory、guided bootstrap、overview、validate、bootstrap finalize、checkpoint 和 Claude hook runtime。
-
-## 从研究对话初始化
-
-如果你先在 ChatGPT 网页版或 App 中建立项目文件夹并产生了大量研究对话，可以把导出的 `zip/json/md/txt/html` 放入目标仓库：
-
-```text
-.aletheia/truth_intake/inbox/
-```
-
-然后运行 git-native 摄入流程：
-
-```bash
-python3 .aletheia/bin/truth_intake.py begin --objective "<project objective>"
-python3 .aletheia/bin/truth_intake.py stage --run <run_id>
-python3 .aletheia/bin/checkpoint.py --auto --message "intake: stage research sources"
-python3 .aletheia/bin/truth_intake.py digest-plan --run <run_id>
-python3 .aletheia/bin/checkpoint.py --auto --message "intake: digest research sources"
-python3 .aletheia/bin/truth_intake.py packet --run <run_id>
-python3 .aletheia/bin/checkpoint.py --auto --message "intake: synthesize candidate truth packet"
-```
-
-首次没有 baseline 时，packet 是候选初始骨架；已有 baseline 后，packet 只处理新增或变化的资料并走融合流程。文件名变化、空白和换行微变不会触发重新摄入；内容微变只处理变化 chunk。
-
-审核候选包后，把确认的内容晋升到正式 truth records，并记录 `.aletheia/truth_intake/PROMOTION_LOG.md`。完成后清理中间态：
-
-```bash
-python3 .aletheia/bin/truth_intake.py finish --run <run_id>
-python3 .aletheia/bin/checkpoint.py --auto --message "intake: finish and clean research intake"
-```
-
-摄入期间的 run workspace 会进入阶段 checkpoint，避免大量资料处理到一半时返工；摄入完成后当前树只保留 registry、promotion log 和正式 truth records，完整中间态可从 git history 找回。
+`bin/` 提供 orient、context pack、model gate、intake inventory、guided bootstrap、overview、validate、bootstrap finalize、checkpoint 和 Claude hook runtime。
 
 ## 推荐闭环
 
@@ -283,10 +252,6 @@ python3 .aletheia/bin/bootstrap_finalize.py
 python3 .aletheia/bin/orient.py
 python3 .aletheia/bin/context_pack.py
 python3 .aletheia/bin/model_gate.py --task-class <task_class> --provider <provider> --model-id <model_id> --record --objective "<objective>"
-python3 .aletheia/bin/truth_intake.py begin --objective "<objective>"
-python3 .aletheia/bin/truth_intake.py stage --run <run_id>
-python3 .aletheia/bin/truth_intake.py packet --run <run_id>
-python3 .aletheia/bin/truth_intake.py finish --run <run_id>
 python3 .aletheia/bin/intake_inventory.py
 python3 .aletheia/bin/guided_bootstrap.py --objective "<objective>"
 python3 .aletheia/bin/overview.py

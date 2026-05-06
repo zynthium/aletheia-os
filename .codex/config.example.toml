@@ -1,7 +1,0 @@
-# Optional Codex local config example.
-# Copy selected settings to ~/.codex/config.toml if desired.
-
-# project_doc_max_bytes = 65536
-# project_doc_fallback_filenames = ["AGENTS.md", "CLAUDE.md"]
-
-# Keep repo-level instructions concise; use .agents/skills for repeatable workflows.

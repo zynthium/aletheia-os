@@ -642,6 +642,30 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("AIOS-Agent-Model: codex-e2e", committed.stdout)
             self.assertIn(".aletheia/state/ACTIVE_STATE.md", committed.stdout)
 
+    def test_stop_hook_validation_failure_does_not_recommend_checkpoint(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".claude" / "settings.json").unlink()
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/stop_hook.py"],
+                cwd=target,
+                input=json.dumps({"hook_event_name": "Stop"}),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("validation failed", output)
+            self.assertIn("Do not finalize this task", output)
+            self.assertNotIn("Recommended next command", output)
+            self.assertNotIn("checkpoint candidate:", output)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -328,6 +328,134 @@ class BootstrapFinalizeTests(unittest.TestCase):
             self.assertIn(".aletheia/governance/CHARTER.md", committed.stdout)
             self.assertNotIn("utility.py", committed.stdout)
 
+    def test_bootstrap_finalize_keep_bootstrap_no_checkpoint_installs_hooks_without_commit(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=False)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=target, check=False)
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            gate = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "bootstrap_finalize",
+                    "--provider",
+                    "openai",
+                    "--model-id",
+                    "codex-e2e",
+                    "--tier",
+                    "C3",
+                    "--operator-approved",
+                    "--record",
+                    "--objective",
+                    "Initialize AletheiaOS",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+            customize_minimal_project_truth(target)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/bootstrap_finalize.py", "--keep-bootstrap", "--no-checkpoint"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("bootstrap finalized", output)
+            self.assertTrue((target / "BOOTSTRAP.md").exists())
+            self.assertTrue((target / ".aletheia" / "hooks" / "pre-commit").exists())
+            hooks_path = subprocess.run(
+                ["git", "config", "core.hooksPath"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(hooks_path.stdout.strip(), ".aletheia/hooks")
+            log = subprocess.run(
+                ["git", "log", "--oneline"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(log.stdout.strip(), "")
+
+    def test_installed_pre_commit_hook_blocks_invalid_truth_layer_commit(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=False)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=target, check=False)
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            gate = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "bootstrap_finalize",
+                    "--provider",
+                    "openai",
+                    "--model-id",
+                    "codex-e2e",
+                    "--tier",
+                    "C3",
+                    "--operator-approved",
+                    "--record",
+                    "--objective",
+                    "Initialize AletheiaOS",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+            customize_minimal_project_truth(target)
+            finalize = subprocess.run(
+                [sys.executable, ".aletheia/bin/bootstrap_finalize.py", "--no-checkpoint"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(finalize.returncode, 0, finalize.stdout + finalize.stderr)
+            (target / ".claude" / "settings.json").unlink()
+            subprocess.run(["git", "add", "-A"], cwd=target, check=False)
+
+            commit = subprocess.run(
+                ["git", "commit", "-m", "test: invalid truth layer"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = commit.stdout + commit.stderr
+            self.assertNotEqual(commit.returncode, 0, output)
+            self.assertIn("AletheiaOS validation failed", output)
+            self.assertIn("missing required path: .claude/settings.json", output)
+
 
 if __name__ == "__main__":
     unittest.main()

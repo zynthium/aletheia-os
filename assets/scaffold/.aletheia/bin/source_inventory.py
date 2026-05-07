@@ -115,6 +115,9 @@ def iter_files(root: Path):
     for base, dirs, files in os.walk(root):
         base_path = Path(base)
         rel_base = base_path.relative_to(root)
+        if rel_base.parts and (base_path / ".git").exists():
+            dirs[:] = []
+            continue
         dirs[:] = [name for name in dirs if name not in EXCLUDED_DIRS]
         if rel_base.parts and rel_base.parts[0] in EXCLUDED_DIRS:
             continue

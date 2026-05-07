@@ -156,6 +156,27 @@ class PluginManifestTests(unittest.TestCase):
             ).exists()
         )
 
+    def test_wiki_handoff_promotion_protocol_requires_dedup_and_conflict_resolution(self) -> None:
+        playbook = (
+            ROOT
+            / "assets"
+            / "scaffold"
+            / ".aletheia"
+            / "playbooks"
+            / "wiki_handoff_promotion.md"
+        ).read_text(encoding="utf-8")
+        skill = (ROOT / "skills" / "aletheia-promote" / "SKILL.md").read_text(encoding="utf-8")
+        combined = (playbook + "\n" + skill).lower()
+
+        for required in [
+            "deduplicate",
+            "duplicate promotion",
+            "conflicting claims",
+            "do not promote both sides as accepted truth",
+            "update the existing truth record",
+        ]:
+            self.assertIn(required, combined)
+
     def test_readme_documents_simple_installation(self) -> None:
         readme = (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
 

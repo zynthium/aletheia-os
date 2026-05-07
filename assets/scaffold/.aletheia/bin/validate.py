@@ -213,6 +213,26 @@ def has_nonempty_section(text: str, section_name: str) -> bool:
     return body is not None and bool(body.strip())
 
 
+def markdown_title(text: str, prefix: str) -> str | None:
+    match = re.search(rf"(?im)^#\s+{re.escape(prefix)}:\s*(.+?)\s*$", text)
+    if not match:
+        return None
+    return re.sub(r"\s+", " ", match.group(1).strip()).lower()
+
+
+def markdown_refs(text: str) -> list[str]:
+    refs: list[str] = []
+    refs.extend(re.findall(r"`([^`]+)`", text))
+    refs.extend(re.findall(r"\[.+?\]\(([^)]+)\)", text))
+    for line in text.splitlines():
+        item = re.match(r"^\s*-\s+(.+?)\s*$", line)
+        if item:
+            value = item.group(1).strip().strip("\"'")
+            if value and not value.startswith("[") and "`" not in value:
+                refs.append(value)
+    return refs
+
+
 def truth_record_files(root: Path, rel: str) -> list[Path]:
     directory = root / ".aletheia" / rel
     if not directory.exists():
@@ -225,6 +245,7 @@ def truth_record_files(root: Path, rel: str) -> list[Path]:
 
 
 def validate_truth_record_semantics(root: Path, errors: list[str]) -> None:
+    accepted_decisions: dict[str, str] = {}
     for path in truth_record_files(root, "evidence"):
         text = path.read_text(encoding="utf-8")
         for section in ["Source refs", "Limitations", "Invalidation criteria", "Confidence impact"]:
@@ -240,9 +261,26 @@ def validate_truth_record_semantics(root: Path, errors: list[str]) -> None:
 
     for path in truth_record_files(root, "decisions"):
         text = path.read_text(encoding="utf-8")
-        if re.search(r"(?im)^Status:\s*accepted\s*$", text) and not has_nonempty_section(text, "Evidence links"):
+        if not re.search(r"(?im)^Status:\s*accepted\s*$", text):
+            continue
+        rel = path.relative_to(root).as_posix()
+        title = markdown_title(text, "Decision")
+        if title:
+            if title in accepted_decisions:
+                errors.append(f"duplicate accepted decision title: {title}")
+            else:
+                accepted_decisions[title] = rel
+        evidence_links = section_body(text, "Evidence links")
+        if not evidence_links:
             rel = path.relative_to(root).as_posix()
             errors.append(f"accepted decision missing evidence links: {rel}")
+            continue
+        for ref in markdown_refs(evidence_links):
+            target = resolve_truth_ref(root, ref)
+            if target is None:
+                errors.append(f"accepted decision evidence link is outside allowed truth records: {ref}")
+            elif not target.exists():
+                errors.append(f"accepted decision evidence link target missing: {target.relative_to(root).as_posix()}")
 
 
 def validate_claude_settings(root: Path, errors: list[str]) -> None:

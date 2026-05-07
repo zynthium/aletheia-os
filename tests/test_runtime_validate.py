@@ -309,6 +309,33 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("研究 资料/市场 建模.md", paths)
             self.assertNotIn("outside-link.md", paths)
 
+    def test_source_inventory_skips_nested_git_repositories(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            nested = target / "examples" / "external-repo"
+            nested.mkdir(parents=True)
+            (nested / ".git").mkdir()
+            (nested / "README.md").write_text("# External repo\n", encoding="utf-8")
+            (target / "examples" / "local-note.md").write_text("# Local note\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/source_inventory.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            inventory = json.loads((target / ".aletheia" / "source_inventory" / "inventory.json").read_text(encoding="utf-8"))
+            paths = {item["path"] for item in inventory["items"]}
+            self.assertIn("examples/local-note.md", paths)
+            self.assertNotIn("examples/external-repo/README.md", paths)
+
     def test_source_inventory_reports_output_path_conflict_without_traceback(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
@@ -489,6 +516,62 @@ class RuntimeValidateTests(unittest.TestCase):
                 "accepted decision missing evidence links: .aletheia/decisions/DEC-0001.md",
                 output,
             )
+
+    def test_validate_rejects_accepted_decision_links_to_missing_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            decision = target / ".aletheia" / "decisions" / "DEC-missing-evidence.md"
+            decision.write_text(
+                "# Decision: missing evidence link\n\n"
+                "Status: accepted\n\n"
+                "## Context\n\nA decision with a stale evidence reference.\n\n"
+                "## Decision\n\nAccept the stale link for testing.\n\n"
+                "## Evidence links\n\n- `.aletheia/evidence/EV-does-not-exist.md`\n",
+                encoding="utf-8",
+            )
+
+            result = validate_target(target)
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn(
+                "accepted decision evidence link target missing: .aletheia/evidence/EV-does-not-exist.md",
+                output,
+            )
+
+    def test_validate_rejects_duplicate_accepted_decision_titles(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            evidence = target / ".aletheia" / "evidence" / "EV-dup-decision.md"
+            evidence.write_text(
+                "# Evidence: duplicate decision support\n\n"
+                "## Source refs\n\n- `README.md`\n\n"
+                "## Method\n\nRead project docs.\n\n"
+                "## Result\n\nThe same decision should not be accepted twice.\n\n"
+                "## Limitations\n\nSingle sample.\n\n"
+                "## Invalidation criteria\n\nContradicting evidence appears.\n\n"
+                "## Confidence impact\n\nRaises confidence.\n",
+                encoding="utf-8",
+            )
+            for name in ["DEC-first.md", "DEC-second.md"]:
+                (target / ".aletheia" / "decisions" / name).write_text(
+                    "# Decision: use market-structure-gated factors\n\n"
+                    "Status: accepted\n\n"
+                    "## Context\n\nDuplicate decision title.\n\n"
+                    "## Decision\n\nAccept the same architectural choice.\n\n"
+                    "## Evidence links\n\n- `.aletheia/evidence/EV-dup-decision.md`\n",
+                    encoding="utf-8",
+                )
+
+            result = validate_target(target)
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn("duplicate accepted decision title: use market-structure-gated factors", output)
 
     def test_orient_outputs_truth_layer_sections(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

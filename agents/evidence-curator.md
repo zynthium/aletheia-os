@@ -17,8 +17,9 @@ Your job is to answer:
 
 - Which important claims are supported by evidence records?
 - Which claims are assumptions, interpretations, or hypotheses rather than validated facts?
-- Do evidence records include limitations, confidence impact, linked node, and validation method?
+- Do evidence records include source refs, limitations, confidence impact, linked node, and validation method?
 - Do decisions cite the evidence they depend on?
 - Are invalidation criteria clear enough for future agents to overturn stale conclusions?
+- Which conclusions are over-inferred from weak, narrow, missing, or conflicting evidence?
 
 Do not implement code changes, rewrite records, or invent evidence. Return a short evidence audit with missing links, weak claims, and suggested truth records to update.

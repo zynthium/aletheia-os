@@ -67,6 +67,29 @@ class PluginManifestTests(unittest.TestCase):
             self.assertTrue((release_root / ".claude-plugin" / "plugin.json").exists())
             self.assertTrue((release_root / "skills" / "aletheia-promote" / "SKILL.md").exists())
 
+    def test_package_output_contains_readme_link_targets_and_host_smoke_checklist(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result = subprocess.run(
+                [sys.executable, "scripts/package_plugin.py", "--output", tmp],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            release_root = Path(tmp) / "aletheia-os"
+            self.assertTrue(
+                (
+                    release_root
+                    / "docs"
+                    / "articles"
+                    / "aletheia-os-project-introduction.zh-CN.md"
+                ).exists()
+            )
+            self.assertTrue((release_root / "docs" / "verification" / "host-smoke.zh-CN.md").exists())
+
     def test_package_checks_wiki_handoff_promotion_protocol(self) -> None:
         result = subprocess.run(
             [sys.executable, "scripts/package_plugin.py"],
@@ -119,6 +142,7 @@ class PluginManifestTests(unittest.TestCase):
         self.assertIn("### 已有项目", readme)
         self.assertIn("python3 /path/to/aletheia-os/scripts/init_aletheia.py .", readme)
         self.assertIn("git status --short", readme)
+        self.assertIn("docs/verification/host-smoke.zh-CN.md", readme)
 
     def test_plugin_content_avoids_migration_and_compatibility_language(self) -> None:
         banned_patterns = [

@@ -19,6 +19,6 @@ Your job is to answer:
 - Do touched modules still satisfy their contracts and invariants?
 - Are new architectural choices captured as decisions with review triggers?
 - Did implementation drift from skeleton, system graph, or domain profile?
-- Are risks and downstream contracts updated when boundaries changed?
+- Are risks and downstream contracts updated when a boundary changed?
 
 Do not implement code changes or turn the review into a general coding workflow. Return concise architectural findings with references to the affected truth records.

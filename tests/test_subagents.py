@@ -42,6 +42,37 @@ class SubagentPackagingTests(unittest.TestCase):
             self.assertIn("Do not implement code changes", claude_text)
             self.assertIn("Do not implement code changes", codex["developer_instructions"])
 
+    def test_subagents_define_concrete_truth_review_outputs(self) -> None:
+        expectations = {
+            "truth-auditor": [
+                "mission",
+                "active state",
+                "Global View Checksum",
+                "contradictions",
+                "file paths",
+            ],
+            "evidence-curator": [
+                "claim",
+                "evidence",
+                "source refs",
+                "invalidation",
+                "over-inferred",
+            ],
+            "architecture-reviewer": [
+                "contracts",
+                "skeleton",
+                "node",
+                "boundary",
+                "drift",
+            ],
+        }
+        for name, phrases in expectations.items():
+            claude_text = (ROOT / "agents" / f"{name}.md").read_text(encoding="utf-8")
+            codex = tomllib.loads((ROOT / "codex-agents" / f"{name}.toml").read_text(encoding="utf-8"))
+            combined = f"{claude_text}\n{codex['developer_instructions']}".lower()
+            for phrase in phrases:
+                self.assertIn(phrase.lower(), combined, f"{name} missing review output phrase: {phrase}")
+
     def test_agent_surface_stays_small_and_optional(self) -> None:
         claude_agents = sorted(path.stem for path in (ROOT / "agents").glob("*.md"))
         codex_agents = sorted(path.stem for path in (ROOT / "codex-agents").glob("*.toml"))

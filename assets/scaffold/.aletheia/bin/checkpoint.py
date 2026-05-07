@@ -178,7 +178,6 @@ def main() -> int:
     parser.add_argument("--allow-code-only", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--no-model-gate", action="store_true")
-    parser.add_argument("--state-only", action="store_true")
     parser.add_argument("--include-worktree", action="store_true", help="Stage the full worktree instead of only AletheiaOS state paths.")
     args = parser.parse_args()
 

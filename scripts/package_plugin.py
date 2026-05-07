@@ -82,6 +82,7 @@ PACKAGE_DIRS = [
     "agents",
     "codex-agents",
     "skills",
+    "docs",
     "assets",
     "scripts",
     "README.zh-CN.md",

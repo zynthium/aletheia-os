@@ -157,6 +157,8 @@ claude plugin validate .
 claude --plugin-dir .
 ```
 
+真实宿主 smoke 验收见 [Host Smoke Checklist](docs/verification/host-smoke.zh-CN.md)。
+
 ## 可选 subagents
 
 AletheiaOS 提供 3 个可选的真相层审阅 subagents，不改变核心闭环，也不会写入目标仓库的默认 scaffold：

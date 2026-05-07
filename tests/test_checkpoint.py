@@ -28,6 +28,20 @@ class CheckpointTests(unittest.TestCase):
 
         self.assertNotIn('"docs/overview/"', text)
 
+    def test_checkpoint_cli_does_not_expose_dead_state_only_argument(self) -> None:
+        result = subprocess.run(
+            [sys.executable, "assets/scaffold/.aletheia/bin/checkpoint.py", "--help"],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        output = result.stdout + result.stderr
+        self.assertEqual(result.returncode, 0, output)
+        self.assertNotIn("--state-only", output)
+
     def test_checkpoint_dry_run_reports_agent_attribution(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

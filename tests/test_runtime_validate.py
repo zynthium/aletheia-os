@@ -221,6 +221,44 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertFalse(by_path["reports/big.csv"]["should_read_full_content"])
             self.assertEqual(by_path["docs/archive/old-design.md"]["initial_classification"], "historical_context")
 
+    def test_source_inventory_skips_heavy_generated_dependency_directories(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            for rel in [
+                "node_modules/package/index.js",
+                ".venv/lib/python/site-packages/lib.py",
+                "target/debug/build.log",
+                "vendor/library/source.c",
+                ".pytest_cache/v/cache/nodeids",
+            ]:
+                path = target / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("generated dependency content\n", encoding="utf-8")
+            (target / "src" / "main.py").parent.mkdir()
+            (target / "src" / "main.py").write_text("print('project source')\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/source_inventory.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            inventory = json.loads((target / ".aletheia" / "source_inventory" / "inventory.json").read_text(encoding="utf-8"))
+            paths = {item["path"] for item in inventory["items"]}
+            self.assertIn("src/main.py", paths)
+            self.assertFalse(any(path.startswith("node_modules/") for path in paths))
+            self.assertFalse(any(path.startswith(".venv/") for path in paths))
+            self.assertFalse(any(path.startswith("target/") for path in paths))
+            self.assertFalse(any(path.startswith("vendor/") for path in paths))
+            self.assertFalse(any(path.startswith(".pytest_cache/") for path in paths))
+
     def test_guided_bootstrap_detects_existing_repository_from_real_project_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

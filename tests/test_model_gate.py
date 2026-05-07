@@ -218,6 +218,57 @@ class ModelGateTests(unittest.TestCase):
             self.assertIn("permissionDecision", output)
             self.assertIn("does not allow write-capable tool calls", output)
 
+    def test_pretooluse_rejects_bash_commands_that_only_look_read_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+
+            for command in [
+                "git status && touch should-not-run",
+                "git status > status.txt",
+                "lsbad",
+                "python3 .aletheia/bin/validate.py && touch should-not-run",
+            ]:
+                result = self.run_pretooluse_hook(
+                    target,
+                    {"tool_name": "Bash", "tool_input": {"command": command}},
+                )
+
+                output = result.stdout + result.stderr
+                self.assertEqual(result.returncode, 0, output)
+                self.assertIn("permissionDecision", output, command)
+                self.assertIn("no current agent run", output, command)
+
+    def test_pretooluse_allows_strict_read_only_bash_commands_without_agent_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+
+            for command in [
+                "git status --short",
+                "git diff -- .aletheia/state/ACTIVE_STATE.md",
+                "ls .aletheia",
+                "pwd",
+                "sed -n 1,80p .aletheia/START_HERE.md",
+                "rg AletheiaOS .aletheia/START_HERE.md",
+                "find .aletheia -maxdepth 1 -type f",
+                "python3 .aletheia/bin/orient.py",
+                "python3 .aletheia/bin/context_pack.py",
+                "python3 .aletheia/bin/validate.py",
+            ]:
+                result = self.run_pretooluse_hook(
+                    target,
+                    {"tool_name": "Bash", "tool_input": {"command": command}},
+                )
+
+                output = result.stdout + result.stderr
+                self.assertEqual(result.returncode, 0, output)
+                self.assertNotIn("permissionDecision", output, command)
+
     def test_registered_model_alias_denied_model_and_self_attested_policy_matrix(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

@@ -110,6 +110,25 @@ class PluginManifestTests(unittest.TestCase):
             self.assertFalse(stale.exists())
             self.assertTrue((release_root / ".codex-plugin" / "plugin.json").exists())
 
+    def test_package_output_rejects_existing_file_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "not-a-directory"
+            output.write_text("occupied\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, "scripts/package_plugin.py", "--output", str(output)],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            combined = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, combined)
+            self.assertIn("output path exists and is not a directory", combined)
+            self.assertNotIn("Traceback", combined)
+
     def test_package_checks_wiki_handoff_promotion_protocol(self) -> None:
         result = subprocess.run(
             [sys.executable, "scripts/package_plugin.py"],

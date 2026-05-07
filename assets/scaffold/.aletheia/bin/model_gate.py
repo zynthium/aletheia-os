@@ -39,20 +39,13 @@ DEFAULT_TASK_CLASSES = {
 
 TIER_RANK = {"C0": 0, "C1": 1, "C2": 2, "C3": 3, "C4": 4}
 WRITE_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
-READ_ONLY_BASH_PREFIXES = (
-    "git status",
-    "git diff",
-    "git log",
-    "git show",
-    "ls",
-    "pwd",
-    "sed ",
-    "rg ",
-    "find ",
-    "python3 .aletheia/bin/orient.py",
-    "python3 .aletheia/bin/context_pack.py",
-    "python3 .aletheia/bin/validate.py",
-)
+READ_ONLY_GIT_SUBCOMMANDS = {"status", "diff", "log", "show"}
+READ_ONLY_LOCAL_COMMANDS = {"ls", "pwd", "sed", "rg", "find"}
+READ_ONLY_ALETHEIA_SCRIPTS = {
+    ".aletheia/bin/orient.py",
+    ".aletheia/bin/context_pack.py",
+    ".aletheia/bin/validate.py",
+}
 SHELL_CONTROL_TOKENS = ("&&", "||", ";", "|", ">", "<", "\n", "`", "$(")
 
 
@@ -243,7 +236,21 @@ def load_current_run(root: Path) -> dict[str, Any] | None:
 
 def bash_is_read_only(command: str) -> bool:
     stripped = command.strip()
-    return any(stripped == prefix.strip() or stripped.startswith(prefix) for prefix in READ_ONLY_BASH_PREFIXES)
+    if not stripped or any(token in stripped for token in SHELL_CONTROL_TOKENS):
+        return False
+    try:
+        parts = shlex.split(stripped)
+    except ValueError:
+        return False
+    if not parts:
+        return False
+    if parts[0] == "git" and len(parts) >= 2:
+        return parts[1] in READ_ONLY_GIT_SUBCOMMANDS
+    if parts[0] in READ_ONLY_LOCAL_COMMANDS:
+        return True
+    if len(parts) >= 2 and parts[0] == "python3":
+        return parts[1] in READ_ONLY_ALETHEIA_SCRIPTS
+    return False
 
 
 def payload_has_write_intent(payload: dict[str, Any]) -> bool:

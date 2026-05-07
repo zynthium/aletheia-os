@@ -198,8 +198,12 @@ def validate_marketplaces(claude_marketplace: dict, codex_marketplace: dict) -> 
 
 
 def copy_release(root: Path, output: Path, plugin_name: str) -> Path:
+    if output.exists() and not output.is_dir():
+        raise ValueError(f"output path exists and is not a directory: {output}")
     release_root = output / plugin_name
     if release_root.exists():
+        if not release_root.is_dir():
+            raise ValueError(f"release path exists and is not a directory: {release_root}")
         shutil.rmtree(release_root)
     release_root.mkdir(parents=True)
 
@@ -242,7 +246,10 @@ def main() -> int:
 
     print("plugin package smoke check passed")
     if args.output:
-        release_root = copy_release(root, args.output.resolve(), manifest["name"])
+        try:
+            release_root = copy_release(root, args.output.resolve(), manifest["name"])
+        except ValueError as exc:
+            parser.error(str(exc))
         print(f"release package written: {release_root}")
     return 0
 

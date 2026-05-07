@@ -24,8 +24,8 @@ CAPABILITIES = [
     ),
     (
         "Refresh context",
-        "Build a fuller context pack for long sessions and handoffs.",
-        ["python3 .aletheia/bin/context_pack.py"],
+        "Build a stable context pack, with optional run/session context at the end.",
+        ["python3 .aletheia/bin/context_pack.py", "python3 .aletheia/bin/context_pack.py --with-runtime"],
     ),
     (
         "Create truth records",

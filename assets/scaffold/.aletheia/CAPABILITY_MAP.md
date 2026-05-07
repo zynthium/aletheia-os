@@ -12,7 +12,7 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 | Initialize AletheiaOS scaffold | `python3 scripts/init_aletheia.py <repo>` or `aletheia-bootstrap` | Run init script | Done | Writes `.aletheia/`, root guidance, and Claude hooks without overwriting existing files. |
 | Discover AletheiaOS capabilities | `python3 .aletheia/bin/help.py` | Print outcome-level capability guide | Done | Use when the user asks what AletheiaOS can do. |
 | Orient on project truth | `python3 .aletheia/bin/orient.py` or `aletheia-orient` | Read truth files and active node records | Done | Default output is stable and compact; use `--with-runtime` for current run/session context or `--static` for the smallest output. |
-| Build context pack | `python3 .aletheia/bin/context_pack.py` | Read core truth, capabilities, activity, and record inventory | Done | Use for full dynamic grounding in long sessions. |
+| Build context pack | `python3 .aletheia/bin/context_pack.py` | Read core truth, capabilities, source summary, and record inventory | Done | Default output keeps stable truth first; use `--with-runtime` to append current run and recent session notes. |
 | List truth records | `python3 .aletheia/bin/truth_record.py list <entity>` | Read truth record directory | Done | Supported entities include evidence, decisions, contracts, hypotheses, risks, nodes, session notes, and agent runs where applicable. |
 | Create truth record | `python3 .aletheia/bin/truth_record.py create <entity> --id <id> --title <title>` | Create from template | Done | Creates a template-backed record in the relevant `.aletheia/` directory. |
 | Show truth record | `python3 .aletheia/bin/truth_record.py show <entity> <id>` | Read one truth record | Done | Emits record content for agent grounding or user review. |
@@ -31,7 +31,7 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 | Review evidence quality | `evidence-curator` profile | Read evidence, hypotheses, and decisions | Done | Read-focused only. |
 | Review architecture drift | `architecture-reviewer` profile | Read state, nodes, contracts, decisions, and source boundaries | Done | Read-focused only. |
 | Create truth record | `truth_record.py create` or templates under `.aletheia/templates/` | Write a new record file in the relevant `.aletheia/` directory | Done | Use templates for evidence, decisions, contracts, hypotheses, risks, nodes, and session notes. |
-| Read truth record | `truth_record.py list/show`, `.aletheia/` files and indexes | Read files directly, or use context pack and overview | Done | Context pack lists current records. |
+| Read truth record | `truth_record.py list/show`, `.aletheia/` files and indexes | Read files directly, or use context pack and overview | Done | Context pack lists current records; runtime details require `--with-runtime`. |
 | Update truth record | Edit existing `.aletheia/` file | Modify file, then validate and checkpoint | Done | Deduplicate before creating a new record. |
 | Delete truth record | `truth_record.py archive` | Archive record, then validate refs | Partial | archive-only policy; no permanent delete command is provided. |
 

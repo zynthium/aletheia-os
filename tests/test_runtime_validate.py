@@ -156,11 +156,16 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("## Runtime commands", output)
             self.assertIn("python3 .aletheia/bin/orient.py", output)
 
-    def test_context_pack_includes_dynamic_capabilities_activity_and_record_inventory(self) -> None:
+    def test_context_pack_defaults_to_stable_capabilities_source_summary_and_record_inventory(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
             target.mkdir()
             init_target(target)
+            (target / "src").mkdir()
+            (target / "src" / "main.py").write_text("print('project code')\n", encoding="utf-8")
+            (target / ".env.local").write_text("TOKEN=secret\n", encoding="utf-8")
+            (target / "reports").mkdir()
+            (target / "reports" / "big.csv").write_text("x" * 1_000_001, encoding="utf-8")
             (target / ".aletheia" / "runtime").mkdir()
             (target / ".aletheia" / "runtime" / "current_agent_run.json").write_text(
                 json.dumps(
@@ -190,6 +195,15 @@ class RuntimeValidateTests(unittest.TestCase):
                 "## Confidence impact\n\nRaises confidence.\n",
                 encoding="utf-8",
             )
+            inventory = subprocess.run(
+                [sys.executable, ".aletheia/bin/source_inventory.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(inventory.returncode, 0, inventory.stdout + inventory.stderr)
 
             result = subprocess.run(
                 [sys.executable, ".aletheia/bin/context_pack.py"],
@@ -204,12 +218,64 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, output)
             self.assertIn("## .aletheia/CAPABILITY_MAP.md", output)
             self.assertIn("Initialize AletheiaOS scaffold", output)
+            self.assertIn("## Source Inventory Summary", output)
+            self.assertIn("- total items: 3", output)
+            self.assertIn("- implementation_code: 1", output)
+            self.assertIn("- data_or_report: 1", output)
+            self.assertIn("- unsafe_or_sensitive: 1", output)
+            self.assertIn("- deferred_due_to_size: 1", output)
+            self.assertIn("- full content candidates: 1", output)
+            self.assertNotIn("## Current Agent Run", output)
+            self.assertNotIn("RUN-test", output)
+            self.assertNotIn("## Recent Session Notes", output)
+            self.assertNotIn("Summary.", output)
+            self.assertIn("## Truth Record Inventory", output)
+            self.assertIn(".aletheia/evidence/EV-001.md", output)
+            self.assertLess(output.index("## Source Inventory Summary"), output.index("## Truth Record Inventory"))
+
+    def test_context_pack_can_append_runtime_context_when_requested(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".aletheia" / "runtime").mkdir()
+            (target / ".aletheia" / "runtime" / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-test",
+                        "provider": "openai",
+                        "model_id": "gpt-test",
+                        "capability_tier": "C3",
+                        "task_class": "research_design",
+                        "gate_status": "allowed",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "session_notes" / "2026-05-07-note.md").write_text(
+                "# Session Note: recent work\n\nSummary.\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/context_pack.py", "--with-runtime"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("## Source Inventory Summary", output)
+            self.assertIn("## Truth Record Inventory", output)
             self.assertIn("## Current Agent Run", output)
             self.assertIn("RUN-test", output)
             self.assertIn("## Recent Session Notes", output)
             self.assertIn(".aletheia/session_notes/2026-05-07-note.md", output)
-            self.assertIn("## Truth Record Inventory", output)
-            self.assertIn(".aletheia/evidence/EV-001.md", output)
+            self.assertLess(output.index("## Truth Record Inventory"), output.index("## Current Agent Run"))
 
     def test_overview_records_validation_failure_and_truth_record_inventory(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

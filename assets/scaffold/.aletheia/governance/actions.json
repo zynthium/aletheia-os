@@ -267,6 +267,26 @@
       "verification": {"returncode": 0}
     },
     {
+      "id": "truth.tree.review",
+      "title": "Review tree governance state",
+      "intent": "Read prompt-ready context with skeleton, tree governance, incubator state, and validation signals.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/system_context.py"],
+      "inputs": {},
+      "outputs": {"format": "markdown"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.tree.health",
+      "title": "Refresh tree health",
+      "intent": "Read compact status including skeleton node count, orphan count, and tree-related validation signals.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/status.py", "--json"],
+      "inputs": {},
+      "outputs": {"format": "json"},
+      "verification": {"returncode": 0}
+    },
+    {
       "id": "model.registry.list",
       "title": "List model registry entries",
       "intent": "Read registered models and model gate policy state.",

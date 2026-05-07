@@ -1,0 +1,10 @@
+version: 0.1
+schema: AIOS_ORPHANS
+updated: 2026-05-08
+
+review_policy:
+  default_review_days: 30
+  max_orphan_age_days: 90
+
+orphans: []
+

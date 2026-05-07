@@ -12,7 +12,7 @@ Bootstrap is model-led. The AI assistant should orchestrate the sequence; the op
 4. Run `python3 .aletheia/bin/source_inventory.py`.
 5. Classify existing material using `.aletheia/governance/SOURCE_POLICY.md`.
 6. Run `python3 .aletheia/bin/guided_bootstrap.py --objective "Initialize AletheiaOS"`; it verifies the recorded bootstrap gate before writing its report.
-7. Synthesize project truth: charter, graph, skeleton, active state, domain profile, risks, decisions, contracts, evidence, and session notes.
+7. Synthesize project truth: charter, graph, skeleton, tree governance fit, active state, domain profile, risks, decisions, contracts, evidence, orphan/incubator state, and session notes.
 8. Run `python3 .aletheia/bin/orient.py` and `python3 .aletheia/bin/validate.py`.
 9. Finalize with `python3 .aletheia/bin/bootstrap_finalize.py`.
 

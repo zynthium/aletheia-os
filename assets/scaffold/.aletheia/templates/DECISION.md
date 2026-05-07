@@ -1,6 +1,7 @@
 # Decision: <title>
 
 Status: proposed
+Decision type: architecture | product | evidence_acceptance | tree_refactor | operationalization
 Date: YYYY-MM-DD
 
 ## Context
@@ -30,6 +31,10 @@ List affected contracts or state that none are affected.
 ## Evidence links
 
 List supporting or contradicting evidence records.
+
+## Hypothesis links
+
+List hypotheses this decision accepts, weakens, falsifies, or operationalizes.
 
 ## Invalidation criteria
 

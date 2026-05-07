@@ -29,7 +29,9 @@ Read order:
 4. `.aletheia/state/ACTIVE_STATE.md`
 5. `.aletheia/state/SYSTEM_GRAPH.yaml`
 6. `.aletheia/state/SKELETON.yaml`
-7. Active node decisions, evidence, contracts, risks, and code paths.
+7. `.aletheia/governance/TREE_GOVERNANCE.md`
+8. `.aletheia/state/ORPHANS.yaml`
+9. Active node decisions, evidence, contracts, risks, and code paths.
 
 Return:
 
@@ -37,6 +39,8 @@ Return:
 - active frontier;
 - active node;
 - parent chain;
+- tree attachment or incubator route for the task;
+- orphan candidates relevant to the task;
 - expanded nodes;
 - skipped siblings and why;
 - loaded contracts;

@@ -47,6 +47,9 @@ Move behavior toward skills or playbooks when it is judgment, sequencing advice,
 - how to interpret evidence limitations and invalidation criteria;
 - when an architecture boundary change requires decisions, contracts, or risks;
 - which truth records a task should update before checkpointing.
+- whether new material belongs on the skeleton tree or should remain in the
+  incubator;
+- when a branch should be split, merged, promoted, demoted, moved, or archived.
 
 ## Delete Policy
 
@@ -71,6 +74,7 @@ Each workflow skill should contain:
 | Bootstrap | `model_gate.py`, `source_inventory.py`, `guided_bootstrap.py`, `truth_record.py`, `validate.py`, `checkpoint.py` |
 | Promotion | `context_pack.py`, `truth_record.py list/show/create/update/archive`, `validate.py`, optional `checkpoint.py` |
 | Architecture evolution | `orient.py`, `truth_record.py`, `system_context.py`, `validate.py`, optional `checkpoint.py` |
+| Tree-governed truth growth | `orient.py`, `context_pack.py`, direct state-file edits, `truth_record.py`, `validate.py`, optional `checkpoint.py` |
 | Checkpoint | `status.py`, `preflight.py`, `validate.py`, `checkpoint.py` |
 | Review agents | `orient.py`, `context_pack.py`, `truth_record.py list/show`, source reads, `validate.py` |
 

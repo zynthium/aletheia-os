@@ -29,5 +29,11 @@ For each important claim, record:
 - interpretation rule;
 - graph impact;
 - follow-up decision.
+- claim lifecycle impact.
 
 Link the evidence back to affected system graph or skeleton nodes. Do not treat implementation success, benchmark output, or model confidence as self-explanatory evidence.
+If the claim does not yet have a defensible parent node, keep it in
+`.aletheia/state/ORPHANS.yaml` with candidate parents and required evidence
+instead of forcing it into the main tree.
+When evidence weakens or falsifies a hypothesis, update that hypothesis
+Lifecycle and review whether dependent decisions still stand.

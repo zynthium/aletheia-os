@@ -60,6 +60,37 @@ def recent_changes(root: Path, limit: int = 5) -> list[dict]:
     return changes
 
 
+def count_skeleton_nodes(root: Path) -> int:
+    path = root / ".aletheia" / "state" / "SKELETON.yaml"
+    if not path.exists():
+        return 0
+    return sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.startswith("  ") and line.endswith(":"))
+
+
+def count_orphans(root: Path) -> int:
+    path = root / ".aletheia" / "state" / "ORPHANS.yaml"
+    if not path.exists():
+        return 0
+    text = path.read_text(encoding="utf-8")
+    if "orphans: []" in text:
+        return 0
+    return sum(1 for line in text.splitlines() if line.startswith("  - id:"))
+
+
+def tree_health(root: Path, validation: dict) -> dict:
+    combined = f"{validation.get('stdout', '')}\n{validation.get('stderr', '')}"
+    signals = [
+        line.strip(" -")
+        for line in combined.splitlines()
+        if any(term in line.lower() for term in ["skeleton", "orphan", "tree"])
+    ]
+    return {
+        "skeleton_nodes": count_skeleton_nodes(root),
+        "orphan_count": count_orphans(root),
+        "signals": signals,
+    }
+
+
 def write_index(path: Path, status: dict) -> None:
     rows = []
     for state in status["state_files"]:
@@ -88,6 +119,8 @@ def write_index(path: Path, status: dict) -> None:
   </table>
   <h2>Validation</h2>
   <pre>{escape(json.dumps(status['validation'], indent=2))}</pre>
+  <h2>Tree health</h2>
+  <pre>{escape(json.dumps(status['tree_health'], indent=2))}</pre>
   <h2>Records</h2>
   <pre>{escape(json.dumps(status['records'], indent=2))}</pre>
   <h2>Recent changes</h2>
@@ -138,6 +171,7 @@ def main() -> int:
     iteration = 0
     while True:
         iteration += 1
+        validation = validation_state(root)
         status = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "repo": str(root),
@@ -146,7 +180,8 @@ def main() -> int:
                 "iteration": iteration,
             },
             "state_files": [file_state(root, rel) for rel in STATE_FILES],
-            "validation": validation_state(root),
+            "validation": validation,
+            "tree_health": tree_health(root, validation),
             "records": {
                 "decisions": list_records(root, ".aletheia/decisions"),
                 "evidence": list_records(root, ".aletheia/evidence"),

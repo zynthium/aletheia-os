@@ -13,6 +13,8 @@ TRUTH_FILES = {
     "active": ".aletheia/state/ACTIVE_STATE.md",
     "graph": ".aletheia/state/SYSTEM_GRAPH.yaml",
     "skeleton": ".aletheia/state/SKELETON.yaml",
+    "tree_governance": ".aletheia/governance/TREE_GOVERNANCE.md",
+    "orphans": ".aletheia/state/ORPHANS.yaml",
     "frontier": ".aletheia/state/FRONTIER_BOARD.md",
     "risks": ".aletheia/state/RISK_REGISTER.md",
 }
@@ -74,6 +76,27 @@ def skeleton_refs(skeleton_text: str, ref_name: str) -> list[str]:
             if line.strip():
                 break
     return refs
+
+
+def skeleton_node_summary(skeleton_text: str) -> str:
+    nodes: list[str] = []
+    for line in skeleton_text.splitlines():
+        match = re.match(r"^\s{2}([A-Za-z0-9_.-]+):\s*$", line)
+        if match:
+            nodes.append(match.group(1))
+    if not nodes:
+        return "No skeleton nodes found."
+    return "\n".join(f"- {node}" for node in nodes[:20])
+
+
+def orphan_summary(orphan_text: str) -> str:
+    if "orphans: []" in orphan_text:
+        return "No incubating orphan entries."
+    ids = re.findall(r"(?m)^\s{2}-\s+id:\s*(.+?)\s*$", orphan_text)
+    if not ids:
+        return "No incubating orphan entries."
+    cleaned = [item.strip().strip("\"'") for item in ids[:20]]
+    return "\n".join(f"- {item}" for item in cleaned)
 
 
 def relative(path: Path, root: Path) -> str:
@@ -190,6 +213,9 @@ def main() -> int:
     print_block("Parent Constraints", read(root, TRUTH_FILES["attention"]))
     print_block("System Graph", read(root, TRUTH_FILES["graph"]))
     print_block("Project Skeleton", skeleton_text)
+    print_block("Tree Governance", read(root, TRUTH_FILES["tree_governance"]))
+    print_block("Tree Nodes", skeleton_node_summary(skeleton_text))
+    print_block("Incubator Orphans", orphan_summary(read(root, TRUTH_FILES["orphans"])))
     print_block("Linked Evidence", "\n".join(skeleton_refs(skeleton_text, "evidence_refs")))
     print_block("Linked Contracts", "\n".join(skeleton_refs(skeleton_text, "contract_refs")))
     print_block("Known Risks", read(root, TRUTH_FILES["risks"]))
@@ -203,6 +229,7 @@ def main() -> int:
 Root mission:
 Active frontier:
 Active node:
+Tree attachment or incubator route:
 Parent constraints:
 Success criteria:
 Invalidation criteria:

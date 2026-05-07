@@ -12,10 +12,12 @@ FILES = [
     ".aletheia/governance/CHARTER.md",
     ".aletheia/governance/ATTENTION_POLICY.md",
     ".aletheia/governance/MODEL_GOVERNANCE.md",
+    ".aletheia/governance/TREE_GOVERNANCE.md",
     ".aletheia/governance/model_registry.json",
     ".aletheia/state/ACTIVE_STATE.md",
     ".aletheia/state/SYSTEM_GRAPH.yaml",
     ".aletheia/state/SKELETON.yaml",
+    ".aletheia/state/ORPHANS.yaml",
 ]
 
 

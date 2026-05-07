@@ -32,8 +32,13 @@ Promotion rules:
 6. Deduplicate every candidate against existing truth records before writing.
 7. Avoid duplicate promotion: update the existing truth record when the claim already exists.
 8. For conflicting claims, do not promote both sides as accepted truth; keep them as evidence, hypotheses, or risks until a decision has explicit evidence links.
-9. Leave unsupported or unclear claims in the wiki layer.
-10. Run `.aletheia/bin/validate.py` before completion.
-11. Run `.aletheia/bin/checkpoint.py` when the user wants the promoted truth committed.
+9. Attach promoted material to the skeleton tree only when the parent is defensible.
+10. Put unclear theory candidates, weak claims, and unmounted findings in `.aletheia/state/ORPHANS.yaml` with candidate parents and review criteria.
+11. Set hypothesis lifecycle explicitly and keep counter-evidence visible.
+12. Link accepted decisions to evidence and the hypotheses they accept or operationalize.
+13. Leave unsupported or unclear claims in the wiki layer when they are not worth incubating.
+14. Run `.aletheia/bin/validate.py` before completion.
+15. Run `.aletheia/bin/checkpoint.py` when the user wants the promoted truth committed.
 
 Use `.aletheia/playbooks/wiki_handoff_promotion.md` as the checklist.
+Use `.aletheia/playbooks/tree_governed_truth_growth.md` when the handoff proposes candidate skeleton or theory changes.

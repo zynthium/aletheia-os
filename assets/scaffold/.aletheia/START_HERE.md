@@ -22,6 +22,7 @@ python3 .aletheia/bin/checkpoint.py
 
 - Initialize project truth for a new or existing repository.
 - Orient on the current mission, active state, system graph, skeleton, risks, and capabilities.
+- Review tree governance and route unmounted findings through the incubator.
 - Refresh context for long sessions with a context pack.
 - Create, read, update, and archive truth records for evidence, decisions, contracts, hypotheses, risks, nodes, session notes, and agent runs.
 - Validate project truth and checkpoint coherent state updates.
@@ -38,16 +39,21 @@ python3 .aletheia/bin/help.py
 1. `.aletheia/governance/CHARTER.md`
 2. `.aletheia/governance/ATTENTION_POLICY.md`
 3. `.aletheia/governance/MODEL_GOVERNANCE.md`
-4. `.aletheia/governance/model_registry.json`
-5. `.aletheia/state/USER_PREFERENCES.md`
-6. `.aletheia/state/ACTIVE_STATE.md`
-7. `.aletheia/state/SYSTEM_GRAPH.yaml`
-8. `.aletheia/state/SKELETON.yaml`
-9. `.aletheia/state/RISK_REGISTER.md`
-10. `.aletheia/state/FRONTIER_BOARD.md`, `.aletheia/state/DOMAIN_PROFILE.md`, and relevant decisions, evidence, contracts, risks, nodes, and source files.
+4. `.aletheia/governance/TREE_GOVERNANCE.md`
+5. `.aletheia/governance/model_registry.json`
+6. `.aletheia/state/USER_PREFERENCES.md`
+7. `.aletheia/state/ACTIVE_STATE.md`
+8. `.aletheia/state/SYSTEM_GRAPH.yaml`
+9. `.aletheia/state/SKELETON.yaml`
+10. `.aletheia/state/ORPHANS.yaml`
+11. `.aletheia/state/RISK_REGISTER.md`
+12. `.aletheia/state/FRONTIER_BOARD.md`, `.aletheia/state/DOMAIN_PROFILE.md`, and relevant decisions, evidence, contracts, risks, nodes, and source files.
 
 For large conversation exports or scattered research material, use
 `.aletheia/playbooks/external_llm_wiki_handoff.md` before writing durable truth.
+For unmounted claims, candidate theories, or skeleton changes, use
+`.aletheia/playbooks/tree_governed_truth_growth.md` and keep uncertain material
+in `.aletheia/state/ORPHANS.yaml` until review.
 
 ## Model Gate
 

@@ -15,6 +15,9 @@ nodes:
       - risk_safety
     purpose: "TBD: define the project purpose."
     invariants: []
+    inherited_constraints: []
+    adds: []
+    does_not_explain: []
     interfaces: []
     owned_paths: []
     test_paths: []
@@ -25,5 +28,9 @@ nodes:
       - "The task changes project objectives, architecture, contracts, or evidence."
     stop_when:
       - "The active task can be answered from the current node and its immediate boundary records."
+    review_triggers:
+      - "A child node no longer fits the parent purpose."
+      - "Multiple children share an unmodeled intermediate concept."
+      - "Evidence weakens or falsifies a supporting hypothesis."
     confidence: 0.1
     last_reviewed: null

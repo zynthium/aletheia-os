@@ -131,12 +131,47 @@ def recent_changes(root: Path, limit: int = 5) -> list[dict[str, Any]]:
     return changes
 
 
+def count_skeleton_nodes(root: Path) -> int:
+    path = root / ".aletheia" / "state" / "SKELETON.yaml"
+    if not path.exists():
+        return 0
+    return len(re.findall(r"(?m)^\s{2}[A-Za-z0-9_.-]+:\s*$", path.read_text(encoding="utf-8")))
+
+
+def count_orphans(root: Path) -> int:
+    path = root / ".aletheia" / "state" / "ORPHANS.yaml"
+    if not path.exists():
+        return 0
+    text = path.read_text(encoding="utf-8")
+    if "orphans: []" in text:
+        return 0
+    return len(re.findall(r"(?m)^\s{2}-\s+id:\s*\S+", text))
+
+
+def tree_health(root: Path, validation_state: dict[str, Any]) -> dict[str, Any]:
+    stdout = validation_state.get("stdout", "")
+    stderr = validation_state.get("stderr", "")
+    combined = f"{stdout}\n{stderr}"
+    tree_lines = [
+        line.strip(" -")
+        for line in combined.splitlines()
+        if any(term in line.lower() for term in ["skeleton", "orphan", "tree"])
+    ]
+    return {
+        "skeleton_nodes": count_skeleton_nodes(root),
+        "orphan_count": count_orphans(root),
+        "signals": tree_lines,
+    }
+
+
 def build_status(root: Path) -> dict[str, Any]:
+    validation_state = validation(root)
     return {
         "repo": str(root),
         "active_state": active_state(root),
-        "validation": validation(root),
+        "validation": validation_state,
         "records": record_counts(root),
+        "tree_health": tree_health(root, validation_state),
         "runtime_gate": runtime_gate(root),
         "recent_changes": recent_changes(root),
     }
@@ -165,6 +200,17 @@ def print_markdown(status: dict[str, Any]) -> None:
     print()
     for name, count in sorted(status["records"].items()):
         print(f"- {name}: {count}")
+    print()
+    print("## Tree Health")
+    print()
+    tree = status["tree_health"]
+    print(f"- skeleton nodes: {tree['skeleton_nodes']}")
+    print(f"- orphan count: {tree['orphan_count']}")
+    if tree["signals"]:
+        for signal in tree["signals"]:
+            print(f"- signal: {signal}")
+    else:
+        print("- signals: none")
     print()
     print("## Runtime Gate")
     print()

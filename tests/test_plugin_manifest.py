@@ -68,8 +68,25 @@ class PluginManifestTests(unittest.TestCase):
             self.assertTrue((release_root / ".claude-plugin" / "plugin.json").exists())
             self.assertTrue((release_root / "skills" / "aletheia-promote" / "SKILL.md").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "CAPABILITY_MAP.md").exists())
+            self.assertTrue(
+                (release_root / "assets" / "scaffold" / ".aletheia" / "governance" / "TREE_GOVERNANCE.md").exists()
+            )
+            self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "state" / "ORPHANS.yaml").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "playbooks" / "drift_audit.md").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "playbooks" / "prompt_native_boundaries.md").exists())
+            self.assertTrue(
+                (
+                    release_root
+                    / "assets"
+                    / "scaffold"
+                    / ".aletheia"
+                    / "playbooks"
+                    / "tree_governed_truth_growth.md"
+                ).exists()
+            )
+            self.assertTrue(
+                (release_root / "assets" / "scaffold" / ".aletheia" / "playbooks" / "skeleton_review.md").exists()
+            )
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "help.py").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "action.py").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "capability_audit.py").exists())
@@ -137,6 +154,8 @@ class PluginManifestTests(unittest.TestCase):
             "action.py",
             "actions.json",
             "truth.validate",
+            "truth.tree.review",
+            "truth.tree.health",
             "truth.preflight",
             "truth.checkpoint.dry_run",
             "capability_audit.py",
@@ -172,6 +191,8 @@ class PluginManifestTests(unittest.TestCase):
             "Agent Primitive Matrix",
             "Primitive-To-Workflow Map",
             "host limitation",
+            "ORPHANS.yaml",
+            "tree refactor",
         ]
         for term in expected_terms:
             self.assertIn(term, capability_map)
@@ -191,6 +212,7 @@ class PluginManifestTests(unittest.TestCase):
             "Primitive-To-Workflow Map",
             "system_context.py",
             "action.py",
+            "Tree-governed truth growth",
         ]:
             self.assertIn(term, boundaries)
 

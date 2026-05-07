@@ -2,6 +2,7 @@
 
 Date: YYYY-MM-DD
 Evidence type: observation | experiment | simulation | proof | field_feedback | market_data | expert_judgment
+Claim lifecycle impact: observation | interpretation | hypothesis | evidence-backed | accepted | operationalized | weakened | falsified | archived
 Claim tested: <claim>
 Linked node: <node id>
 

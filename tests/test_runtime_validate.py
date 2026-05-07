@@ -147,6 +147,9 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("- returncode: 0", output)
             self.assertIn("## Records", output)
             self.assertIn("- evidence: 1", output)
+            self.assertIn("## Tree Health", output)
+            self.assertIn("- skeleton nodes:", output)
+            self.assertIn("- orphan count: 0", output)
             self.assertIn("## Runtime Gate", output)
             self.assertIn("- run_id: RUN-status", output)
             self.assertIn("- gate_status: allowed", output)
@@ -696,6 +699,9 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn(".aletheia/nodes/feature.yaml", status["records"]["nodes"])
             self.assertIn(".aletheia/risks/RISK-001.md", status["records"]["risks"])
             self.assertIn(".aletheia/agent_runs/RUN-test.json", status["records"]["agent_runs"])
+            self.assertIn("tree_health", status)
+            self.assertIn("skeleton_nodes", status["tree_health"])
+            self.assertIn("orphan_count", status["tree_health"])
 
     def test_overview_surfaces_recent_runtime_changes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -733,6 +739,59 @@ class RuntimeValidateTests(unittest.TestCase):
             html = (target / ".aletheia" / "overview" / "index.html").read_text(encoding="utf-8")
             self.assertIn("Recent changes", html)
             self.assertIn("python3 .aletheia/bin/validate.py", html)
+            self.assertIn("Tree health", html)
+
+    def test_tree_governance_context_surfaces_orphans_and_health(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".aletheia" / "state" / "ORPHANS.yaml").write_text(
+                "version: 0.1\n"
+                "schema: AIOS_ORPHANS\n"
+                "updated: 2026-05-08\n\n"
+                "review_policy:\n"
+                "  default_review_days: 30\n"
+                "  max_orphan_age_days: 90\n\n"
+                "orphans:\n"
+                "  - id: OR-001\n"
+                "    title: Candidate unmounted claim\n"
+                "    disposition: incubating\n"
+                "    candidate_parents:\n"
+                "      - root\n"
+                "    next_review: 2026-01-01\n",
+                encoding="utf-8",
+            )
+
+            orient = subprocess.run(
+                [sys.executable, ".aletheia/bin/orient.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(orient.returncode, 0, orient.stdout + orient.stderr)
+            self.assertIn("## Tree Governance", orient.stdout)
+            self.assertIn("## Incubator Orphans", orient.stdout)
+            self.assertIn("OR-001", orient.stdout)
+
+            status = subprocess.run(
+                [sys.executable, ".aletheia/bin/status.py", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(status.returncode, 0, status.stdout + status.stderr)
+            payload = json.loads(status.stdout)
+            self.assertEqual(payload["tree_health"]["orphan_count"], 1)
+            self.assertTrue(any("orphan" in signal.lower() for signal in payload["tree_health"]["signals"]))
+
+            validate = validate_target(target)
+            self.assertEqual(validate.returncode, 0, validate.stdout + validate.stderr)
+            self.assertIn("orphan review is stale: OR-001", validate.stdout)
 
     def test_overview_can_watch_for_refresh_iterations(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1574,6 +1633,72 @@ class RuntimeValidateTests(unittest.TestCase):
                 output,
             )
 
+    def test_validate_rejects_accepted_hypothesis_without_supporting_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            hypothesis = target / ".aletheia" / "hypotheses" / "HYP-accepted.md"
+            hypothesis.write_text(
+                "# Hypothesis: unsupported acceptance\n\n"
+                "- Lifecycle: accepted\n\n"
+                "## Claim\n\nA possible explanation.\n\n"
+                "## Invalidation criteria\n\nContradicting evidence.\n",
+                encoding="utf-8",
+            )
+
+            result = validate_target(target)
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn(
+                "hypothesis lifecycle requires supporting evidence: .aletheia/hypotheses/HYP-accepted.md",
+                output,
+            )
+
+    def test_validate_rejects_accepted_decision_linking_falsified_hypothesis(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".aletheia" / "evidence" / "EV-0001.md").write_text(
+                "# Evidence: falsifies hypothesis\n\n"
+                "## Source refs\n\n- `README.md`\n\n"
+                "## Method\n\nRead source.\n\n"
+                "## Result\n\nContradiction.\n\n"
+                "## Limitations\n\nSingle source.\n\n"
+                "## Invalidation criteria\n\nNew evidence.\n\n"
+                "## Confidence impact\n\nLowers confidence.\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "hypotheses" / "HYP-falsified.md").write_text(
+                "# Hypothesis: falsified support\n\n"
+                "- Lifecycle: falsified\n\n"
+                "## Claim\n\nA disproven explanation.\n\n"
+                "## Invalidation criteria\n\nContradiction.\n\n"
+                "## Review Note\n\nTBD.\n",
+                encoding="utf-8",
+            )
+            decision = target / ".aletheia" / "decisions" / "DEC-0001.md"
+            decision.write_text(
+                "# Decision: depends on falsified hypothesis\n\n"
+                "Status: accepted\n\n"
+                "## Context\n\nContext.\n\n"
+                "## Decision\n\nChosen path.\n\n"
+                "## Evidence links\n\n- `.aletheia/evidence/EV-0001.md`\n\n"
+                "## Hypothesis links\n\n- `.aletheia/hypotheses/HYP-falsified.md`\n",
+                encoding="utf-8",
+            )
+
+            result = validate_target(target)
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn(
+                "accepted decision references falsified hypothesis: .aletheia/decisions/DEC-0001.md -> .aletheia/hypotheses/HYP-falsified.md",
+                output,
+            )
+
     def test_validate_rejects_accepted_decision_without_evidence_links(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
@@ -1864,8 +1989,9 @@ class RuntimeValidateTests(unittest.TestCase):
     def test_truth_templates_keep_traceability_fields(self) -> None:
         template_root = ROOT / "assets" / "scaffold" / ".aletheia" / "templates"
         expectations = {
-            "EVIDENCE.md": ["Linked node", "Source refs", "Limitations", "Confidence impact"],
-            "DECISION.md": ["Affected nodes", "Affected contracts", "Evidence links", "Review trigger"],
+            "EVIDENCE.md": ["Linked node", "Claim lifecycle impact", "Source refs", "Limitations", "Confidence impact"],
+            "HYPOTHESIS.md": ["Lifecycle", "Supporting Evidence", "Dependent Decisions", "Review Note"],
+            "DECISION.md": ["Decision type", "Affected nodes", "Affected contracts", "Evidence links", "Hypothesis links", "Review trigger"],
             "CONTRACT.md": ["Serves nodes", "Upstream assumptions", "Invariants", "Validation"],
             "SESSION_NOTE.md": ["Active node", "Files changed", "Truth records updated", "Checkpoint"],
         }

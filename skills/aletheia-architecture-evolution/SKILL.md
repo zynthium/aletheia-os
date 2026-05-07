@@ -29,5 +29,9 @@ Before changing architecture:
 4. Define transition and rollback boundaries.
 5. Define invalidation criteria.
 6. Record expected graph impact.
+7. Decide whether the change is a local node edit, an incubating candidate, or
+   a tree refactor that needs a decision record.
 
 After changing architecture, update decisions, contracts, skeleton paths, evidence, and active state.
+Use `.aletheia/playbooks/tree_governed_truth_growth.md` before moving subtrees,
+inserting parents, splitting nodes, or promoting leaves.

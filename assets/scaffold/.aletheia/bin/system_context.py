@@ -54,6 +54,7 @@ Use this block as dynamic agent context for the current repository. It is genera
 
 - Treat the repository as the durable project truth source.
 - Follow the daily loop: orient -> work -> update truth -> validate -> checkpoint.
+- Route new durable truth to the skeleton tree, or keep it in the incubator until review.
 - Before durable writes, record or verify model-gate attribution.
 - Keep generated runtime context after stable project truth.
 - Do not copy secrets into `.aletheia/`.

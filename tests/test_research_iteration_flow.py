@@ -311,6 +311,184 @@ def write_iteration_two_truth(target: Path) -> None:
 
 
 class ResearchIterationFlowTests(unittest.TestCase):
+    def test_merge_nodes_refactor_archives_duplicate_sibling_without_new_record_types(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "merge-node-loop"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+
+            (target / ".aletheia" / "evidence" / "EV-303-duplicate-modeling-siblings.md").write_text(
+                "# Evidence: Duplicate factor modeling siblings\n\n"
+                "Date: 2026-05-08\n"
+                "Evidence type: observation\n"
+                "Claim lifecycle impact: evidence-backed\n"
+                "Claim tested: factor_modeling and indicator_factor_modeling describe the same durable branch.\n"
+                "Linked node: factor_modeling\n\n"
+                "## Source refs\n\n"
+                "- `.aletheia/state/SKELETON.yaml`\n\n"
+                "## Method\n\n"
+                "Reviewed sibling boundaries and found duplicate ownership over indicator factor evidence.\n\n"
+                "## Result\n\n"
+                "indicator_factor_modeling should merge into factor_modeling and be archived.\n\n"
+                "## Limitations\n\n"
+                "This only resolves tree duplication, not modeling validity.\n\n"
+                "## Interpretation\n\n"
+                "Keep factor_modeling as the active branch and archive the duplicate sibling.\n\n"
+                "## Invalidation criteria\n\n"
+                "Revisit if indicator_factor_modeling later gains a distinct boundary.\n\n"
+                "## Graph impact\n\n"
+                "- market_modeling\n"
+                "- factor_modeling\n"
+                "- indicator_factor_modeling\n\n"
+                "## Confidence impact\n\n"
+                "Raises confidence that factor modeling has one canonical skeleton branch.\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "decisions" / "DEC-303-merge-factor-modeling.md").write_text(
+                "# Decision: Merge duplicate factor modeling sibling\n\n"
+                "Status: accepted\n"
+                "Decision type: tree_refactor\n"
+                "Date: 2026-05-08\n\n"
+                "## Context\n\n"
+                "Two sibling nodes duplicate the same factor modeling boundary.\n\n"
+                "## Decision\n\n"
+                "Keep `factor_modeling` and archive `indicator_factor_modeling` as a duplicate sibling.\n\n"
+                "## Alternatives considered\n\n"
+                "- Keep both siblings: rejected because evidence would drift across duplicate branches.\n"
+                "- Create a merge command: rejected because the skeleton plus decision record already captures the refactor.\n\n"
+                "## Consequences\n\n"
+                "Future factor evidence attaches to factor_modeling only.\n\n"
+                "## Affected nodes\n\n"
+                "- market_modeling\n"
+                "- factor_modeling\n"
+                "- indicator_factor_modeling\n\n"
+                "## Affected contracts\n\n"
+                "None.\n\n"
+                "## Evidence links\n\n"
+                "- `.aletheia/evidence/EV-303-duplicate-modeling-siblings.md`\n\n"
+                "## Hypothesis links\n\n"
+                "None.\n\n"
+                "## Invalidation criteria\n\n"
+                "Revisit if archived duplicate branch becomes meaningfully distinct.\n\n"
+                "## Review trigger\n\n"
+                "Review before unarchiving indicator_factor_modeling.\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "state" / "SKELETON.yaml").write_text(
+                (target / ".aletheia" / "state" / "SKELETON.yaml").read_text(encoding="utf-8")
+                + "\n"
+                "  market_modeling:\n"
+                "    layer: branch\n"
+                "    parent: theory_model\n"
+                "    children:\n"
+                "      - factor_modeling\n"
+                "      - liquidity_context\n"
+                "    purpose: \"Separate market modeling mechanisms under the theory model.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs:\n"
+                "      - .aletheia/decisions/DEC-303-merge-factor-modeling.md\n"
+                "    evidence_refs:\n"
+                "      - .aletheia/evidence/EV-303-duplicate-modeling-siblings.md\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.5\n"
+                "    last_reviewed: 2026-05-08\n"
+                "  factor_modeling:\n"
+                "    layer: leaf\n"
+                "    parent: market_modeling\n"
+                "    children: []\n"
+                "    purpose: \"Canonical branch for indicator and factor signals.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs:\n"
+                "      - .aletheia/decisions/DEC-303-merge-factor-modeling.md\n"
+                "    evidence_refs:\n"
+                "      - .aletheia/evidence/EV-303-duplicate-modeling-siblings.md\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.5\n"
+                "    last_reviewed: 2026-05-08\n"
+                "  liquidity_context:\n"
+                "    layer: leaf\n"
+                "    parent: market_modeling\n"
+                "    children: []\n"
+                "    purpose: \"Model participant behavior and liquidity pressure context.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs: []\n"
+                "    evidence_refs: []\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.4\n"
+                "    last_reviewed: 2026-05-08\n"
+                "  indicator_factor_modeling:\n"
+                "    layer: leaf\n"
+                "    status: archived\n"
+                "    parent: market_modeling\n"
+                "    children: []\n"
+                "    purpose: \"Archived duplicate of factor_modeling.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs:\n"
+                "      - .aletheia/decisions/DEC-303-merge-factor-modeling.md\n"
+                "    evidence_refs:\n"
+                "      - .aletheia/evidence/EV-303-duplicate-modeling-siblings.md\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.1\n"
+                "    last_reviewed: 2026-05-08\n",
+                encoding="utf-8",
+            )
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(
+                active_state.read_text(encoding="utf-8").replace("- `root`", "- `factor_modeling`"),
+                encoding="utf-8",
+            )
+
+            validate = run_repo(target, sys.executable, ".aletheia/bin/validate.py")
+            self.assertEqual(validate.returncode, 0, validate.stdout + validate.stderr)
+
+            orient = run_repo(target, sys.executable, ".aletheia/bin/orient.py")
+            self.assertEqual(orient.returncode, 0, orient.stdout + orient.stderr)
+            self.assertIn("factor_modeling", orient.stdout)
+            self.assertIn("indicator_factor_modeling", orient.stdout)
+
+            status = run_repo(target, sys.executable, ".aletheia/bin/status.py", "--json")
+            self.assertEqual(status.returncode, 0, status.stdout + status.stderr)
+            status_payload = json.loads(status.stdout)
+            self.assertEqual(status_payload["active_state"]["active_nodes"], ["factor_modeling"])
+            self.assertFalse(status_payload["tree_health"]["review_needed"])
+
     def test_split_node_refactor_separates_overloaded_branch_without_new_record_types(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "split-node-loop"

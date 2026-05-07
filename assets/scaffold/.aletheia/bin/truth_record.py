@@ -16,12 +16,17 @@ class EntityConfig:
     template: str | None
     suffix: str
     writable: bool = True
+    fixed_path: str | None = None
 
 
 ENTITY_CONFIG = {
     "agent-run": EntityConfig("agent_runs", None, ".json", writable=False),
     "agent-runs": EntityConfig("agent_runs", None, ".json", writable=False),
     "agent_runs": EntityConfig("agent_runs", None, ".json", writable=False),
+    "active-state": EntityConfig("", None, ".md", fixed_path=".aletheia/state/ACTIVE_STATE.md"),
+    "active_state": EntityConfig("", None, ".md", fixed_path=".aletheia/state/ACTIVE_STATE.md"),
+    "capability-map": EntityConfig("", None, ".md", fixed_path=".aletheia/CAPABILITY_MAP.md"),
+    "capability_map": EntityConfig("", None, ".md", fixed_path=".aletheia/CAPABILITY_MAP.md"),
     "contract": EntityConfig("contracts", "CONTRACT.md", ".md"),
     "contracts": EntityConfig("contracts", "CONTRACT.md", ".md"),
     "decision": EntityConfig("decisions", "DECISION.md", ".md"),
@@ -33,9 +38,13 @@ ENTITY_CONFIG = {
     "nodes": EntityConfig("nodes", "NODE.yaml", ".yaml"),
     "risk": EntityConfig("risks", "RISK.md", ".md"),
     "risks": EntityConfig("risks", "RISK.md", ".md"),
+    "runtime-policy": EntityConfig("", None, ".json", fixed_path=".aletheia/governance/runtime_policy.json"),
+    "runtime_policy": EntityConfig("", None, ".json", fixed_path=".aletheia/governance/runtime_policy.json"),
     "session-note": EntityConfig("session_notes", "SESSION_NOTE.md", ".md"),
     "session-notes": EntityConfig("session_notes", "SESSION_NOTE.md", ".md"),
     "session_notes": EntityConfig("session_notes", "SESSION_NOTE.md", ".md"),
+    "system-graph": EntityConfig("", None, ".yaml", fixed_path=".aletheia/state/SYSTEM_GRAPH.yaml"),
+    "system_graph": EntityConfig("", None, ".yaml", fixed_path=".aletheia/state/SYSTEM_GRAPH.yaml"),
 }
 ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 
@@ -61,6 +70,15 @@ def validate_record_id(record_id: str) -> str:
 
 def record_path(root: Path, entity: str, record_id: str) -> Path:
     config = entity_config(entity)
+    if config.fixed_path:
+        if record_id != "current":
+            raise ValueError(f"fixed truth entity requires record id 'current': {entity}")
+        path = root / config.fixed_path
+        resolved_root = root.resolve()
+        resolved_path = path.resolve()
+        if resolved_path != resolved_root and resolved_root not in resolved_path.parents:
+            raise ValueError("record path escapes repository")
+        return path
     normalized = validate_record_id(record_id)
     if normalized.endswith(config.suffix):
         name = normalized
@@ -77,7 +95,7 @@ def record_path(root: Path, entity: str, record_id: str) -> Path:
 def template_text(root: Path, entity: str) -> str:
     config = entity_config(entity)
     if config.template is None:
-        raise ValueError(f"truth record entity is read-only: {entity}")
+        raise ValueError(f"truth record entity cannot be created from a template: {entity}")
     path = root / ".aletheia" / "templates" / config.template
     if not path.exists():
         raise ValueError(f"missing template: {path.relative_to(root).as_posix()}")
@@ -113,6 +131,16 @@ def emit_json(payload: dict) -> None:
 
 def list_records(root: Path, entity: str, as_json: bool = False) -> int:
     config = entity_config(entity)
+    if config.fixed_path:
+        path = root / config.fixed_path
+        records = [config.fixed_path] if path.exists() else []
+        if as_json:
+            emit_json({"action": "list", "entity": entity, "records": records})
+        elif records:
+            print(config.fixed_path)
+        else:
+            print("None")
+        return 0
     directory = root / ".aletheia" / config.directory
     if not directory.exists():
         if as_json:
@@ -139,6 +167,9 @@ def list_records(root: Path, entity: str, as_json: bool = False) -> int:
 
 def create_record(root: Path, entity: str, record_id: str, title: str, as_json: bool = False) -> int:
     config = entity_config(entity)
+    if config.fixed_path:
+        print(f"truth record entity already exists as a fixed file: {entity}", file=sys.stderr)
+        return 1
     if not config.writable:
         print(f"truth record entity is read-only: {entity}", file=sys.stderr)
         return 1
@@ -179,6 +210,17 @@ def archive_record(root: Path, entity: str, record_id: str, reason: str, as_json
     if not path.exists():
         print(f"truth record not found: {path.relative_to(root).as_posix()}", file=sys.stderr)
         return 1
+    if config.fixed_path:
+        archive_path = root / ".aletheia" / "archive" / path.relative_to(root / ".aletheia")
+        archive_path.parent.mkdir(parents=True, exist_ok=True)
+        archive_path.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+        path.unlink()
+        rel = relative(archive_path, root)
+        if as_json:
+            emit_json({"action": "archive", "entity": entity, "path": rel, "reason": reason})
+        else:
+            print(f"archived truth record: {rel}")
+        return 0
     text = path.read_text(encoding="utf-8").rstrip()
     lines = text.splitlines()
     status_line = "status: archived" if config.suffix in {".yaml", ".yml"} else "Status: archived"

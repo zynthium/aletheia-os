@@ -384,6 +384,8 @@ python3 .aletheia/bin/model_gate.py --task-class bootstrap_finalize --provider <
 python3 .aletheia/bin/model_gate.py --registry list
 python3 .aletheia/bin/model_gate.py --registry register <name> --provider <provider> --model-id <model_id> --tier C3
 python3 .aletheia/bin/model_gate.py --registry disable <name>
+python3 .aletheia/bin/model_gate.py --registry deprecate <name> --reason "<reason>"
+python3 .aletheia/bin/model_gate.py --registry remove <name>
 python3 .aletheia/bin/model_gate.py --registry deny <model_id> --reason "<reason>"
 python3 .aletheia/bin/source_inventory.py
 python3 .aletheia/bin/guided_bootstrap.py --objective "<objective>"
@@ -393,13 +395,13 @@ python3 .aletheia/bin/validate.py
 python3 .aletheia/bin/checkpoint.py
 ```
 
-首次 bootstrap 可以用 `--operator-approved` 明确授权当前模型完成初始化；项目固定后，应把可信模型登记到 `.aletheia/governance/model_registry.json`，后续 durable writes 由 registry 决定。可用 `model_gate.py --registry list/register/show/enable/disable/deny/undeny` 显式维护 registry，避免依赖手改 JSON。
+首次 bootstrap 可以用 `--operator-approved` 明确授权当前模型完成初始化；项目固定后，应把可信模型登记到 `.aletheia/governance/model_registry.json`，后续 durable writes 由 registry 决定。可用 `model_gate.py --registry list/register/show/enable/disable/deprecate/remove/deny/undeny` 显式维护 registry，避免依赖手改 JSON。
 
 `model_gate.py` 是治理、归因和审计边界，不是安全沙箱，也不是不可绕过的权限系统。它用于让 agent 在写入前显式声明 task class、model、tier 和 objective，并留下可审查记录。
 
 Claude Code 通过 hooks 自动执行门禁和审计；Codex 当前以 skills、显式命令和可选 subagents 执行同一协议，不宣称拥有等同的自动 hook enforcement。
 
-truth_record.py 支持 `--json` 输出，便于 agent 稳定组合 list、create、show、update 和 archive 结果。truth record 删除默认采用 archive-only 策略；永久移除属于人工/admin 操作，应先确认没有悬空引用。
+truth_record.py 支持 `--json` 输出，便于 agent 稳定组合 list、create、show、update 和 archive 结果。固定 truth files 可用 `current` 作为记录 id，例如 `truth_record.py show capability-map current`、`truth_record.py update active-state current --section "Active frontier" --content "..."` 和 `truth_record.py archive runtime-policy current --reason "..."`。truth record 删除默认采用 archive-only 策略；永久移除属于人工/admin 操作，应先确认没有悬空引用。
 
 `checkpoint.py` 默认只提交 AletheiaOS state/control-plane 路径；只有显式传入 `--include-worktree` 时才 stage 整个工作树。
 

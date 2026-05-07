@@ -804,6 +804,69 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("status: archived", node_text)
             self.assertNotIn("Status: archived", node_text)
 
+    def test_truth_record_script_admin_crud_for_governance_and_state_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+
+            show = subprocess.run(
+                [sys.executable, ".aletheia/bin/truth_record.py", "show", "capability-map", "current", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(show.returncode, 0, show.stdout + show.stderr)
+            show_payload = json.loads(show.stdout)
+            self.assertEqual(show_payload["path"], ".aletheia/CAPABILITY_MAP.md")
+
+            update = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "update",
+                    "active-state",
+                    "current",
+                    "--section",
+                    "Active frontier",
+                    "--content",
+                    "Policy-driven frontier.",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(update.returncode, 0, update.stdout + update.stderr)
+            active_text = (target / ".aletheia" / "state" / "ACTIVE_STATE.md").read_text(encoding="utf-8")
+            self.assertIn("Policy-driven frontier.", active_text)
+
+            archive = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "archive",
+                    "runtime-policy",
+                    "current",
+                    "--reason",
+                    "Keep as historical policy.",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(archive.returncode, 0, archive.stdout + archive.stderr)
+            archive_path = target / ".aletheia" / "archive" / "governance" / "runtime_policy.json"
+            self.assertTrue(archive_path.exists())
+            self.assertFalse((target / ".aletheia" / "governance" / "runtime_policy.json").exists())
+
     def test_truth_record_script_replaces_template_placeholders_for_supported_entities(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
@@ -1674,6 +1737,69 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(record["file_path"], ".aletheia/state/ACTIVE_STATE.md")
             self.assertIsNone(record["agent_run_id"])
             self.assertIn("current_agent_run.json", record["agent_run_error"])
+
+    def test_model_registry_can_deprecate_and_remove_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+
+            register = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--registry",
+                    "register",
+                    "codex",
+                    "--provider",
+                    "openai",
+                    "--model-id",
+                    "gpt-test",
+                    "--tier",
+                    "C3",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(register.returncode, 0, register.stdout + register.stderr)
+
+            deprecate = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--registry",
+                    "deprecate",
+                    "codex",
+                    "--reason",
+                    "Superseded.",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(deprecate.returncode, 0, deprecate.stdout + deprecate.stderr)
+            registry = json.loads((target / ".aletheia" / "governance" / "model_registry.json").read_text(encoding="utf-8"))
+            self.assertFalse(registry["registered_models"]["codex"]["enabled"])
+            self.assertEqual(registry["registered_models"]["codex"]["status"], "deprecated")
+            self.assertEqual(registry["registered_models"]["codex"]["deprecation_reason"], "Superseded.")
+
+            remove = subprocess.run(
+                [sys.executable, ".aletheia/bin/model_gate.py", "--registry", "remove", "codex", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(remove.returncode, 0, remove.stdout + remove.stderr)
+            registry = json.loads((target / ".aletheia" / "governance" / "model_registry.json").read_text(encoding="utf-8"))
+            self.assertNotIn("codex", registry["registered_models"])
 
     def test_stop_hook_reports_checkpoint_recommendation_and_autocommit_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

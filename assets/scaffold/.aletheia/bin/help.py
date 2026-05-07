@@ -44,6 +44,8 @@ CAPABILITIES = [
             "python3 .aletheia/bin/model_gate.py --registry list",
             "python3 .aletheia/bin/model_gate.py --registry register <name> --provider <provider> --model-id <model_id> --tier C3",
             "python3 .aletheia/bin/model_gate.py --registry disable <name>",
+            "python3 .aletheia/bin/model_gate.py --registry deprecate <name> --reason \"Superseded\"",
+            "python3 .aletheia/bin/model_gate.py --registry remove <name>",
             "python3 .aletheia/bin/model_gate.py --registry deny <model_id> --reason \"Reason\"",
         ],
     ),
@@ -56,6 +58,9 @@ CAPABILITIES = [
             "python3 .aletheia/bin/truth_record.py show evidence EV-0001",
             "python3 .aletheia/bin/truth_record.py update evidence EV-0001 --status active",
             "python3 .aletheia/bin/truth_record.py archive evidence EV-0001 --reason \"Superseded by stronger evidence\"",
+            "python3 .aletheia/bin/truth_record.py show capability-map current",
+            "python3 .aletheia/bin/truth_record.py update active-state current --section \"Active frontier\" --content \"...\"",
+            "python3 .aletheia/bin/truth_record.py archive runtime-policy current --reason \"Superseded policy\"",
         ],
     ),
     (

@@ -490,12 +490,26 @@ def registry_command(args: argparse.Namespace) -> int:
         registry_emit(save_registry(root, registry), args.json)
         return 0
 
-    if command in {"enable", "disable"}:
+    if command in {"enable", "disable", "deprecate"}:
         entry = models.get(args.name)
         if not isinstance(entry, dict):
             print(f"model registry entry not found: {args.name}", file=sys.stderr)
             return 1
         entry["enabled"] = command == "enable"
+        if command == "deprecate":
+            entry["status"] = "deprecated"
+            entry["deprecation_reason"] = args.reason or "deprecated"
+        elif command == "enable":
+            entry.pop("status", None)
+            entry.pop("deprecation_reason", None)
+        registry_emit(save_registry(root, registry), args.json)
+        return 0
+
+    if command == "remove":
+        entry = models.pop(args.name, None)
+        if not isinstance(entry, dict):
+            print(f"model registry entry not found: {args.name}", file=sys.stderr)
+            return 1
         registry_emit(save_registry(root, registry), args.json)
         return 0
 
@@ -531,7 +545,10 @@ def registry_command(args: argparse.Namespace) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run the AletheiaOS model gate.")
-    parser.add_argument("--registry", choices=["list", "register", "show", "enable", "disable", "deny", "undeny"])
+    parser.add_argument(
+        "--registry",
+        choices=["list", "register", "show", "enable", "disable", "deprecate", "remove", "deny", "undeny"],
+    )
     parser.add_argument("name", nargs="?")
     parser.add_argument("--hook-mode", choices=["sessionstart", "pretooluse"], default=None)
     parser.add_argument("--task-class", default=None)

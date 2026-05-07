@@ -450,6 +450,71 @@ class CheckpointTests(unittest.TestCase):
             self.assertIn(".aletheia/state/ACTIVE_STATE.md", committed_paths)
             self.assertIn("src/included.py", committed_paths)
 
+    def test_checkpoint_default_output_reports_truth_record_rename_candidate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=False)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=target, check=False)
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-test",
+                        "provider": "test",
+                        "model_id": "test-model",
+                        "capability_tier": "C3",
+                        "task_class": "research_design",
+                        "gate_status": "allowed",
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            evidence = target / ".aletheia" / "evidence" / "old-name.md"
+            evidence.write_text(
+                "# Evidence: old name\n\n"
+                "## Source refs\n\n- `README.md`\n\n"
+                "## Method\n\nRead docs.\n\n"
+                "## Result\n\nObserved behavior.\n\n"
+                "## Limitations\n\nSingle sample.\n\n"
+                "## Invalidation criteria\n\nContradicting evidence.\n\n"
+                "## Confidence impact\n\nRaises confidence.\n",
+                encoding="utf-8",
+            )
+            subprocess.run(["git", "add", "-A"], cwd=target, check=False)
+            baseline = subprocess.run(
+                ["git", "commit", "-m", "test: baseline evidence"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(baseline.returncode, 0, baseline.stdout + baseline.stderr)
+            new_evidence = target / ".aletheia" / "evidence" / "new-name.md"
+            evidence.rename(new_evidence)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/checkpoint.py", "--auto", "--dry-run"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("checkpoint candidate:", output)
+            self.assertIn(".aletheia/evidence/new-name.md", output)
+            self.assertNotIn("non-checkpoint worktree changes remain", output)
+
 
 if __name__ == "__main__":
     unittest.main()

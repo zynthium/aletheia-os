@@ -296,6 +296,20 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0, output)
             self.assertIn("missing required path: .claude/settings.json", output)
 
+    def test_validate_rejects_invalid_claude_settings_json_with_clear_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".claude" / "settings.json").write_text("{invalid json", encoding="utf-8")
+
+            result = validate_target(target)
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn("Claude settings JSON invalid", output)
+            self.assertNotIn("Traceback", output)
+
     def test_validate_rejects_graph_skeleton_root_child_mismatch(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
@@ -564,6 +578,60 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(record["file_path"], ".aletheia/evidence/EV-test.md")
             self.assertEqual(record["model_id"], "codex-e2e")
             self.assertEqual(record["task_class"], "research_design")
+
+    def test_change_hook_records_bash_command_when_file_path_is_absent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            gate = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "research_design",
+                    "--provider",
+                    "openai",
+                    "--model-id",
+                    "codex-e2e",
+                    "--tier",
+                    "C3",
+                    "--operator-approved",
+                    "--record",
+                    "--objective",
+                    "Record bash hook payload",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+            payload = {
+                "hook_event_name": "PostToolUse",
+                "tool_name": "Bash",
+                "tool_input": {"command": "python3 .aletheia/bin/validate.py"},
+                "cwd": str(target),
+            }
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/change_hook.py"],
+                cwd=target,
+                input=json.dumps(payload),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            log_path = target / ".aletheia" / "runtime" / "change_log.jsonl"
+            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[-1])
+            self.assertEqual(record["tool"], "Bash")
+            self.assertEqual(record["command"], "python3 .aletheia/bin/validate.py")
+            self.assertIsNone(record["file_path"])
 
     def test_stop_hook_reports_checkpoint_recommendation_and_autocommit_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

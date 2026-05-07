@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -94,6 +95,37 @@ class ModelGateTests(unittest.TestCase):
             self.assertEqual(allowed.returncode, 0, allowed.stdout + allowed.stderr)
             self.assertTrue((target / ".aletheia" / "runtime" / "current_agent_run.json").exists())
             self.assertTrue(any((target / ".aletheia" / "agent_runs").glob("*.json")))
+
+    def test_sessionstart_records_payload_model_and_env_task_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            env = os.environ.copy()
+            env["AIOS_TASK_CLASS"] = "orientation"
+            env["AIOS_OBJECTIVE"] = "Open Claude Code session"
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/model_gate.py", "--hook-mode", "sessionstart"],
+                cwd=target,
+                env=env,
+                input=json.dumps({"session_id": "claude-session", "model": "claude-sonnet-4-5"}),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("Detected model: anthropic/claude-sonnet-4-5", output)
+            run_data = json.loads((target / ".aletheia" / "runtime" / "current_agent_run.json").read_text(encoding="utf-8"))
+            self.assertEqual(run_data["provider"], "anthropic")
+            self.assertEqual(run_data["model_id"], "claude-sonnet-4-5")
+            self.assertEqual(run_data["agent_tool"], "claude-code")
+            self.assertEqual(run_data["task_class"], "orientation")
+            self.assertEqual(run_data["objective"], "Open Claude Code session")
 
     def test_pretooluse_allows_standalone_bootstrap_model_gate_before_current_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

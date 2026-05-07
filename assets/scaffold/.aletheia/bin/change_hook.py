@@ -31,6 +31,7 @@ def main() -> int:
         "event": payload.get("hook_event_name"),
         "tool": payload.get("tool_name"),
         "file_path": (payload.get("tool_input") or {}).get("file_path"),
+        "command": (payload.get("tool_input") or {}).get("command"),
         "cwd": payload.get("cwd"),
         "agent_run_id": current.get("run_id"),
         "model_id": current.get("model_id"),

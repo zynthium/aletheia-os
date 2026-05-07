@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -354,6 +355,139 @@ class RuntimeValidateTests(unittest.TestCase):
             text = (template_root / filename).read_text(encoding="utf-8")
             for phrase in phrases:
                 self.assertIn(phrase, text)
+
+    def test_change_hook_records_real_payload_with_current_agent_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            gate = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "research_design",
+                    "--provider",
+                    "openai",
+                    "--model-id",
+                    "codex-e2e",
+                    "--tier",
+                    "C3",
+                    "--operator-approved",
+                    "--record",
+                    "--objective",
+                    "Record hook payload",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+            payload = {
+                "hook_event_name": "PostToolUse",
+                "tool_name": "Write",
+                "tool_input": {"file_path": ".aletheia/evidence/EV-test.md"},
+                "cwd": str(target),
+            }
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/change_hook.py"],
+                cwd=target,
+                input=json.dumps(payload),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            log_path = target / ".aletheia" / "runtime" / "change_log.jsonl"
+            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[-1])
+            self.assertEqual(record["event"], "PostToolUse")
+            self.assertEqual(record["tool"], "Write")
+            self.assertEqual(record["file_path"], ".aletheia/evidence/EV-test.md")
+            self.assertEqual(record["model_id"], "codex-e2e")
+            self.assertEqual(record["task_class"], "research_design")
+
+    def test_stop_hook_reports_checkpoint_recommendation_and_autocommit_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=False)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=target, check=False)
+            gate = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "research_design",
+                    "--provider",
+                    "openai",
+                    "--model-id",
+                    "codex-e2e",
+                    "--tier",
+                    "C3",
+                    "--operator-approved",
+                    "--record",
+                    "--objective",
+                    "Stop hook checkpoint",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(active_state.read_text(encoding="utf-8") + "\nStop hook state note.\n", encoding="utf-8")
+
+            recommend = subprocess.run(
+                [sys.executable, ".aletheia/bin/stop_hook.py"],
+                cwd=target,
+                input=json.dumps({"hook_event_name": "Stop"}),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            recommend_output = recommend.stdout + recommend.stderr
+            self.assertEqual(recommend.returncode, 0, recommend_output)
+            self.assertIn("current agent run", recommend_output)
+            self.assertIn("changes detected. Recommended next command", recommend_output)
+
+            env = os.environ.copy()
+            env["AIOS_AUTOCOMMIT"] = "1"
+            autocommit = subprocess.run(
+                [sys.executable, ".aletheia/bin/stop_hook.py"],
+                cwd=target,
+                env=env,
+                input=json.dumps({"hook_event_name": "Stop"}),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            autocommit_output = autocommit.stdout + autocommit.stderr
+            self.assertEqual(autocommit.returncode, 0, autocommit_output)
+            self.assertIn("checkpoint candidate:", autocommit_output)
+            committed = subprocess.run(
+                ["git", "show", "--name-only", "--format=%B", "HEAD"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertIn("AIOS-Agent-Model: codex-e2e", committed.stdout)
+            self.assertIn(".aletheia/state/ACTIVE_STATE.md", committed.stdout)
 
 
 if __name__ == "__main__":

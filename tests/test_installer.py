@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -93,6 +94,58 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(codex_marketplace["interface"]["displayName"], "AletheiaOS")
         self.assertEqual(codex_marketplace["plugins"][0]["name"], "aletheia-os")
         self.assertEqual(codex_marketplace["plugins"][0]["source"]["path"], "./")
+
+    def test_installer_non_dry_run_executes_cli_and_copies_codex_agents(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fakebin = root / "bin"
+            project = root / "project"
+            log = root / "commands.log"
+            fakebin.mkdir()
+            project.mkdir()
+            for name in ["codex", "claude"]:
+                command = fakebin / name
+                command.write_text(
+                    "#!/bin/sh\n"
+                    f"printf '{name} %s\\n' \"$*\" >> \"{log}\"\n",
+                    encoding="utf-8",
+                )
+                command.chmod(0o755)
+            env = os.environ.copy()
+            env["PATH"] = f"{fakebin}{os.pathsep}{env.get('PATH', '')}"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/install_aletheia.py",
+                    "--host",
+                    "both",
+                    "--scope",
+                    "project",
+                    "--project",
+                    str(project),
+                    "--source",
+                    str(ROOT),
+                    "--with-codex-agents",
+                    "--init-project",
+                ],
+                cwd=ROOT,
+                env=env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            commands = log.read_text(encoding="utf-8")
+            self.assertIn(f"claude plugin marketplace add {ROOT} --scope project", commands)
+            self.assertIn("claude plugin install aletheia-os@aletheia-os --scope project", commands)
+            self.assertIn(f"codex plugin marketplace add {ROOT}", commands)
+            self.assertTrue((project / ".codex" / "agents" / "truth-auditor.toml").exists())
+            self.assertTrue((project / ".aletheia" / "START_HERE.md").exists())
+            self.assertTrue((project / ".claude" / "settings.json").exists())
 
 
 if __name__ == "__main__":

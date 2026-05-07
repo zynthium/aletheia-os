@@ -8,6 +8,20 @@ description: Promote reviewed AletheiaOS Wiki Handoff findings or candidate rese
 Use when the user has an AletheiaOS Wiki Handoff or candidate research findings
 and wants to turn confirmed findings into durable AletheiaOS truth records.
 
+## Primitive Capabilities
+
+Use these primitives. Do not add orchestration to runtime scripts for promotion judgment:
+
+- `system_context.py` or `context_pack.py` to load stable truth, capabilities, and record inventory.
+- `truth_record.py list/show` to deduplicate candidate claims against existing truth.
+- `truth_record.py create/update/archive` to write evidence, hypotheses, decisions, contracts, risks, nodes, state, or session notes.
+- `validate.py` to verify refs and truth record semantics.
+- `checkpoint.py --dry-run` and `checkpoint.py` when the user wants promoted truth committed.
+
+## Prompt Recipe
+
+The skill is a prompt recipe for deciding what deserves promotion from research material.
+
 Promotion rules:
 
 1. Read the handoff before writing.

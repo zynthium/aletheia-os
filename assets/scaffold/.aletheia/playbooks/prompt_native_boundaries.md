@@ -61,6 +61,11 @@ primitive unless reference checks and recovery guidance are added.
 Prompt workflows should compose the runtime primitives above instead of hiding new
 business logic inside Python:
 
+Each workflow skill should contain:
+
+- `## Primitive Capabilities`: the scripts or action contracts the skill composes.
+- `## Prompt Recipe`: the judgment, sequencing, and interpretation that belongs in prose.
+
 | Workflow | Primitive capabilities it should compose |
 |---|---|
 | Bootstrap | `model_gate.py`, `source_inventory.py`, `guided_bootstrap.py`, `truth_record.py`, `validate.py`, `checkpoint.py` |

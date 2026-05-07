@@ -194,6 +194,25 @@ class PluginManifestTests(unittest.TestCase):
         ]:
             self.assertIn(term, boundaries)
 
+    def test_workflow_skills_declare_primitives_and_prompt_recipes(self) -> None:
+        expected_primitives = {
+            "aletheia-architecture-evolution": ["orient.py", "truth_record.py", "validate.py"],
+            "aletheia-bootstrap": ["model_gate.py", "source_inventory.py", "guided_bootstrap.py"],
+            "aletheia-checkpoint": ["preflight.py", "validate.py", "checkpoint.py"],
+            "aletheia-design-evidence": ["truth_record.py", "validate.py"],
+            "aletheia-orient": ["system_context.py", "orient.py", "context_pack.py"],
+            "aletheia-promote": ["context_pack.py", "truth_record.py", "validate.py"],
+        }
+
+        for skill_name, primitives in expected_primitives.items():
+            with self.subTest(skill=skill_name):
+                text = (ROOT / "skills" / skill_name / "SKILL.md").read_text(encoding="utf-8")
+                self.assertIn("## Primitive Capabilities", text)
+                self.assertIn("## Prompt Recipe", text)
+                self.assertIn("Do not add orchestration to runtime scripts", text)
+                for primitive in primitives:
+                    self.assertIn(primitive, text)
+
     def test_capability_audit_passes_for_scaffold_and_fails_when_map_drifts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             scaffold = Path(tmp) / "scaffold"

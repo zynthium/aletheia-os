@@ -54,6 +54,7 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 
 These are the atomic capabilities that prompt workflows and review agents should compose.
 See `.aletheia/playbooks/prompt_native_boundaries.md` for the Primitive-To-Workflow Map.
+Each workflow skill declares its `Primitive Capabilities` and `Prompt Recipe` so the skill remains prose-level judgment over these primitives.
 
 | Primitive | Script or file | Scope |
 |---|---|---|

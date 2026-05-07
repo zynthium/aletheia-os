@@ -30,14 +30,17 @@ def repo_root() -> Path:
 
 
 def run(cmd: list[str], root: Path, *, capture: bool = False) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        cmd,
-        cwd=root,
-        check=False,
-        text=True,
-        stdout=subprocess.PIPE if capture else None,
-        stderr=subprocess.PIPE if capture else None,
-    )
+    try:
+        return subprocess.run(
+            cmd,
+            cwd=root,
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE if capture else None,
+            stderr=subprocess.PIPE if capture else None,
+        )
+    except FileNotFoundError as exc:
+        raise RuntimeError(f"{cmd[0]} is not available on PATH") from exc
 
 
 def ensure_git(root: Path) -> None:
@@ -188,8 +191,12 @@ def main() -> int:
     args = parser.parse_args()
 
     root = repo_root()
-    ensure_git(root)
-    files = status_files(root)
+    try:
+        ensure_git(root)
+        files = status_files(root)
+    except RuntimeError as exc:
+        print(f"checkpoint blocked: {exc}")
+        return 1
     if not files:
         print("checkpoint skipped: working tree is clean")
         return 0

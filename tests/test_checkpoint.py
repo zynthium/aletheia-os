@@ -42,6 +42,34 @@ class CheckpointTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, output)
         self.assertNotIn("--state-only", output)
 
+    def test_checkpoint_reports_missing_git_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(active_state.read_text(encoding="utf-8") + "\nMissing git checkpoint note.\n", encoding="utf-8")
+            empty_bin = Path(tmp) / "empty-bin"
+            empty_bin.mkdir()
+            env = os.environ.copy()
+            env["PATH"] = str(empty_bin)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/checkpoint.py", "--auto", "--dry-run", "--no-model-gate"],
+                cwd=target,
+                env=env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn("checkpoint blocked: git is not available on PATH", output)
+            self.assertNotIn("Traceback", output)
+
     def test_checkpoint_dry_run_reports_agent_attribution(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

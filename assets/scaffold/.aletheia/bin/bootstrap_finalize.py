@@ -29,14 +29,17 @@ def repo_root() -> Path:
 
 
 def run(cmd: list[str], root: Path, *, capture: bool = False) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        cmd,
-        cwd=root,
-        text=True,
-        stdout=subprocess.PIPE if capture else None,
-        stderr=subprocess.PIPE if capture else None,
-        check=False,
-    )
+    try:
+        return subprocess.run(
+            cmd,
+            cwd=root,
+            text=True,
+            stdout=subprocess.PIPE if capture else None,
+            stderr=subprocess.PIPE if capture else None,
+            check=False,
+        )
+    except FileNotFoundError as exc:
+        raise RuntimeError(f"{cmd[0]} is not available on PATH") from exc
 
 
 def validate(root: Path) -> int:
@@ -133,8 +136,12 @@ def main() -> int:
     if rc != 0:
         return rc
 
-    ensure_git(root)
-    configure_hooks(root)
+    try:
+        ensure_git(root)
+        configure_hooks(root)
+    except RuntimeError as exc:
+        print(f"bootstrap blocked: {exc}")
+        return 1
     write_session_note(root)
 
     bootstrap = root / "BOOTSTRAP.md"

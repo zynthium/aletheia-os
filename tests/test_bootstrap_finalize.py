@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -346,6 +347,51 @@ class BootstrapFinalizeTests(unittest.TestCase):
             output = result.stdout + result.stderr
             self.assertNotEqual(result.returncode, 0, output)
             self.assertIn("critical files still contain TBD markers", output)
+            self.assertTrue((target / "BOOTSTRAP.md").exists())
+
+    def test_bootstrap_finalize_reports_missing_git_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-test",
+                        "provider": "test",
+                        "model_id": "test-model",
+                        "capability_tier": "C3",
+                        "task_class": "bootstrap_finalize",
+                        "gate_status": "allowed",
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            customize_minimal_project_truth(target)
+            empty_bin = Path(tmp) / "empty-bin"
+            empty_bin.mkdir()
+            env = os.environ.copy()
+            env["PATH"] = str(empty_bin)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/bootstrap_finalize.py", "--no-checkpoint"],
+                cwd=target,
+                env=env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn("bootstrap blocked: git is not available on PATH", output)
+            self.assertNotIn("Traceback", output)
             self.assertTrue((target / "BOOTSTRAP.md").exists())
 
     def test_existing_project_bootstrap_finalize_creates_truth_checkpoint_without_touching_source(self) -> None:

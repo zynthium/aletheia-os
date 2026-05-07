@@ -311,6 +311,162 @@ def write_iteration_two_truth(target: Path) -> None:
 
 
 class ResearchIterationFlowTests(unittest.TestCase):
+    def test_insert_parent_refactor_groups_existing_leaves_without_new_record_types(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "insert-parent-loop"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+
+            (target / ".aletheia" / "evidence" / "EV-301-missing-parent.md").write_text(
+                "# Evidence: Reproducibility leaves need a parent branch\n\n"
+                "Date: 2026-05-08\n"
+                "Evidence type: observation\n"
+                "Claim lifecycle impact: evidence-backed\n"
+                "Claim tested: Deterministic fixtures and replay checks share one execution concern.\n"
+                "Linked node: reproducibility_checks\n\n"
+                "## Source refs\n\n"
+                "- `.aletheia/state/SKELETON.yaml`\n\n"
+                "## Method\n\n"
+                "Reviewed sibling leaf boundaries after repeated execution work touched both leaves.\n\n"
+                "## Result\n\n"
+                "The leaves share a missing intermediate parent: reproducibility_checks.\n\n"
+                "## Limitations\n\n"
+                "This only refactors the truth tree; it does not implement any checks.\n\n"
+                "## Interpretation\n\n"
+                "Insert reproducibility_checks between engineering_execution and the two existing leaves.\n\n"
+                "## Invalidation criteria\n\n"
+                "Revisit if the leaves diverge into unrelated execution concerns.\n\n"
+                "## Graph impact\n\n"
+                "- engineering_execution\n"
+                "- reproducibility_checks\n"
+                "- deterministic_fixtures\n"
+                "- replay_validation\n\n"
+                "## Confidence impact\n\n"
+                "Raises confidence that reproducibility_checks is the correct intermediate branch.\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "decisions" / "DEC-301-insert-reproducibility-parent.md").write_text(
+                "# Decision: Insert reproducibility parent branch\n\n"
+                "Status: accepted\n"
+                "Decision type: tree_refactor\n"
+                "Date: 2026-05-08\n\n"
+                "## Context\n\n"
+                "Two execution leaves share an unmodeled reproducibility concern.\n\n"
+                "## Decision\n\n"
+                "Insert `reproducibility_checks` as an intermediate skeleton parent under `engineering_execution`.\n\n"
+                "## Alternatives considered\n\n"
+                "- Keep leaves directly under engineering_execution: rejected because the shared boundary remains implicit.\n"
+                "- Create a new record type: rejected because skeleton, evidence, and decisions already represent the refactor.\n\n"
+                "## Consequences\n\n"
+                "Future agents orient on reproducibility_checks before changing fixture or replay validation truth.\n\n"
+                "## Affected nodes\n\n"
+                "- engineering_execution\n"
+                "- reproducibility_checks\n"
+                "- deterministic_fixtures\n"
+                "- replay_validation\n\n"
+                "## Affected contracts\n\n"
+                "None.\n\n"
+                "## Evidence links\n\n"
+                "- `.aletheia/evidence/EV-301-missing-parent.md`\n\n"
+                "## Hypothesis links\n\n"
+                "None.\n\n"
+                "## Invalidation criteria\n\n"
+                "Revisit if deterministic fixtures and replay validation no longer share a reproducibility boundary.\n\n"
+                "## Review trigger\n\n"
+                "Review when another reproducibility leaf appears or either child is archived.\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "state" / "SKELETON.yaml").write_text(
+                (target / ".aletheia" / "state" / "SKELETON.yaml").read_text(encoding="utf-8")
+                + "\n"
+                "  reproducibility_checks:\n"
+                "    layer: branch\n"
+                "    parent: engineering_execution\n"
+                "    children:\n"
+                "      - deterministic_fixtures\n"
+                "      - replay_validation\n"
+                "    purpose: \"Group durable reproducibility concerns under execution.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs:\n"
+                "      - .aletheia/decisions/DEC-301-insert-reproducibility-parent.md\n"
+                "    evidence_refs:\n"
+                "      - .aletheia/evidence/EV-301-missing-parent.md\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.5\n"
+                "    last_reviewed: 2026-05-08\n"
+                "  deterministic_fixtures:\n"
+                "    layer: leaf\n"
+                "    parent: reproducibility_checks\n"
+                "    children: []\n"
+                "    purpose: \"Keep fixture generation deterministic.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs: []\n"
+                "    evidence_refs: []\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.4\n"
+                "    last_reviewed: 2026-05-08\n"
+                "  replay_validation:\n"
+                "    layer: leaf\n"
+                "    parent: reproducibility_checks\n"
+                "    children: []\n"
+                "    purpose: \"Keep replay validation deterministic and inspectable.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs: []\n"
+                "    evidence_refs: []\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.4\n"
+                "    last_reviewed: 2026-05-08\n",
+                encoding="utf-8",
+            )
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(
+                active_state.read_text(encoding="utf-8").replace("- `root`", "- `reproducibility_checks`"),
+                encoding="utf-8",
+            )
+
+            validate = run_repo(target, sys.executable, ".aletheia/bin/validate.py")
+            self.assertEqual(validate.returncode, 0, validate.stdout + validate.stderr)
+
+            orient = run_repo(target, sys.executable, ".aletheia/bin/orient.py")
+            self.assertEqual(orient.returncode, 0, orient.stdout + orient.stderr)
+            self.assertIn("reproducibility_checks", orient.stdout)
+            self.assertIn("deterministic_fixtures", orient.stdout)
+            self.assertIn("replay_validation", orient.stdout)
+
+            status = run_repo(target, sys.executable, ".aletheia/bin/status.py", "--json")
+            self.assertEqual(status.returncode, 0, status.stdout + status.stderr)
+            status_payload = json.loads(status.stdout)
+            self.assertEqual(status_payload["active_state"]["active_nodes"], ["reproducibility_checks"])
+            self.assertFalse(status_payload["tree_health"]["review_needed"])
+
     def test_orphan_candidate_can_be_attached_to_the_truth_tree_without_new_record_types(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "tree-loop"

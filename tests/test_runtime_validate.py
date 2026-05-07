@@ -150,6 +150,10 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("## Tree Health", output)
             self.assertIn("- skeleton nodes:", output)
             self.assertIn("- orphan count: 0", output)
+            self.assertIn("- stale orphan count: 0", output)
+            self.assertIn("- tree warning count: 0", output)
+            self.assertIn("- tree error count: 0", output)
+            self.assertIn("- review needed: False", output)
             self.assertIn("## Runtime Gate", output)
             self.assertIn("- run_id: RUN-status", output)
             self.assertIn("- gate_status: allowed", output)
@@ -224,6 +228,10 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(payload["active_state"]["current_phase"], "bootstrap")
             self.assertEqual(payload["validation"]["returncode"], 0)
             self.assertIn("decisions", payload["records"])
+            self.assertEqual(payload["tree_health"]["stale_orphan_count"], 0)
+            self.assertEqual(payload["tree_health"]["warning_count"], 0)
+            self.assertEqual(payload["tree_health"]["error_count"], 0)
+            self.assertFalse(payload["tree_health"]["review_needed"])
             self.assertIsNone(payload["runtime_gate"])
 
     def test_preflight_reports_validation_gate_and_checkpoint_candidate_for_no_hooks_hosts(self) -> None:
@@ -702,6 +710,10 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("tree_health", status)
             self.assertIn("skeleton_nodes", status["tree_health"])
             self.assertIn("orphan_count", status["tree_health"])
+            self.assertIn("stale_orphan_count", status["tree_health"])
+            self.assertIn("warning_count", status["tree_health"])
+            self.assertIn("error_count", status["tree_health"])
+            self.assertIn("review_needed", status["tree_health"])
 
     def test_overview_surfaces_recent_runtime_changes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -787,7 +799,27 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(status.returncode, 0, status.stdout + status.stderr)
             payload = json.loads(status.stdout)
             self.assertEqual(payload["tree_health"]["orphan_count"], 1)
+            self.assertEqual(payload["tree_health"]["stale_orphan_count"], 1)
+            self.assertGreaterEqual(payload["tree_health"]["warning_count"], 1)
+            self.assertEqual(payload["tree_health"]["error_count"], 0)
+            self.assertTrue(payload["tree_health"]["review_needed"])
             self.assertTrue(any("orphan" in signal.lower() for signal in payload["tree_health"]["signals"]))
+
+            overview = subprocess.run(
+                [sys.executable, ".aletheia/bin/overview.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(overview.returncode, 0, overview.stdout + overview.stderr)
+            overview_status = json.loads((target / ".aletheia" / "overview" / "status.json").read_text(encoding="utf-8"))
+            self.assertEqual(overview_status["tree_health"]["orphan_count"], 1)
+            self.assertEqual(overview_status["tree_health"]["stale_orphan_count"], 1)
+            self.assertGreaterEqual(overview_status["tree_health"]["warning_count"], 1)
+            self.assertEqual(overview_status["tree_health"]["error_count"], 0)
+            self.assertTrue(overview_status["tree_health"]["review_needed"])
 
             validate = validate_target(target)
             self.assertEqual(validate.returncode, 0, validate.stdout + validate.stderr)

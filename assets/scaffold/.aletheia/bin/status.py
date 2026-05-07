@@ -21,6 +21,8 @@ RECORD_DIRS = {
     "agent_runs": ".aletheia/agent_runs",
 }
 
+TREE_SIGNAL_TERMS = ("skeleton", "orphan", "tree")
+
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
@@ -148,18 +150,38 @@ def count_orphans(root: Path) -> int:
     return len(re.findall(r"(?m)^\s{2}-\s+id:\s*\S+", text))
 
 
+def tree_signal_lines(text: str) -> list[str]:
+    return [line for line in text.splitlines() if any(term in line.lower() for term in TREE_SIGNAL_TERMS)]
+
+
+def stale_orphan_count(stdout: str) -> int:
+    total = 0
+    for line in stdout.splitlines():
+        match = re.search(r"orphan review is stale:\s*(.+?)\s*$", line)
+        if not match:
+            continue
+        total += len([item for item in re.split(r"\s*,\s*", match.group(1).strip()) if item])
+    return total
+
+
 def tree_health(root: Path, validation_state: dict[str, Any]) -> dict[str, Any]:
     stdout = validation_state.get("stdout", "")
     stderr = validation_state.get("stderr", "")
-    combined = f"{stdout}\n{stderr}"
+    stdout_tree_lines = tree_signal_lines(stdout)
+    stderr_tree_lines = tree_signal_lines(stderr)
     tree_lines = [
         line.strip(" -")
-        for line in combined.splitlines()
-        if any(term in line.lower() for term in ["skeleton", "orphan", "tree"])
+        for line in [*stdout_tree_lines, *stderr_tree_lines]
     ]
+    orphan_count = count_orphans(root)
+    stale_count = stale_orphan_count(stdout)
     return {
         "skeleton_nodes": count_skeleton_nodes(root),
-        "orphan_count": count_orphans(root),
+        "orphan_count": orphan_count,
+        "stale_orphan_count": stale_count,
+        "warning_count": len(stdout_tree_lines),
+        "error_count": len(stderr_tree_lines),
+        "review_needed": stale_count > 0 or orphan_count > 0,
         "signals": tree_lines,
     }
 
@@ -206,6 +228,10 @@ def print_markdown(status: dict[str, Any]) -> None:
     tree = status["tree_health"]
     print(f"- skeleton nodes: {tree['skeleton_nodes']}")
     print(f"- orphan count: {tree['orphan_count']}")
+    print(f"- stale orphan count: {tree['stale_orphan_count']}")
+    print(f"- tree warning count: {tree['warning_count']}")
+    print(f"- tree error count: {tree['error_count']}")
+    print(f"- review needed: {tree['review_needed']}")
     if tree["signals"]:
         for signal in tree["signals"]:
             print(f"- signal: {signal}")

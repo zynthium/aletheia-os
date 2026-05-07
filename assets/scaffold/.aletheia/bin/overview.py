@@ -21,6 +21,8 @@ STATE_FILES = [
     ".aletheia/state/DOMAIN_PROFILE.md",
 ]
 
+TREE_SIGNAL_TERMS = ("skeleton", "orphan", "tree")
+
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
@@ -77,16 +79,38 @@ def count_orphans(root: Path) -> int:
     return sum(1 for line in text.splitlines() if line.startswith("  - id:"))
 
 
+def tree_signal_lines(text: str) -> list[str]:
+    return [line for line in text.splitlines() if any(term in line.lower() for term in TREE_SIGNAL_TERMS)]
+
+
+def stale_orphan_count(stdout: str) -> int:
+    total = 0
+    for line in stdout.splitlines():
+        if "orphan review is stale:" not in line:
+            continue
+        ids = line.split("orphan review is stale:", 1)[1].strip()
+        total += len([item for item in ids.split(",") if item.strip()])
+    return total
+
+
 def tree_health(root: Path, validation: dict) -> dict:
-    combined = f"{validation.get('stdout', '')}\n{validation.get('stderr', '')}"
+    stdout = validation.get("stdout", "")
+    stderr = validation.get("stderr", "")
+    stdout_tree_lines = tree_signal_lines(stdout)
+    stderr_tree_lines = tree_signal_lines(stderr)
     signals = [
         line.strip(" -")
-        for line in combined.splitlines()
-        if any(term in line.lower() for term in ["skeleton", "orphan", "tree"])
+        for line in [*stdout_tree_lines, *stderr_tree_lines]
     ]
+    orphan_count = count_orphans(root)
+    stale_count = stale_orphan_count(stdout)
     return {
         "skeleton_nodes": count_skeleton_nodes(root),
-        "orphan_count": count_orphans(root),
+        "orphan_count": orphan_count,
+        "stale_orphan_count": stale_count,
+        "warning_count": len(stdout_tree_lines),
+        "error_count": len(stderr_tree_lines),
+        "review_needed": stale_count > 0 or orphan_count > 0,
         "signals": signals,
     }
 

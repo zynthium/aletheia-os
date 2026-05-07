@@ -868,6 +868,38 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("Claude settings JSON invalid", output)
             self.assertNotIn("Traceback", output)
 
+    def test_validate_rejects_invalid_runtime_policy_with_clear_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            policy = target / ".aletheia" / "governance" / "runtime_policy.json"
+
+            policy.write_text("{invalid json", encoding="utf-8")
+            invalid_json = validate_target(target)
+            invalid_json_output = invalid_json.stdout + invalid_json.stderr
+            self.assertNotEqual(invalid_json.returncode, 0, invalid_json_output)
+            self.assertIn("runtime policy JSON invalid", invalid_json_output)
+            self.assertNotIn("Traceback", invalid_json_output)
+
+            policy.write_text(json.dumps({"read_only_git_subcommands": ["status"]}) + "\n", encoding="utf-8")
+            missing = validate_target(target)
+            missing_output = missing.stdout + missing.stderr
+            self.assertNotEqual(missing.returncode, 0, missing_output)
+            self.assertIn("runtime policy missing section: protected_path_patterns", missing_output)
+            self.assertIn("runtime policy missing section: checkpoint_state_patterns", missing_output)
+            self.assertNotIn("Traceback", missing_output)
+
+            good_policy = json.loads((ROOT / "assets" / "scaffold" / ".aletheia" / "governance" / "runtime_policy.json").read_text(encoding="utf-8"))
+            good_policy["protected_path_patterns"].append("[bad")
+            policy.write_text(json.dumps(good_policy, indent=2) + "\n", encoding="utf-8")
+            bad_regex = validate_target(target)
+            bad_regex_output = bad_regex.stdout + bad_regex.stderr
+            self.assertNotEqual(bad_regex.returncode, 0, bad_regex_output)
+            self.assertIn("runtime policy protected_path_patterns invalid regex", bad_regex_output)
+            self.assertIn("[bad", bad_regex_output)
+            self.assertNotIn("Traceback", bad_regex_output)
+
     def test_validate_rejects_graph_skeleton_root_child_mismatch(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

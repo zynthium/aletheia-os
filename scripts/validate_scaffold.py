@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -136,6 +137,42 @@ def validate_no_retired_language(root: Path) -> list[str]:
     return errors
 
 
+def validate_runtime_policy(root: Path) -> list[str]:
+    path = root / ".aletheia" / "governance" / "runtime_policy.json"
+    errors: list[str] = []
+    try:
+        policy = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return [f"runtime policy JSON invalid: {exc}"]
+    if not isinstance(policy, dict):
+        return ["runtime policy JSON invalid: expected object"]
+
+    required_sections = [
+        "read_only_git_subcommands",
+        "read_only_local_commands",
+        "read_only_aletheia_scripts",
+        "read_only_truth_record_actions",
+        "checkpoint_state_patterns",
+        "protected_path_patterns",
+    ]
+    for section in required_sections:
+        values = policy.get(section)
+        if section not in policy:
+            errors.append(f"runtime policy missing section: {section}")
+            continue
+        if not isinstance(values, list) or not all(isinstance(item, str) for item in values):
+            errors.append(f"runtime policy section must be a list of strings: {section}")
+
+    for pattern in policy.get("protected_path_patterns", []):
+        if not isinstance(pattern, str):
+            continue
+        try:
+            re.compile(pattern)
+        except re.error as exc:
+            errors.append(f"runtime policy protected_path_patterns invalid regex: {pattern}: {exc}")
+    return errors
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate an AletheiaOS scaffold directory.")
     parser.add_argument("scaffold", type=Path)
@@ -148,7 +185,7 @@ def main() -> int:
             print(f"missing required path: {rel}", file=sys.stderr)
         return 1
 
-    skeleton_errors = validate_skeleton(root) + validate_no_retired_language(root)
+    skeleton_errors = validate_skeleton(root) + validate_runtime_policy(root) + validate_no_retired_language(root)
     if skeleton_errors:
         for error in skeleton_errors:
             print(error, file=sys.stderr)

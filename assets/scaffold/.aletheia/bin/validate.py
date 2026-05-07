@@ -333,6 +333,44 @@ def validate_model_registry(root: Path, errors: list[str], warnings: list[str]) 
         warnings.append("model registry has no enabled registered models; writes require operator approval or registry customization")
 
 
+def validate_runtime_policy(root: Path, errors: list[str]) -> None:
+    path = root / ".aletheia" / "governance" / "runtime_policy.json"
+    if not path.exists():
+        return
+    try:
+        policy = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        errors.append(f"runtime policy JSON invalid: {exc}")
+        return
+    if not isinstance(policy, dict):
+        errors.append("runtime policy JSON invalid: expected object")
+        return
+
+    required_sections = [
+        "read_only_git_subcommands",
+        "read_only_local_commands",
+        "read_only_aletheia_scripts",
+        "read_only_truth_record_actions",
+        "checkpoint_state_patterns",
+        "protected_path_patterns",
+    ]
+    for section in required_sections:
+        values = policy.get(section)
+        if section not in policy:
+            errors.append(f"runtime policy missing section: {section}")
+            continue
+        if not isinstance(values, list) or not all(isinstance(item, str) for item in values):
+            errors.append(f"runtime policy section must be a list of strings: {section}")
+
+    for pattern in policy.get("protected_path_patterns", []):
+        if not isinstance(pattern, str):
+            continue
+        try:
+            re.compile(pattern)
+        except re.error as exc:
+            errors.append(f"runtime policy protected_path_patterns invalid regex: {pattern}: {exc}")
+
+
 def validate_graph_and_skeleton(root: Path, errors: list[str], warnings: list[str], bootstrap_mode: bool) -> None:
     graph_path = root / ".aletheia" / "state" / "SYSTEM_GRAPH.yaml"
     skeleton_path = root / ".aletheia" / "state" / "SKELETON.yaml"
@@ -384,6 +422,7 @@ def main() -> int:
 
     validate_claude_settings(root, errors)
     validate_model_registry(root, errors, warnings)
+    validate_runtime_policy(root, errors)
     validate_graph_and_skeleton(root, errors, warnings, bootstrap_mode)
     validate_truth_record_semantics(root, errors)
 

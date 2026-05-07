@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -184,6 +185,40 @@ class PluginManifestTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0, combined)
             self.assertIn("output path exists and is not a directory", combined)
             self.assertNotIn("Traceback", combined)
+
+    def test_validate_scaffold_rejects_invalid_runtime_policy_before_packaging(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            scaffold = Path(tmp) / "scaffold"
+            result = subprocess.run(
+                [sys.executable, "scripts/package_plugin.py", "--output", tmp],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            packaged = Path(tmp) / "aletheia-os"
+            source_scaffold = packaged / "assets" / "scaffold"
+            shutil.copytree(source_scaffold, scaffold)
+            policy = scaffold / ".aletheia" / "governance" / "runtime_policy.json"
+            data = json.loads(policy.read_text(encoding="utf-8"))
+            data["protected_path_patterns"].append("[bad")
+            policy.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+            validate = subprocess.run(
+                [sys.executable, "scripts/validate_scaffold.py", str(scaffold)],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = validate.stdout + validate.stderr
+            self.assertNotEqual(validate.returncode, 0, output)
+            self.assertIn("runtime policy protected_path_patterns invalid regex", output)
+            self.assertNotIn("Traceback", output)
 
     def test_package_checks_wiki_handoff_promotion_protocol(self) -> None:
         result = subprocess.run(

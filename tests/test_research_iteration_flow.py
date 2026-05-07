@@ -311,6 +311,162 @@ def write_iteration_two_truth(target: Path) -> None:
 
 
 class ResearchIterationFlowTests(unittest.TestCase):
+    def test_split_node_refactor_separates_overloaded_branch_without_new_record_types(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "split-node-loop"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+
+            (target / ".aletheia" / "evidence" / "EV-302-overloaded-modeling.md").write_text(
+                "# Evidence: Market modeling node carries two mechanisms\n\n"
+                "Date: 2026-05-08\n"
+                "Evidence type: observation\n"
+                "Claim lifecycle impact: evidence-backed\n"
+                "Claim tested: A single market_modeling branch is carrying both factor signals and liquidity context.\n"
+                "Linked node: market_modeling\n\n"
+                "## Source refs\n\n"
+                "- `.aletheia/state/SKELETON.yaml`\n\n"
+                "## Method\n\n"
+                "Reviewed modeling records and found two independent explanatory mechanisms.\n\n"
+                "## Result\n\n"
+                "Factor modeling and liquidity context need separate leaves under the market_modeling branch.\n\n"
+                "## Limitations\n\n"
+                "This refactors project truth only; it does not choose either modeling lens as globally true.\n\n"
+                "## Interpretation\n\n"
+                "Split market_modeling into factor_modeling and liquidity_context children.\n\n"
+                "## Invalidation criteria\n\n"
+                "Revisit if future evidence shows one child fully subsumes the other.\n\n"
+                "## Graph impact\n\n"
+                "- theory_model\n"
+                "- market_modeling\n"
+                "- factor_modeling\n"
+                "- liquidity_context\n\n"
+                "## Confidence impact\n\n"
+                "Raises confidence that the overloaded branch has been separated into clearer mechanisms.\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "decisions" / "DEC-302-split-market-modeling.md").write_text(
+                "# Decision: Split market modeling mechanisms\n\n"
+                "Status: accepted\n"
+                "Decision type: tree_refactor\n"
+                "Date: 2026-05-08\n\n"
+                "## Context\n\n"
+                "The market_modeling branch mixes factor signal work with liquidity context reasoning.\n\n"
+                "## Decision\n\n"
+                "Keep `market_modeling` as a branch and split its mechanisms into `factor_modeling` and `liquidity_context` leaves.\n\n"
+                "## Alternatives considered\n\n"
+                "- Keep one node: rejected because agents would keep mixing evidence standards.\n"
+                "- Add a separate theory registry: rejected because hypotheses, evidence, decisions, and skeleton nodes are enough.\n\n"
+                "## Consequences\n\n"
+                "Future evidence can attach to the specific modeling mechanism it supports or weakens.\n\n"
+                "## Affected nodes\n\n"
+                "- theory_model\n"
+                "- market_modeling\n"
+                "- factor_modeling\n"
+                "- liquidity_context\n\n"
+                "## Affected contracts\n\n"
+                "None.\n\n"
+                "## Evidence links\n\n"
+                "- `.aletheia/evidence/EV-302-overloaded-modeling.md`\n\n"
+                "## Hypothesis links\n\n"
+                "None.\n\n"
+                "## Invalidation criteria\n\n"
+                "Revisit if one child becomes obsolete or the split creates duplicated evidence.\n\n"
+                "## Review trigger\n\n"
+                "Review when either child is archived, merged, or operationalized.\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "state" / "SKELETON.yaml").write_text(
+                (target / ".aletheia" / "state" / "SKELETON.yaml").read_text(encoding="utf-8")
+                + "\n"
+                "  market_modeling:\n"
+                "    layer: branch\n"
+                "    parent: theory_model\n"
+                "    children:\n"
+                "      - factor_modeling\n"
+                "      - liquidity_context\n"
+                "    purpose: \"Separate market modeling mechanisms under the theory model.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs:\n"
+                "      - .aletheia/decisions/DEC-302-split-market-modeling.md\n"
+                "    evidence_refs:\n"
+                "      - .aletheia/evidence/EV-302-overloaded-modeling.md\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.5\n"
+                "    last_reviewed: 2026-05-08\n"
+                "  factor_modeling:\n"
+                "    layer: leaf\n"
+                "    parent: market_modeling\n"
+                "    children: []\n"
+                "    purpose: \"Model indicator and factor signals.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs: []\n"
+                "    evidence_refs: []\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.4\n"
+                "    last_reviewed: 2026-05-08\n"
+                "  liquidity_context:\n"
+                "    layer: leaf\n"
+                "    parent: market_modeling\n"
+                "    children: []\n"
+                "    purpose: \"Model participant behavior and liquidity pressure context.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs: []\n"
+                "    evidence_refs: []\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.4\n"
+                "    last_reviewed: 2026-05-08\n",
+                encoding="utf-8",
+            )
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(
+                active_state.read_text(encoding="utf-8").replace("- `root`", "- `market_modeling`"),
+                encoding="utf-8",
+            )
+
+            validate = run_repo(target, sys.executable, ".aletheia/bin/validate.py")
+            self.assertEqual(validate.returncode, 0, validate.stdout + validate.stderr)
+
+            orient = run_repo(target, sys.executable, ".aletheia/bin/orient.py")
+            self.assertEqual(orient.returncode, 0, orient.stdout + orient.stderr)
+            self.assertIn("market_modeling", orient.stdout)
+            self.assertIn("factor_modeling", orient.stdout)
+            self.assertIn("liquidity_context", orient.stdout)
+
+            status = run_repo(target, sys.executable, ".aletheia/bin/status.py", "--json")
+            self.assertEqual(status.returncode, 0, status.stdout + status.stderr)
+            status_payload = json.loads(status.stdout)
+            self.assertEqual(status_payload["active_state"]["active_nodes"], ["market_modeling"])
+            self.assertFalse(status_payload["tree_health"]["review_needed"])
+
     def test_insert_parent_refactor_groups_existing_leaves_without_new_record_types(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "insert-parent-loop"

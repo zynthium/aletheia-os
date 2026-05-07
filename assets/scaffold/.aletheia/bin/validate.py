@@ -35,6 +35,7 @@ REQUIRED_PATHS = [
     ".aletheia/playbooks/external_llm_wiki_handoff.md",
     ".aletheia/playbooks/wiki_handoff_promotion.md",
     ".aletheia/bin/help.py",
+    ".aletheia/bin/capability_audit.py",
     ".aletheia/bin/orient.py",
     ".aletheia/bin/context_pack.py",
     ".aletheia/bin/preflight.py",
@@ -394,6 +395,27 @@ def validate_runtime_policy(root: Path, errors: list[str]) -> None:
         errors.append("runtime policy source_inventory_large_bytes must be a positive integer")
 
 
+def validate_capability_map(root: Path, errors: list[str]) -> None:
+    path = root / ".aletheia" / "CAPABILITY_MAP.md"
+    if not path.exists():
+        return
+    text = path.read_text(encoding="utf-8")
+    required_terms = [
+        "help.py",
+        "capability_audit.py",
+        "truth_record.py list",
+        "truth_record.py create",
+        "truth_record.py show",
+        "truth_record.py update",
+        "truth_record.py archive",
+        "model_gate.py --registry register",
+        "model_gate.py --registry remove",
+    ]
+    for term in required_terms:
+        if term not in text:
+            errors.append(f"capability map missing term: {term}")
+
+
 def validate_graph_and_skeleton(root: Path, errors: list[str], warnings: list[str], bootstrap_mode: bool) -> None:
     graph_path = root / ".aletheia" / "state" / "SYSTEM_GRAPH.yaml"
     skeleton_path = root / ".aletheia" / "state" / "SKELETON.yaml"
@@ -446,6 +468,7 @@ def main() -> int:
     validate_claude_settings(root, errors)
     validate_model_registry(root, errors, warnings)
     validate_runtime_policy(root, errors)
+    validate_capability_map(root, errors)
     validate_graph_and_skeleton(root, errors, warnings, bootstrap_mode)
     validate_truth_record_semantics(root, errors)
 

@@ -71,6 +71,7 @@ class PluginManifestTests(unittest.TestCase):
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "playbooks" / "drift_audit.md").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "playbooks" / "prompt_native_boundaries.md").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "help.py").exists())
+            self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "capability_audit.py").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "preflight.py").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "truth_record.py").exists())
             self.assertFalse((release_root / "docs" / "superpowers").exists())
@@ -122,6 +123,7 @@ class PluginManifestTests(unittest.TestCase):
 
         expected_terms = [
             "help.py",
+            "capability_audit.py",
             "orient.py",
             "context_pack.py",
             "preflight.py",
@@ -151,6 +153,38 @@ class PluginManifestTests(unittest.TestCase):
         ]
         for term in expected_terms:
             self.assertIn(term, capability_map)
+
+    def test_capability_audit_passes_for_scaffold_and_fails_when_map_drifts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            scaffold = Path(tmp) / "scaffold"
+            shutil.copytree(ROOT / "assets" / "scaffold", scaffold)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/capability_audit.py"],
+                cwd=scaffold,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn("capability audit passed", result.stdout)
+
+            capability_map = scaffold / ".aletheia" / "CAPABILITY_MAP.md"
+            capability_map.write_text("drifted\n", encoding="utf-8")
+            drifted = subprocess.run(
+                [sys.executable, ".aletheia/bin/capability_audit.py"],
+                cwd=scaffold,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = drifted.stdout + drifted.stderr
+            self.assertNotEqual(drifted.returncode, 0, output)
+            self.assertIn("capability audit failed", output)
 
     def test_capability_discovery_surfaces_core_truth_record_crud_consistently(self) -> None:
         capability_map = (ROOT / "assets" / "scaffold" / ".aletheia" / "CAPABILITY_MAP.md").read_text(

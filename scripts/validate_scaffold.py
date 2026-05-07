@@ -40,6 +40,7 @@ REQUIRED_PATHS = [
     ".aletheia/playbooks/drift_audit.md",
     ".aletheia/playbooks/wiki_handoff_promotion.md",
     ".aletheia/bin/help.py",
+    ".aletheia/bin/capability_audit.py",
     ".aletheia/bin/orient.py",
     ".aletheia/bin/context_pack.py",
     ".aletheia/bin/preflight.py",
@@ -196,6 +197,25 @@ def validate_runtime_policy(root: Path) -> list[str]:
     return errors
 
 
+def validate_capability_map(root: Path) -> list[str]:
+    path = root / ".aletheia" / "CAPABILITY_MAP.md"
+    if not path.exists():
+        return ["missing capability map: .aletheia/CAPABILITY_MAP.md"]
+    text = path.read_text(encoding="utf-8")
+    required_terms = [
+        "help.py",
+        "capability_audit.py",
+        "truth_record.py list",
+        "truth_record.py create",
+        "truth_record.py show",
+        "truth_record.py update",
+        "truth_record.py archive",
+        "model_gate.py --registry register",
+        "model_gate.py --registry remove",
+    ]
+    return [f"capability map missing term: {term}" for term in required_terms if term not in text]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate an AletheiaOS scaffold directory.")
     parser.add_argument("scaffold", type=Path)
@@ -208,7 +228,12 @@ def main() -> int:
             print(f"missing required path: {rel}", file=sys.stderr)
         return 1
 
-    skeleton_errors = validate_skeleton(root) + validate_runtime_policy(root) + validate_no_retired_language(root)
+    skeleton_errors = (
+        validate_skeleton(root)
+        + validate_runtime_policy(root)
+        + validate_capability_map(root)
+        + validate_no_retired_language(root)
+    )
     if skeleton_errors:
         for error in skeleton_errors:
             print(error, file=sys.stderr)

@@ -531,6 +531,71 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn(".aletheia/session_notes/2026-05-07-note.md", output)
             self.assertLess(output.index("## Truth Record Inventory"), output.index("## Current Agent Run"))
 
+    def test_system_context_outputs_prompt_ready_context_with_preferences(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            preferences = target / ".aletheia" / "state" / "USER_PREFERENCES.md"
+            preferences.write_text(
+                "# User Preferences\n\n## Communication\n\n- Keep updates concise.\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/system_context.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("# AletheiaOS Prompt Context", output)
+            self.assertIn("## User Preferences", output)
+            self.assertIn("Keep updates concise.", output)
+            self.assertIn("## Project Context Pack", output)
+            self.assertIn("# AletheiaOS Project Truth Context Pack", output)
+            self.assertNotIn("## Current Agent Run", output)
+
+    def test_system_context_can_emit_json_with_runtime_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".aletheia" / "runtime").mkdir()
+            (target / ".aletheia" / "runtime" / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-system-context",
+                        "provider": "openai",
+                        "model_id": "gpt-test",
+                        "capability_tier": "C3",
+                        "task_class": "research_design",
+                        "gate_status": "allowed",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/system_context.py", "--with-runtime", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            payload = json.loads(result.stdout)
+            self.assertTrue(payload["with_runtime"])
+            self.assertIn("RUN-system-context", payload["prompt"])
+
     def test_overview_records_validation_failure_and_truth_record_inventory(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

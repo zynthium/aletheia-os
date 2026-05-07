@@ -299,7 +299,7 @@ orient -> work -> update truth -> validate -> checkpoint
 
 `CAPABILITY_MAP.md` 是 action parity 清单：记录安装、初始化、orient、context pack、truth record create/list/show/update/archive、model gate、source inventory、bootstrap finalize、validate、overview、checkpoint、truth promotion 和只读审阅 agent 等用户动作与 agent 能力的对应关系。
 
-`bin/` 提供 help、capability audit、orient、context pack、preflight、status refresh、truth record、model gate、source inventory、guided bootstrap、overview、validate、bootstrap finalize、checkpoint 和 Claude hook runtime。`orient.py` 默认输出 cache 友好的稳定事实和精简 record inventory；`context_pack.py` 默认输出核心 truth files、能力地图、精简 source inventory summary 和完整 truth record inventory。当前 agent run 与最近 session notes 需要显式使用 `--with-runtime`，并追加在稳定上下文之后。`status.py` 是显式动态刷新入口，用于按需查看 active state、validation、record counts 和 runtime gate。`capability_audit.py` 用于检查 `.aletheia/CAPABILITY_MAP.md` 是否覆盖 runtime scripts、skills、review agents 和 CRUD 命令。`preflight.py` 是 Codex 等无自动 hook enforcement 宿主的显式检查入口，会读取 model gate、validation、git status 和 checkpoint candidate。`playbooks/prompt_native_boundaries.md` 记录哪些运行时脚本应保持 primitive，哪些 workflow judgment 应移到 skills 或 playbooks。
+`bin/` 提供 help、capability audit、orient、context pack、system context、preflight、status refresh、truth record、model gate、source inventory、guided bootstrap、overview、validate、bootstrap finalize、checkpoint 和 Claude hook runtime。`orient.py` 默认输出 cache 友好的稳定事实和精简 record inventory；`context_pack.py` 默认输出核心 truth files、能力地图、精简 source inventory summary 和完整 truth record inventory。`system_context.py` 输出可直接放入 agent prompt 的动态上下文块，组合稳定项目事实、用户偏好、能力地图和可选 runtime context。当前 agent run 与最近 session notes 需要显式使用 `--with-runtime`，并追加在稳定上下文之后。`status.py` 是显式动态刷新入口，用于按需查看 active state、validation、record counts 和 runtime gate。`capability_audit.py` 用于检查 `.aletheia/CAPABILITY_MAP.md` 是否覆盖 runtime scripts、skills、review agents 和 CRUD 命令。`preflight.py` 是 Codex 等无自动 hook enforcement 宿主的显式检查入口，会读取 model gate、validation、git status 和 checkpoint candidate。`playbooks/prompt_native_boundaries.md` 记录哪些运行时脚本应保持 primitive，哪些 workflow judgment 应移到 skills 或 playbooks。
 
 ## 外部 LLM Wiki 资料摄入
 
@@ -371,6 +371,8 @@ python3 .aletheia/bin/orient.py --with-runtime
 python3 .aletheia/bin/orient.py --static
 python3 .aletheia/bin/context_pack.py
 python3 .aletheia/bin/context_pack.py --with-runtime
+python3 .aletheia/bin/system_context.py
+python3 .aletheia/bin/system_context.py --with-runtime
 python3 .aletheia/bin/preflight.py
 python3 .aletheia/bin/preflight.py --json
 python3 .aletheia/bin/status.py

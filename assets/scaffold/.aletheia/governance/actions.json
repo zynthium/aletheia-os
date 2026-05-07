@@ -47,6 +47,26 @@
       "verification": {"returncode": 0}
     },
     {
+      "id": "truth.system_context",
+      "title": "Build prompt-ready system context",
+      "intent": "Build a single prompt-ready context block from stable truth, user preferences, capabilities, and optional runtime context.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/system_context.py"],
+      "inputs": {},
+      "outputs": {"format": "markdown"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.system_context.runtime",
+      "title": "Build prompt-ready system context with runtime",
+      "intent": "Build prompt-ready context and append current run and recent session context.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/system_context.py", "--with-runtime"],
+      "inputs": {},
+      "outputs": {"format": "markdown"},
+      "verification": {"returncode": 0}
+    },
+    {
       "id": "truth.status",
       "title": "Refresh status",
       "intent": "Read active state, validation, record counts, and runtime gate status.",

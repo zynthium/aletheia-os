@@ -24,8 +24,13 @@ CAPABILITIES = [
     ),
     (
         "Refresh context",
-        "Build a stable context pack, with optional run/session context at the end.",
-        ["python3 .aletheia/bin/context_pack.py", "python3 .aletheia/bin/context_pack.py --with-runtime"],
+        "Build stable or prompt-ready context, with optional run/session context at the end.",
+        [
+            "python3 .aletheia/bin/context_pack.py",
+            "python3 .aletheia/bin/context_pack.py --with-runtime",
+            "python3 .aletheia/bin/system_context.py",
+            "python3 .aletheia/bin/system_context.py --with-runtime",
+        ],
     ),
     (
         "Refresh status",

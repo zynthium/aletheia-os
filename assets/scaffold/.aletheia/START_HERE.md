@@ -12,6 +12,7 @@ Use this command set for normal work:
 
 ```bash
 python3 .aletheia/bin/help.py
+python3 .aletheia/bin/system_context.py
 python3 .aletheia/bin/orient.py
 python3 .aletheia/bin/validate.py
 python3 .aletheia/bin/checkpoint.py
@@ -38,11 +39,12 @@ python3 .aletheia/bin/help.py
 2. `.aletheia/governance/ATTENTION_POLICY.md`
 3. `.aletheia/governance/MODEL_GOVERNANCE.md`
 4. `.aletheia/governance/model_registry.json`
-5. `.aletheia/state/ACTIVE_STATE.md`
-6. `.aletheia/state/SYSTEM_GRAPH.yaml`
-7. `.aletheia/state/SKELETON.yaml`
-8. `.aletheia/state/RISK_REGISTER.md`
-9. `.aletheia/state/FRONTIER_BOARD.md`, `.aletheia/state/DOMAIN_PROFILE.md`, and relevant decisions, evidence, contracts, risks, nodes, and source files.
+5. `.aletheia/state/USER_PREFERENCES.md`
+6. `.aletheia/state/ACTIVE_STATE.md`
+7. `.aletheia/state/SYSTEM_GRAPH.yaml`
+8. `.aletheia/state/SKELETON.yaml`
+9. `.aletheia/state/RISK_REGISTER.md`
+10. `.aletheia/state/FRONTIER_BOARD.md`, `.aletheia/state/DOMAIN_PROFILE.md`, and relevant decisions, evidence, contracts, risks, nodes, and source files.
 
 For large conversation exports or scattered research material, use
 `.aletheia/playbooks/external_llm_wiki_handoff.md` before writing durable truth.
@@ -81,6 +83,8 @@ python3 .aletheia/bin/bootstrap_finalize.py
 ## Diagnostic Commands
 
 ```bash
+python3 .aletheia/bin/system_context.py
+python3 .aletheia/bin/system_context.py --with-runtime
 python3 .aletheia/bin/context_pack.py
 python3 .aletheia/bin/context_pack.py --with-runtime
 python3 .aletheia/bin/status.py

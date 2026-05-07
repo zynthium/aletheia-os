@@ -47,6 +47,7 @@ READ_ONLY_ALETHEIA_SCRIPTS = {
     ".aletheia/bin/status.py",
     ".aletheia/bin/validate.py",
 }
+READ_ONLY_TRUTH_RECORD_ACTIONS = {"list", "show"}
 SHELL_CONTROL_TOKENS = ("&&", "||", ";", "|", ">", "<", "\n", "`", "$(")
 
 
@@ -86,6 +87,29 @@ def load_registry(root: Path) -> dict[str, Any]:
     registry.setdefault("registered_models", {})
     registry.setdefault("denylist", [])
     return registry
+
+
+def list_policy_values(policy: dict[str, Any], key: str, fallback: set[str]) -> set[str]:
+    values = policy.get(key)
+    if not isinstance(values, list) or not all(isinstance(item, str) for item in values):
+        return set(fallback)
+    return set(values)
+
+
+def runtime_policy(root: Path) -> dict[str, set[str]]:
+    data = load_json(root / ".aletheia" / "governance" / "runtime_policy.json", {})
+    if not isinstance(data, dict):
+        data = {}
+    return {
+        "read_only_git_subcommands": list_policy_values(data, "read_only_git_subcommands", READ_ONLY_GIT_SUBCOMMANDS),
+        "read_only_local_commands": list_policy_values(data, "read_only_local_commands", READ_ONLY_LOCAL_COMMANDS),
+        "read_only_aletheia_scripts": list_policy_values(data, "read_only_aletheia_scripts", READ_ONLY_ALETHEIA_SCRIPTS),
+        "read_only_truth_record_actions": list_policy_values(
+            data,
+            "read_only_truth_record_actions",
+            READ_ONLY_TRUTH_RECORD_ACTIONS,
+        ),
+    }
 
 
 def candidate_model_keys(provider: str, model_id: str) -> list[str]:
@@ -251,7 +275,8 @@ def load_current_run(root: Path) -> dict[str, Any] | None:
     return data if isinstance(data, dict) else None
 
 
-def bash_is_read_only(command: str) -> bool:
+def bash_is_read_only(command: str, policy: dict[str, set[str]] | None = None) -> bool:
+    policy = policy or runtime_policy(repo_root())
     stripped = command.strip()
     if not stripped or any(token in stripped for token in SHELL_CONTROL_TOKENS):
         return False
@@ -262,13 +287,13 @@ def bash_is_read_only(command: str) -> bool:
     if not parts:
         return False
     if parts[0] == "git" and len(parts) >= 2:
-        return parts[1] in READ_ONLY_GIT_SUBCOMMANDS
-    if parts[0] in READ_ONLY_LOCAL_COMMANDS:
+        return parts[1] in policy["read_only_git_subcommands"]
+    if parts[0] in policy["read_only_local_commands"]:
         return True
     if len(parts) >= 2 and parts[0] == "python3":
         if parts[1] == ".aletheia/bin/truth_record.py" and len(parts) >= 3:
-            return parts[2] in {"list", "show"}
-        return parts[1] in READ_ONLY_ALETHEIA_SCRIPTS
+            return parts[2] in policy["read_only_truth_record_actions"]
+        return parts[1] in policy["read_only_aletheia_scripts"]
     return False
 
 

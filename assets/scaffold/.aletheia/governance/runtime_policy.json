@@ -1,0 +1,37 @@
+{
+  "read_only_git_subcommands": [
+    "status",
+    "diff",
+    "log",
+    "show"
+  ],
+  "read_only_local_commands": [
+    "ls",
+    "pwd",
+    "sed",
+    "rg",
+    "find"
+  ],
+  "read_only_aletheia_scripts": [
+    ".aletheia/bin/orient.py",
+    ".aletheia/bin/context_pack.py",
+    ".aletheia/bin/status.py",
+    ".aletheia/bin/validate.py"
+  ],
+  "read_only_truth_record_actions": [
+    "list",
+    "show"
+  ],
+  "checkpoint_state_patterns": [
+    "AGENTS.md",
+    "START_HERE.md",
+    "BOOTSTRAP.md",
+    ".claude/settings.json",
+    ".aletheia/"
+  ],
+  "protected_path_patterns": [
+    "(^|/)\\.env(\\.|$)",
+    "(^|/)secrets/",
+    "\\.(pem|key|crt|credentials|secret)$"
+  ]
+}

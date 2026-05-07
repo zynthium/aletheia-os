@@ -20,6 +20,7 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 | Archive truth record | `python3 .aletheia/bin/truth_record.py archive <entity> <id> --reason <reason>` | Mark record archived | Done | Preferred safe alternative to deletion. |
 | Record model gate attribution | `python3 .aletheia/bin/model_gate.py --record ...` | Run model gate | Done | Writes `agent_runs/` and runtime current run record. |
 | Manage model registry | `python3 .aletheia/bin/model_gate.py --registry <command>` | List, register, show, enable, disable, deny, and undeny models | Done | Keeps model gate policy editable through explicit commands instead of hand-editing JSON. |
+| Configure runtime policy | `.aletheia/governance/runtime_policy.json` | Read declarative read-only, checkpoint state, and protected path rules | Done | Used by model gate and checkpoint runtime, with code fallbacks if the file is unavailable. |
 | Inventory project sources | `python3 .aletheia/bin/source_inventory.py` | Run source inventory | Done | Writes generated inventory under `.aletheia/source_inventory/`. |
 | Prepare guided bootstrap report | `python3 .aletheia/bin/guided_bootstrap.py` | Run guided bootstrap helper | Done | Requires bootstrap model gate unless explicitly skipped. |
 | Finalize bootstrap | `python3 .aletheia/bin/bootstrap_finalize.py` | Run finalize script | Done | Validates, installs Git hooks, writes session note, and checkpoints unless skipped. |
@@ -45,6 +46,7 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 | Capability map | edit file | `context_pack.py` | edit file | manual removal | Validate should require this file. |
 | Charter and governance files | edit files | `orient.py`, `context_pack.py` | edit files | manual removal | Root-level changes require human confirmation by prompt policy. |
 | Model registry | `model_gate.py --registry register` | `model_gate.py --registry list/show` | `model_gate.py --registry enable/disable/deny/undeny` | manual removal | Gate uses enabled registered models, aliases, and denylist entries. |
+| Runtime policy | edit `runtime_policy.json` | `model_gate.py`, `checkpoint.py` | edit file | manual removal | Controls strict read-only commands, checkpoint state paths, and protected path patterns. |
 | Active state and state files | edit files | `orient.py`, `context_pack.py`, `status.py`, `overview.py` | edit files | manual removal | Validate checks critical TBD markers after bootstrap. |
 | Nodes | template/file write | `orient.py`, `context_pack.py`, `overview.py` | edit files | manual removal | Validate checks active node references. |
 | Evidence | template/file write | `context_pack.py`, `overview.py` | edit files | manual removal | Validate checks required sections. |

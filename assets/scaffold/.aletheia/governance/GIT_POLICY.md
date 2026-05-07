@@ -13,4 +13,4 @@ Create a checkpoint when one of these occurs:
 
 Do not auto-commit when validation fails, secrets are present, generated artifacts dominate the diff, the task is mid-flight, or the project owner explicitly asks not to commit.
 
-The default checkpoint runtime stages the coherent worktree after validation and secret-like path screening. Use `--state-only` only when intentionally checkpointing control-plane state without implementation changes.
+The default checkpoint runtime stages the configured project-state paths after validation and secret-like path screening. Runtime path rules live in `.aletheia/governance/runtime_policy.json`.

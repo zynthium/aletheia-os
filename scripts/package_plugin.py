@@ -41,6 +41,7 @@ REQUIRED = [
     "assets/scaffold/BOOTSTRAP.md",
     "assets/scaffold/.aletheia/governance/model_registry.json",
     "assets/scaffold/.aletheia/governance/SOURCE_POLICY.md",
+    "assets/scaffold/.aletheia/governance/runtime_policy.json",
     "assets/scaffold/.aletheia/state/RISK_REGISTER.md",
     "assets/scaffold/.aletheia/state/FRONTIER_BOARD.md",
     "assets/scaffold/.aletheia/state/GLOSSARY.md",

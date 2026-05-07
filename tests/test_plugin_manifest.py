@@ -124,6 +124,7 @@ class PluginManifestTests(unittest.TestCase):
             "status.py",
             "truth_record.py",
             "model_gate.py",
+            "runtime_policy.json",
             "source_inventory.py",
             "guided_bootstrap.py",
             "bootstrap_finalize.py",

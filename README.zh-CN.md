@@ -64,7 +64,7 @@ mission -> system graph -> skeleton -> contracts -> evidence -> decisions -> cod
 
 其中：
 
-- `governance/` 保存 charter、attention policy、model governance、model registry、git policy 和 source policy；
+- `governance/` 保存 charter、attention policy、model governance、model registry、runtime policy、git policy 和 source policy；
 - `state/` 保存 active state、system graph、project skeleton、frontier board、glossary、domain profile 和 risk register；
 - `nodes/` 保存可下钻的系统节点事实；
 - `evidence/` 保存实验、验证、观察、推理和解释记录；
@@ -398,7 +398,7 @@ Claude Code 通过 hooks 自动执行门禁和审计；Codex 当前以 skills、
 
 `checkpoint.py` 默认只提交 AletheiaOS state/control-plane 路径；只有显式传入 `--include-worktree` 时才 stage 整个工作树。
 
-`guided_bootstrap.py` 会验证已经记录的 bootstrap gate，不会自行创建新的模型授权。`source_inventory.py` 默认跳过 `.aletheia/`、`.claude/` 和初始化根部控制文件，只扫描项目自身资料。`context_pack.py` 只引用 source inventory 的聚合摘要，不默认展开高频变化的运行时记录；需要刷新当前状态时运行 `status.py`，不要把动态状态前移到默认 orient/context pack。新增或改变用户可执行动作时，应同步更新 `.aletheia/CAPABILITY_MAP.md`。
+`guided_bootstrap.py` 会验证已经记录的 bootstrap gate，不会自行创建新的模型授权。`source_inventory.py` 默认跳过 `.aletheia/`、`.claude/` 和初始化根部控制文件，只扫描项目自身资料。`context_pack.py` 只引用 source inventory 的聚合摘要，不默认展开高频变化的运行时记录；需要刷新当前状态时运行 `status.py`，不要把动态状态前移到默认 orient/context pack。`runtime_policy.json` 保存只读命令、checkpoint state paths 和 protected path patterns，让 hook/checkpoint 规则可审查。新增或改变用户可执行动作时，应同步更新 `.aletheia/CAPABILITY_MAP.md`。
 
 `overview.py` 和 `source_inventory.py` 默认写入 `.aletheia/` 下的 generated/intermediate 目录，不属于 durable project truth；只有显式使用 `--public-docs` 时才生成 `docs/overview/`。
 

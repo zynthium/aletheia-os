@@ -239,6 +239,69 @@ class CheckpointTests(unittest.TestCase):
             self.assertIn("checkpoint blocked: protected-looking files are present", output)
             self.assertIn(".env.local", output)
 
+    def test_checkpoint_uses_runtime_policy_for_state_and_protected_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-policy",
+                        "provider": "test",
+                        "model_id": "test-model",
+                        "capability_tier": "C3",
+                        "task_class": "research_design",
+                        "gate_status": "allowed",
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            policy_path = target / ".aletheia" / "governance" / "runtime_policy.json"
+            policy = json.loads(policy_path.read_text(encoding="utf-8"))
+            policy["checkpoint_state_patterns"].append("docs/truth/")
+            policy["protected_path_patterns"].append("(^|/)private_notes/")
+            policy_path.write_text(json.dumps(policy, indent=2) + "\n", encoding="utf-8")
+
+            doc = target / "docs" / "truth" / "note.md"
+            doc.parent.mkdir(parents=True)
+            doc.write_text("# Truth note\n", encoding="utf-8")
+            blocked_file = target / "private_notes" / "secret.txt"
+            blocked_file.parent.mkdir()
+            blocked_file.write_text("blocked\n", encoding="utf-8")
+
+            blocked = subprocess.run(
+                [sys.executable, ".aletheia/bin/checkpoint.py", "--auto", "--dry-run", "--include-worktree"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            blocked_output = blocked.stdout + blocked.stderr
+            self.assertEqual(blocked.returncode, 2, blocked_output)
+            self.assertIn("private_notes/secret.txt", blocked_output)
+
+            blocked_file.unlink()
+            allowed = subprocess.run(
+                [sys.executable, ".aletheia/bin/checkpoint.py", "--auto", "--dry-run", "--no-validate"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            allowed_output = allowed.stdout + allowed.stderr
+            self.assertEqual(allowed.returncode, 0, allowed_output)
+            self.assertIn("docs/truth/note.md", allowed_output)
+            self.assertNotIn("changes do not include durable project-state update", allowed_output)
+
     def test_checkpoint_allow_code_only_env_and_no_validate_paths_are_explicit(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

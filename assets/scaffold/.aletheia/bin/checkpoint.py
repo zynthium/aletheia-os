@@ -23,6 +23,7 @@ STATE_PATTERNS = [
     ".claude/settings.json",
     ".aletheia/",
 ]
+RUNTIME_POLICY = ".aletheia/governance/runtime_policy.json"
 
 INTERRUPTED_GIT_MARKERS = [
     "MERGE_HEAD",
@@ -81,7 +82,7 @@ def interrupted_git_operation(root: Path) -> str | None:
 
 
 def status_files(root: Path) -> list[str]:
-    result = run(["git", "status", "--porcelain"], root, capture=True)
+    result = run(["git", "status", "--porcelain", "--untracked-files=all"], root, capture=True)
     if result.returncode != 0:
         raise RuntimeError(result.stderr or "git status failed")
     files = []
@@ -95,9 +96,9 @@ def status_files(root: Path) -> list[str]:
     return files
 
 
-def has_state_update(files: list[str]) -> bool:
+def has_state_update(files: list[str], patterns: list[str]) -> bool:
     for file in files:
-        for pattern in STATE_PATTERNS:
+        for pattern in patterns:
             if pattern.endswith("/"):
                 if file.startswith(pattern):
                     return True
@@ -106,10 +107,10 @@ def has_state_update(files: list[str]) -> bool:
     return False
 
 
-def state_files(root: Path, files: list[str]) -> list[str]:
+def state_files(root: Path, files: list[str], patterns: list[str]) -> list[str]:
     state: list[str] = []
     for file in files:
-        for pattern in STATE_PATTERNS:
+        for pattern in patterns:
             if pattern.endswith("/"):
                 if file.startswith(pattern):
                     state.append(file)
@@ -123,8 +124,9 @@ def state_files(root: Path, files: list[str]) -> list[str]:
     return state
 
 
-def protected_files(files: list[str]) -> list[str]:
-    return [file for file in files if any(pattern.search(file) for pattern in PROTECTED_PATTERNS)]
+def protected_files(files: list[str], patterns: list[str]) -> list[str]:
+    compiled = [re.compile(pattern, re.IGNORECASE) for pattern in patterns]
+    return [file for file in files if any(pattern.search(file) for pattern in compiled)]
 
 
 def load_json(path: Path, *, strict: bool = False) -> dict:
@@ -141,6 +143,25 @@ def load_json(path: Path, *, strict: bool = False) -> dict:
             raise ValueError(f"{path}: expected JSON object")
         return {}
     return data
+
+
+def list_policy_values(policy: dict, key: str, fallback: list[str]) -> list[str]:
+    values = policy.get(key)
+    if not isinstance(values, list) or not all(isinstance(item, str) for item in values):
+        return list(fallback)
+    return list(values)
+
+
+def runtime_policy(root: Path) -> dict:
+    policy = load_json(root / RUNTIME_POLICY)
+    return {
+        "checkpoint_state_patterns": list_policy_values(policy, "checkpoint_state_patterns", STATE_PATTERNS),
+        "protected_path_patterns": list_policy_values(
+            policy,
+            "protected_path_patterns",
+            [pattern.pattern for pattern in PROTECTED_PATTERNS],
+        ),
+    }
 
 
 def require_agent_run_for_checkpoint(root: Path) -> bool:
@@ -196,12 +217,12 @@ def validate(root: Path) -> int:
     return subprocess.run([sys.executable, ".aletheia/bin/validate.py"], cwd=root, text=True).returncode
 
 
-def state_pathspecs(root: Path) -> list[str]:
-    return [pattern for pattern in STATE_PATTERNS if (root / pattern.rstrip("/")).exists()]
+def state_pathspecs(root: Path, patterns: list[str]) -> list[str]:
+    return [pattern for pattern in patterns if (root / pattern.rstrip("/")).exists()]
 
 
-def stage_state_paths(root: Path) -> int:
-    existing = state_pathspecs(root)
+def stage_state_paths(root: Path, patterns: list[str]) -> int:
+    existing = state_pathspecs(root, patterns)
     if not existing:
         print("checkpoint blocked: no AletheiaOS state paths exist")
         return 1
@@ -234,11 +255,14 @@ def main() -> int:
     except RuntimeError as exc:
         print(f"checkpoint blocked: {exc}")
         return 1
+    policy = runtime_policy(root)
+    checkpoint_patterns = policy["checkpoint_state_patterns"]
+    protected_patterns = policy["protected_path_patterns"]
     if not files:
         print("checkpoint skipped: working tree is clean")
         return 0
 
-    protected = protected_files(files)
+    protected = protected_files(files, protected_patterns)
     if protected:
         print("checkpoint blocked: protected-looking files are present:")
         for file in protected:
@@ -251,7 +275,9 @@ def main() -> int:
             print("checkpoint blocked: validation failed")
             return rc
 
-    if not has_state_update(files) and not (args.allow_code_only or os.environ.get("AIOS_ALLOW_CODE_ONLY_COMMIT") == "1"):
+    if not has_state_update(files, checkpoint_patterns) and not (
+        args.allow_code_only or os.environ.get("AIOS_ALLOW_CODE_ONLY_COMMIT") == "1"
+    ):
         print("checkpoint blocked: changes do not include durable project-state update")
         print("Update .aletheia state, evidence, decisions, contracts, nodes, or session notes.")
         return 3
@@ -272,7 +298,7 @@ def main() -> int:
         print(f"  gate_status: {run_data.get('gate_status')}")
         return 5
 
-    candidate_files = files if args.include_worktree else state_files(root, files)
+    candidate_files = files if args.include_worktree else state_files(root, files, checkpoint_patterns)
     non_checkpoint_files = [] if args.include_worktree else [file for file in files if file not in set(candidate_files)]
     message = args.message or infer_message(candidate_files or files)
     print("checkpoint candidate:")
@@ -304,13 +330,13 @@ def main() -> int:
             print(add.stderr, end="")
             return add.returncode
     else:
-        rc = stage_state_paths(root)
+        rc = stage_state_paths(root, checkpoint_patterns)
         if rc != 0:
             return rc
 
     commit_cmd = ["git", "commit", "-m", message + attribution_trailers(run_data)]
     if not args.include_worktree:
-        commit_cmd.extend(["--", *state_pathspecs(root)])
+        commit_cmd.extend(["--", *state_pathspecs(root, checkpoint_patterns)])
     commit = run(commit_cmd, root, capture=True)
     print(commit.stdout, end="")
     if commit.returncode != 0:

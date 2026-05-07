@@ -21,6 +21,7 @@ REQUIRED_PATHS = [
     ".aletheia/governance/MODEL_GOVERNANCE.md",
     ".aletheia/governance/GIT_POLICY.md",
     ".aletheia/governance/SOURCE_POLICY.md",
+    ".aletheia/governance/runtime_policy.json",
     ".aletheia/governance/model_registry.json",
     ".aletheia/state/ACTIVE_STATE.md",
     ".aletheia/state/SYSTEM_GRAPH.yaml",

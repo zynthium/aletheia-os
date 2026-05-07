@@ -272,6 +272,26 @@ class ModelGateTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, output)
                 self.assertNotIn("permissionDecision", output, command)
 
+    def test_pretooluse_uses_runtime_policy_for_read_only_aletheia_scripts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            policy_path = target / ".aletheia" / "governance" / "runtime_policy.json"
+            policy = json.loads(policy_path.read_text(encoding="utf-8"))
+            policy["read_only_aletheia_scripts"].append(".aletheia/bin/help.py")
+            policy_path.write_text(json.dumps(policy, indent=2) + "\n", encoding="utf-8")
+
+            result = self.run_pretooluse_hook(
+                target,
+                {"tool_name": "Bash", "tool_input": {"command": "python3 .aletheia/bin/help.py"}},
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertNotIn("permissionDecision", output)
+
     def test_pretooluse_treats_truth_record_create_and_archive_as_write_capable(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

@@ -40,6 +40,7 @@ class GreenfieldInitTests(unittest.TestCase):
                 ".aletheia/CAPABILITY_MAP.md",
                 ".aletheia/governance/CHARTER.md",
                 ".aletheia/governance/SOURCE_POLICY.md",
+                ".aletheia/governance/runtime_policy.json",
                 ".aletheia/state/FRONTIER_BOARD.md",
                 ".aletheia/state/GLOSSARY.md",
                 ".aletheia/state/DOMAIN_PROFILE.md",

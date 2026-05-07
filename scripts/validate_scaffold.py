@@ -156,11 +156,22 @@ def validate_runtime_policy(root: Path) -> list[str]:
         "checkpoint_state_patterns",
         "checkpoint_excluded_patterns",
         "protected_path_patterns",
+        "source_inventory_excluded_dirs",
+        "source_inventory_excluded_root_files",
+        "source_inventory_sensitive_patterns",
+        "source_inventory_kind_keywords",
+        "source_inventory_suffix_kinds",
     ]
     for section in required_sections:
         values = policy.get(section)
         if section not in policy:
             errors.append(f"runtime policy missing section: {section}")
+            continue
+        if section in {"source_inventory_kind_keywords", "source_inventory_suffix_kinds"}:
+            if not isinstance(values, dict) or not all(
+                isinstance(key, str) and isinstance(value, str) for key, value in values.items()
+            ):
+                errors.append(f"runtime policy section must be an object of string values: {section}")
             continue
         if not isinstance(values, list) or not all(isinstance(item, str) for item in values):
             errors.append(f"runtime policy section must be a list of strings: {section}")
@@ -172,6 +183,16 @@ def validate_runtime_policy(root: Path) -> list[str]:
             re.compile(pattern)
         except re.error as exc:
             errors.append(f"runtime policy protected_path_patterns invalid regex: {pattern}: {exc}")
+    for pattern in policy.get("source_inventory_sensitive_patterns", []):
+        if not isinstance(pattern, str):
+            continue
+        try:
+            re.compile(pattern)
+        except re.error as exc:
+            errors.append(f"runtime policy source_inventory_sensitive_patterns invalid regex: {pattern}: {exc}")
+    large_bytes = policy.get("source_inventory_large_bytes")
+    if not isinstance(large_bytes, int) or large_bytes <= 0:
+        errors.append("runtime policy source_inventory_large_bytes must be a positive integer")
     return errors
 
 

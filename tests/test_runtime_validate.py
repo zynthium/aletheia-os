@@ -905,6 +905,49 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertFalse(by_path["reports/big.csv"]["should_read_full_content"])
             self.assertEqual(by_path["docs/archive/old-design.md"]["initial_classification"], "historical_context")
 
+    def test_source_inventory_uses_runtime_policy_classification_rules(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            policy_path = target / ".aletheia" / "governance" / "runtime_policy.json"
+            policy = json.loads(policy_path.read_text(encoding="utf-8"))
+            policy["source_inventory_excluded_dirs"].append("generated")
+            policy["source_inventory_excluded_root_files"].append("PROJECT_ONLY.md")
+            policy["source_inventory_sensitive_patterns"].append("customer-list")
+            policy["source_inventory_large_bytes"] = 12
+            policy["source_inventory_kind_keywords"]["roadmap"] = "planning_material"
+            policy["source_inventory_suffix_kinds"][".plan"] = "planning_file"
+            policy_path.write_text(json.dumps(policy, indent=2) + "\n", encoding="utf-8")
+
+            (target / "generated").mkdir()
+            (target / "generated" / "ignored.md").write_text("# generated\n", encoding="utf-8")
+            (target / "PROJECT_ONLY.md").write_text("# ignored root file\n", encoding="utf-8")
+            (target / "customer-list.md").write_text("# names\n", encoding="utf-8")
+            (target / "tiny.txt").write_text("0123456789013", encoding="utf-8")
+            (target / "product-roadmap.md").write_text("# roadmap\n", encoding="utf-8")
+            (target / "launch.plan").write_text("plan\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/source_inventory.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            inventory = json.loads((target / ".aletheia" / "source_inventory" / "inventory.json").read_text(encoding="utf-8"))
+            by_path = {item["path"]: item for item in inventory["items"]}
+            self.assertNotIn("generated/ignored.md", by_path)
+            self.assertNotIn("PROJECT_ONLY.md", by_path)
+            self.assertEqual(by_path["customer-list.md"]["initial_classification"], "unsafe_or_sensitive")
+            self.assertEqual(by_path["tiny.txt"]["initial_classification"], "deferred_due_to_size")
+            self.assertEqual(by_path["product-roadmap.md"]["kind"], "planning_material")
+            self.assertEqual(by_path["launch.plan"]["kind"], "planning_file")
+
     def test_source_inventory_skips_heavy_generated_dependency_directories(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

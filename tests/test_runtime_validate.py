@@ -1599,6 +1599,55 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0, output)
             self.assertIn("skeleton root children do not match system graph root children", output)
 
+    def test_validate_accepts_active_nodes_from_skeleton_and_rejects_unknown_active_nodes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            skeleton = target / ".aletheia" / "state" / "SKELETON.yaml"
+            skeleton.write_text(
+                skeleton.read_text(encoding="utf-8")
+                + "\n"
+                "  reproducibility_checks:\n"
+                "    layer: leaf\n"
+                "    parent: engineering_execution\n"
+                "    children: []\n"
+                "    purpose: \"Keep project checks reproducible.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs: []\n"
+                "    evidence_refs: []\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.4\n"
+                "    last_reviewed: 2026-05-08\n",
+                encoding="utf-8",
+            )
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(
+                active_state.read_text(encoding="utf-8").replace("- `root`", "- `reproducibility_checks`"),
+                encoding="utf-8",
+            )
+
+            accepted = validate_target(target)
+            self.assertEqual(accepted.returncode, 0, accepted.stdout + accepted.stderr)
+
+            active_state.write_text(
+                active_state.read_text(encoding="utf-8").replace("`reproducibility_checks`", "`missing_branch`"),
+                encoding="utf-8",
+            )
+            rejected = validate_target(target)
+            output = rejected.stdout + rejected.stderr
+            self.assertNotEqual(rejected.returncode, 0, output)
+            self.assertIn("active state references unknown graph or skeleton nodes: missing_branch", output)
+
     def test_validate_rejects_missing_contract_decision_and_evidence_refs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

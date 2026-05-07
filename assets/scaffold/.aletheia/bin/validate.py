@@ -656,9 +656,10 @@ def validate_graph_and_skeleton(root: Path, errors: list[str], warnings: list[st
     active_path = root / ".aletheia" / "state" / "ACTIVE_STATE.md"
     if active_path.exists():
         active_nodes = extract_active_nodes(active_path.read_text(encoding="utf-8"))
-        missing = sorted(node for node in active_nodes if node not in graph_nodes)
+        valid_active_nodes = set(graph_nodes) | set(skeleton_nodes)
+        missing = sorted(node for node in active_nodes if node not in valid_active_nodes)
         if missing:
-            errors.append("active state references unknown graph nodes: " + ", ".join(missing))
+            errors.append("active state references unknown graph or skeleton nodes: " + ", ".join(missing))
     if "TBD" in graph_text:
         (warnings if bootstrap_mode else errors).append("system graph still contains TBD markers")
     for ref in extract_skeleton_refs(skeleton_text):

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 import tempfile
@@ -310,6 +311,155 @@ def write_iteration_two_truth(target: Path) -> None:
 
 
 class ResearchIterationFlowTests(unittest.TestCase):
+    def test_orphan_candidate_can_be_attached_to_the_truth_tree_without_new_record_types(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "tree-loop"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+
+            (target / ".aletheia" / "state" / "ORPHANS.yaml").write_text(
+                "version: 0.1\n"
+                "schema: AIOS_ORPHANS\n"
+                "updated: 2026-05-08\n\n"
+                "review_policy:\n"
+                "  default_review_days: 30\n"
+                "  max_orphan_age_days: 90\n\n"
+                "orphans:\n"
+                "  - id: OR-201\n"
+                "    title: Reproducibility checks deserve their own execution branch\n"
+                "    disposition: incubating\n"
+                "    candidate_parents:\n"
+                "      - engineering_execution\n"
+                "    next_review: 2026-05-30\n"
+                "    evidence_refs:\n"
+                "      - .aletheia/evidence/EV-201-reproducibility-gap.md\n",
+                encoding="utf-8",
+            )
+
+            incubating_status = run_repo(target, sys.executable, ".aletheia/bin/status.py", "--json")
+            self.assertEqual(incubating_status.returncode, 0, incubating_status.stdout + incubating_status.stderr)
+            incubating_payload = json.loads(incubating_status.stdout)
+            self.assertEqual(incubating_payload["tree_health"]["orphan_count"], 1)
+            self.assertTrue(incubating_payload["tree_health"]["review_needed"])
+
+            (target / ".aletheia" / "evidence" / "EV-201-reproducibility-gap.md").write_text(
+                "# Evidence: Reproducibility checks are a distinct execution concern\n\n"
+                "Date: 2026-05-08\n"
+                "Evidence type: observation\n"
+                "Claim lifecycle impact: evidence-backed\n"
+                "Claim tested: Reproducibility checks need their own branch under engineering execution.\n"
+                "Linked node: reproducibility_checks\n\n"
+                "## Source refs\n\n"
+                "- `.aletheia/state/ORPHANS.yaml#OR-201`\n\n"
+                "## Method\n\n"
+                "Reviewed the incubating orphan against engineering execution boundaries.\n\n"
+                "## Result\n\n"
+                "The concern is not a one-off task; it owns repeatable checks, fixture regeneration, and test reproducibility.\n\n"
+                "## Limitations\n\n"
+                "This establishes a tree position, not a full implementation plan.\n\n"
+                "## Interpretation\n\n"
+                "Attach the candidate as a skeleton leaf under engineering_execution and remove it from the incubator.\n\n"
+                "## Invalidation criteria\n\n"
+                "Archive the branch if reproducibility checks collapse into ordinary test maintenance.\n\n"
+                "## Graph impact\n\n"
+                "- engineering_execution\n"
+                "- reproducibility_checks\n\n"
+                "## Confidence impact\n\n"
+                "Raises confidence that reproducibility checks are a durable execution branch.\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "decisions" / "DEC-201-attach-reproducibility-checks.md").write_text(
+                "# Decision: Attach reproducibility checks under engineering execution\n\n"
+                "Status: accepted\n"
+                "Decision type: tree_refactor\n"
+                "Date: 2026-05-08\n\n"
+                "## Context\n\n"
+                "OR-201 identified a durable concern whose parent is engineering_execution.\n\n"
+                "## Decision\n\n"
+                "Attach `reproducibility_checks` as a skeleton leaf under `engineering_execution` and clear OR-201 from the incubator.\n\n"
+                "## Alternatives considered\n\n"
+                "- Keep incubating: rejected because the parent and support evidence are clear.\n"
+                "- Add a new record family: rejected because skeleton, evidence, and decisions already represent the change.\n\n"
+                "## Consequences\n\n"
+                "Future work can orient directly on the reproducibility_checks branch without creating a parallel tree subsystem.\n\n"
+                "## Affected nodes\n\n"
+                "- engineering_execution\n"
+                "- reproducibility_checks\n\n"
+                "## Affected contracts\n\n"
+                "None.\n\n"
+                "## Evidence links\n\n"
+                "- `.aletheia/evidence/EV-201-reproducibility-gap.md`\n\n"
+                "## Hypothesis links\n\n"
+                "None.\n\n"
+                "## Invalidation criteria\n\n"
+                "Revisit if reproducibility checks no longer need a dedicated execution boundary.\n\n"
+                "## Review trigger\n\n"
+                "Review when engineering_execution gains more than twelve children or reproducibility work becomes ordinary test maintenance.\n",
+                encoding="utf-8",
+            )
+            skeleton = target / ".aletheia" / "state" / "SKELETON.yaml"
+            skeleton.write_text(
+                skeleton.read_text(encoding="utf-8")
+                + "\n"
+                "  reproducibility_checks:\n"
+                "    layer: leaf\n"
+                "    parent: engineering_execution\n"
+                "    children: []\n"
+                "    purpose: \"Keep project checks, fixtures, and validations reproducible.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs:\n"
+                "      - .aletheia/decisions/DEC-201-attach-reproducibility-checks.md\n"
+                "    evidence_refs:\n"
+                "      - .aletheia/evidence/EV-201-reproducibility-gap.md\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.4\n"
+                "    last_reviewed: 2026-05-08\n",
+                encoding="utf-8",
+            )
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(
+                active_state.read_text(encoding="utf-8").replace(
+                    "- `root`",
+                    "- `reproducibility_checks`",
+                ),
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "state" / "ORPHANS.yaml").write_text(
+                "version: 0.1\n"
+                "schema: AIOS_ORPHANS\n"
+                "updated: 2026-05-08\n\n"
+                "review_policy:\n"
+                "  default_review_days: 30\n"
+                "  max_orphan_age_days: 90\n\n"
+                "orphans: []\n",
+                encoding="utf-8",
+            )
+
+            validate = run_repo(target, sys.executable, ".aletheia/bin/validate.py")
+            self.assertEqual(validate.returncode, 0, validate.stdout + validate.stderr)
+
+            orient = run_repo(target, sys.executable, ".aletheia/bin/orient.py")
+            self.assertEqual(orient.returncode, 0, orient.stdout + orient.stderr)
+            self.assertIn("reproducibility_checks", orient.stdout)
+            self.assertIn("No incubating orphan entries.", orient.stdout)
+
+            overview = run_repo(target, sys.executable, ".aletheia/bin/overview.py")
+            self.assertEqual(overview.returncode, 0, overview.stdout + overview.stderr)
+            overview_status = json.loads((target / ".aletheia" / "overview" / "status.json").read_text(encoding="utf-8"))
+            self.assertEqual(overview_status["tree_health"]["orphan_count"], 0)
+            self.assertEqual(overview_status["tree_health"]["stale_orphan_count"], 0)
+            self.assertFalse(overview_status["tree_health"]["review_needed"])
+
     def test_quant_research_iteration_preserves_one_current_truth_across_competing_lenses(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "quant-research"

@@ -96,14 +96,20 @@ def protected_files(files: list[str]) -> list[str]:
     return [file for file in files if any(pattern.search(file) for pattern in PROTECTED_PATTERNS)]
 
 
-def load_json(path: Path) -> dict:
+def load_json(path: Path, *, strict: bool = False) -> dict:
     if not path.exists():
         return {}
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as exc:
+        if strict:
+            raise ValueError(f"{path}: {exc}") from exc
         return {}
-    return data if isinstance(data, dict) else {}
+    if not isinstance(data, dict):
+        if strict:
+            raise ValueError(f"{path}: expected JSON object")
+        return {}
+    return data
 
 
 def require_agent_run_for_checkpoint(root: Path) -> bool:
@@ -113,7 +119,7 @@ def require_agent_run_for_checkpoint(root: Path) -> bool:
 
 
 def load_current_agent_run(root: Path) -> dict:
-    run_data = load_json(root / ".aletheia" / "runtime" / "current_agent_run.json")
+    run_data = load_json(root / ".aletheia" / "runtime" / "current_agent_run.json", strict=True)
     if run_data:
         return run_data
     return {}
@@ -206,7 +212,11 @@ def main() -> int:
         print("Update .aletheia state, evidence, decisions, contracts, nodes, or session notes.")
         return 3
 
-    run_data = load_current_agent_run(root)
+    try:
+        run_data = load_current_agent_run(root)
+    except ValueError as exc:
+        print(f"checkpoint blocked: current AI agent run record is invalid: {exc}")
+        return 4
     allow_unattributed = args.no_model_gate or os.environ.get("AIOS_ALLOW_UNATTRIBUTED_CHECKPOINT") == "1"
     if require_agent_run_for_checkpoint(root) and not run_data and not allow_unattributed:
         print("checkpoint blocked: no current AI agent run attribution found")

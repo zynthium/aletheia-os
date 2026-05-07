@@ -654,6 +654,39 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(record["command"], "python3 .aletheia/bin/validate.py")
             self.assertIsNone(record["file_path"])
 
+    def test_change_hook_records_invalid_current_agent_run_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "current_agent_run.json").write_text("{bad json", encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/change_hook.py"],
+                cwd=target,
+                input=json.dumps(
+                    {
+                        "hook_event_name": "PostToolUse",
+                        "tool_name": "Write",
+                        "tool_input": {"file_path": ".aletheia/state/ACTIVE_STATE.md"},
+                    }
+                ),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            log_path = target / ".aletheia" / "runtime" / "change_log.jsonl"
+            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[-1])
+            self.assertEqual(record["file_path"], ".aletheia/state/ACTIVE_STATE.md")
+            self.assertIsNone(record["agent_run_id"])
+            self.assertIn("current_agent_run.json", record["agent_run_error"])
+
     def test_stop_hook_reports_checkpoint_recommendation_and_autocommit_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

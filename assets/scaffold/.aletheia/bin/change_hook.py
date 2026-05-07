@@ -20,12 +20,14 @@ def main() -> int:
     runtime = root / ".aletheia" / "runtime"
     runtime.mkdir(parents=True, exist_ok=True)
     current = {}
+    agent_run_error = None
     current_path = runtime / "current_agent_run.json"
     if current_path.exists():
         try:
             current = json.loads(current_path.read_text(encoding="utf-8"))
-        except Exception:
+        except Exception as exc:
             current = {}
+            agent_run_error = f"{current_path}: {exc}"
     record = {
         "ts": datetime.now(timezone.utc).isoformat(),
         "event": payload.get("hook_event_name"),
@@ -36,6 +38,7 @@ def main() -> int:
         "agent_run_id": current.get("run_id"),
         "model_id": current.get("model_id"),
         "task_class": current.get("task_class"),
+        "agent_run_error": agent_run_error,
     }
     with (runtime / "change_log.jsonl").open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(record, ensure_ascii=False) + "\n")

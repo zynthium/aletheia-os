@@ -117,6 +117,35 @@ class CheckpointTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0, output)
             self.assertIn("no current AI agent run attribution found", output)
 
+    def test_checkpoint_reports_invalid_current_agent_run_without_treating_it_as_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "current_agent_run.json").write_text("{bad json", encoding="utf-8")
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(active_state.read_text(encoding="utf-8") + "\nInvalid run checkpoint note.\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/checkpoint.py", "--auto", "--dry-run"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn("checkpoint blocked: current AI agent run record is invalid", output)
+            self.assertIn("current_agent_run.json", output)
+            self.assertNotIn("no current AI agent run attribution found", output)
+            self.assertNotIn("Traceback", output)
+
     def test_checkpoint_explicit_no_model_gate_allows_unattributed_dry_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

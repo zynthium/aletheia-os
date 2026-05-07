@@ -259,6 +259,8 @@ class ModelGateTests(unittest.TestCase):
                 "python3 .aletheia/bin/orient.py",
                 "python3 .aletheia/bin/context_pack.py",
                 "python3 .aletheia/bin/validate.py",
+                "python3 .aletheia/bin/truth_record.py list evidence",
+                "python3 .aletheia/bin/truth_record.py show evidence EV-0001",
             ]:
                 result = self.run_pretooluse_hook(
                     target,
@@ -268,6 +270,27 @@ class ModelGateTests(unittest.TestCase):
                 output = result.stdout + result.stderr
                 self.assertEqual(result.returncode, 0, output)
                 self.assertNotIn("permissionDecision", output, command)
+
+    def test_pretooluse_treats_truth_record_create_and_archive_as_write_capable(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+
+            for command in [
+                "python3 .aletheia/bin/truth_record.py create evidence --id EV-0001 --title Claim",
+                "python3 .aletheia/bin/truth_record.py archive evidence EV-0001 --reason stale",
+            ]:
+                result = self.run_pretooluse_hook(
+                    target,
+                    {"tool_name": "Bash", "tool_input": {"command": command}},
+                )
+
+                output = result.stdout + result.stderr
+                self.assertEqual(result.returncode, 0, output)
+                self.assertIn("permissionDecision", output, command)
+                self.assertIn("no current agent run", output, command)
 
     def test_registered_model_alias_denied_model_and_self_attested_policy_matrix(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

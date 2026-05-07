@@ -249,6 +249,8 @@ def bash_is_read_only(command: str) -> bool:
     if parts[0] in READ_ONLY_LOCAL_COMMANDS:
         return True
     if len(parts) >= 2 and parts[0] == "python3":
+        if parts[1] == ".aletheia/bin/truth_record.py" and len(parts) >= 3:
+            return parts[2] in {"list", "show"}
         return parts[1] in READ_ONLY_ALETHEIA_SCRIPTS
     return False
 

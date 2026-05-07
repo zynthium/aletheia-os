@@ -125,6 +125,61 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("MISSING", output)
             self.assertIn("...[truncated]", output)
 
+    def test_context_pack_includes_dynamic_capabilities_activity_and_record_inventory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".aletheia" / "runtime").mkdir()
+            (target / ".aletheia" / "runtime" / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-test",
+                        "provider": "openai",
+                        "model_id": "gpt-test",
+                        "capability_tier": "C3",
+                        "task_class": "research_design",
+                        "gate_status": "allowed",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "session_notes" / "2026-05-07-note.md").write_text(
+                "# Session Note: recent work\n\nSummary.\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "evidence" / "EV-001.md").write_text(
+                "# Evidence: sample\n\n"
+                "## Source refs\n\n- `README.md`\n\n"
+                "## Method\n\nRead docs.\n\n"
+                "## Result\n\nResult.\n\n"
+                "## Limitations\n\nSingle source.\n\n"
+                "## Invalidation criteria\n\nContradiction.\n\n"
+                "## Confidence impact\n\nRaises confidence.\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/context_pack.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("## .aletheia/CAPABILITY_MAP.md", output)
+            self.assertIn("Initialize AletheiaOS scaffold", output)
+            self.assertIn("## Current Agent Run", output)
+            self.assertIn("RUN-test", output)
+            self.assertIn("## Recent Session Notes", output)
+            self.assertIn(".aletheia/session_notes/2026-05-07-note.md", output)
+            self.assertIn("## Truth Record Inventory", output)
+            self.assertIn(".aletheia/evidence/EV-001.md", output)
+
     def test_overview_records_validation_failure_and_truth_record_inventory(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
@@ -178,6 +233,232 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn(".aletheia/nodes/feature.yaml", status["records"]["nodes"])
             self.assertIn(".aletheia/risks/RISK-001.md", status["records"]["risks"])
             self.assertIn(".aletheia/agent_runs/RUN-test.json", status["records"]["agent_runs"])
+
+    def test_truth_record_script_creates_lists_shows_and_archives_records(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+
+            create = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "create",
+                    "evidence",
+                    "--id",
+                    "EV-0001",
+                    "--title",
+                    "Source-backed claim",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            create_output = create.stdout + create.stderr
+            self.assertEqual(create.returncode, 0, create_output)
+            record = target / ".aletheia" / "evidence" / "EV-0001.md"
+            self.assertTrue(record.exists())
+            text = record.read_text(encoding="utf-8")
+            self.assertIn("# Evidence: Source-backed claim", text)
+            self.assertIn("Claim tested: Source-backed claim", text)
+
+            listing = subprocess.run(
+                [sys.executable, ".aletheia/bin/truth_record.py", "list", "evidence"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            listing_output = listing.stdout + listing.stderr
+            self.assertEqual(listing.returncode, 0, listing_output)
+            self.assertIn(".aletheia/evidence/EV-0001.md", listing_output)
+
+            show = subprocess.run(
+                [sys.executable, ".aletheia/bin/truth_record.py", "show", "evidence", "EV-0001"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            show_output = show.stdout + show.stderr
+            self.assertEqual(show.returncode, 0, show_output)
+            self.assertIn("# Evidence: Source-backed claim", show_output)
+
+            archive = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "archive",
+                    "evidence",
+                    "EV-0001",
+                    "--reason",
+                    "Superseded by later evidence.",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            archive_output = archive.stdout + archive.stderr
+            self.assertEqual(archive.returncode, 0, archive_output)
+            archived = record.read_text(encoding="utf-8")
+            self.assertIn("Status: archived", archived)
+            self.assertIn("Archive reason: Superseded by later evidence.", archived)
+
+    def test_truth_record_script_rejects_unknown_entity_and_path_traversal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+
+            unknown = subprocess.run(
+                [sys.executable, ".aletheia/bin/truth_record.py", "list", "unknown"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            unknown_output = unknown.stdout + unknown.stderr
+            self.assertNotEqual(unknown.returncode, 0, unknown_output)
+            self.assertIn("unknown truth record entity", unknown_output)
+            self.assertNotIn("Traceback", unknown_output)
+
+            traversal = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "create",
+                    "evidence",
+                    "--id",
+                    "../outside",
+                    "--title",
+                    "Invalid",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            traversal_output = traversal.stdout + traversal.stderr
+            self.assertNotEqual(traversal.returncode, 0, traversal_output)
+            self.assertIn("record id must contain only", traversal_output)
+            self.assertFalse((target / ".aletheia" / "outside.md").exists())
+            self.assertNotIn("Traceback", traversal_output)
+
+    def test_truth_record_script_handles_runtime_and_yaml_records_safely(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".aletheia" / "agent_runs" / "RUN-0001.json").write_text(
+                json.dumps({"run_id": "RUN-0001"}) + "\n",
+                encoding="utf-8",
+            )
+
+            agent_runs = subprocess.run(
+                [sys.executable, ".aletheia/bin/truth_record.py", "list", "agent-runs"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            agent_runs_output = agent_runs.stdout + agent_runs.stderr
+            self.assertEqual(agent_runs.returncode, 0, agent_runs_output)
+            self.assertIn(".aletheia/agent_runs/RUN-0001.json", agent_runs_output)
+
+            create_node = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "create",
+                    "node",
+                    "--id",
+                    "feature_node",
+                    "--title",
+                    "Feature Node",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(create_node.returncode, 0, create_node.stdout + create_node.stderr)
+
+            archive_node = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "archive",
+                    "node",
+                    "feature_node",
+                    "--reason",
+                    "No longer active.",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(archive_node.returncode, 0, archive_node.stdout + archive_node.stderr)
+            node_text = (target / ".aletheia" / "nodes" / "feature_node.yaml").read_text(encoding="utf-8")
+            self.assertIn("status: archived", node_text)
+            self.assertNotIn("Status: archived", node_text)
+
+    def test_truth_record_script_replaces_template_placeholders_for_supported_entities(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            cases = [
+                ("evidence", "EV-template", "Template Evidence", ".aletheia/evidence/EV-template.md"),
+                ("decision", "DEC-template", "Template Decision", ".aletheia/decisions/DEC-template.md"),
+                ("contract", "CON-template", "Template Contract", ".aletheia/contracts/CON-template.md"),
+                ("hypothesis", "HYP-template", "Template Hypothesis", ".aletheia/hypotheses/HYP-template.md"),
+                ("risk", "RISK-template", "Template Risk", ".aletheia/risks/RISK-template.md"),
+                ("session-note", "2026-05-07-template", "Template Session", ".aletheia/session_notes/2026-05-07-template.md"),
+                ("node", "template_node", "Template Node", ".aletheia/nodes/template_node.yaml"),
+            ]
+
+            for entity, record_id, title, rel in cases:
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        ".aletheia/bin/truth_record.py",
+                        "create",
+                        entity,
+                        "--id",
+                        record_id,
+                        "--title",
+                        title,
+                    ],
+                    cwd=target,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                text = (target / rel).read_text(encoding="utf-8")
+                for placeholder in ["<title>", "<boundary name>", "TITLE", "YYYY-MM-DD", "HYP-0001", "node_id", "Node title"]:
+                    self.assertNotIn(placeholder, text, f"{placeholder} remained in {rel}")
 
     def test_scaffold_gitignore_marks_generated_aletheia_outputs(self) -> None:
         ignore = (ROOT / "assets" / "scaffold" / ".aletheia" / ".gitignore").read_text(encoding="utf-8")
@@ -609,6 +890,121 @@ class RuntimeValidateTests(unittest.TestCase):
                 "Checkpoint plan:",
             ]:
                 self.assertIn(field, output)
+
+    def test_orient_defaults_to_cache_friendly_context_sections(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".aletheia" / "runtime").mkdir()
+            (target / ".aletheia" / "runtime" / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-orient",
+                        "provider": "openai",
+                        "model_id": "gpt-test",
+                        "capability_tier": "C3",
+                        "task_class": "research_design",
+                        "gate_status": "allowed",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "session_notes" / "2026-05-07-orient.md").write_text(
+                "# Session Note: orient context\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "decisions" / "DEC-001.md").write_text(
+                "# Decision: sample\n\nStatus: proposed\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/orient.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("## Capability Map", output)
+            self.assertIn("truth_record.py create", output)
+            self.assertIn("## Truth Record Inventory", output)
+            self.assertIn(".aletheia/decisions/DEC-001.md", output)
+            self.assertNotIn("## Current Agent Run", output)
+            self.assertNotIn("RUN-orient", output)
+            self.assertNotIn("## Recent Session Notes", output)
+            self.assertNotIn(".aletheia/session_notes/2026-05-07-orient.md", output)
+
+    def test_orient_can_include_runtime_context_when_requested(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".aletheia" / "runtime").mkdir()
+            (target / ".aletheia" / "runtime" / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-orient",
+                        "provider": "openai",
+                        "model_id": "gpt-test",
+                        "capability_tier": "C3",
+                        "task_class": "research_design",
+                        "gate_status": "allowed",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "session_notes" / "2026-05-07-orient.md").write_text(
+                "# Session Note: orient context\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/orient.py", "--with-runtime"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("## Current Agent Run", output)
+            self.assertIn("RUN-orient", output)
+            self.assertIn("## Recent Session Notes", output)
+            self.assertIn(".aletheia/session_notes/2026-05-07-orient.md", output)
+
+    def test_orient_static_mode_omits_record_inventory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".aletheia" / "decisions" / "DEC-001.md").write_text(
+                "# Decision: sample\n\nStatus: proposed\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/orient.py", "--static"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("## Capability Map", output)
+            self.assertNotIn("## Truth Record Inventory", output)
+            self.assertNotIn(".aletheia/decisions/DEC-001.md", output)
 
     def test_orient_does_not_treat_following_skeleton_lists_as_refs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

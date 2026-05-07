@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
+import json
 import re
 from pathlib import Path
 
@@ -13,6 +15,16 @@ TRUTH_FILES = {
     "skeleton": ".aletheia/state/SKELETON.yaml",
     "frontier": ".aletheia/state/FRONTIER_BOARD.md",
     "risks": ".aletheia/state/RISK_REGISTER.md",
+}
+RECORD_DIRS = {
+    "decisions": ".aletheia/decisions",
+    "evidence": ".aletheia/evidence",
+    "contracts": ".aletheia/contracts",
+    "hypotheses": ".aletheia/hypotheses",
+    "nodes": ".aletheia/nodes",
+    "risks": ".aletheia/risks",
+    "session_notes": ".aletheia/session_notes",
+    "agent_runs": ".aletheia/agent_runs",
 }
 
 
@@ -64,6 +76,70 @@ def skeleton_refs(skeleton_text: str, ref_name: str) -> list[str]:
     return refs
 
 
+def relative(path: Path, root: Path) -> str:
+    return path.relative_to(root).as_posix()
+
+
+def current_agent_run(root: Path) -> str:
+    path = root / ".aletheia" / "runtime" / "current_agent_run.json"
+    if not path.exists():
+        return "No current agent run record."
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return f"Current agent run record is invalid: {exc}"
+    if not isinstance(data, dict):
+        return "Current agent run record is invalid: expected JSON object."
+    fields = [
+        "run_id",
+        "provider",
+        "model_id",
+        "capability_tier",
+        "task_class",
+        "gate_status",
+        "objective",
+        "recorded_at",
+    ]
+    return "\n".join(f"- {field}: {data.get(field, 'unknown')}" for field in fields)
+
+
+def recent_session_notes(root: Path, limit: int = 5) -> str:
+    directory = root / ".aletheia" / "session_notes"
+    if not directory.exists():
+        return "None"
+    notes = sorted(
+        (path for path in directory.glob("*.md") if path.is_file()),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )[:limit]
+    if not notes:
+        return "None"
+    return "\n".join(f"- `{relative(path, root)}`" for path in notes)
+
+
+def record_inventory(root: Path, include_activity: bool = False) -> str:
+    lines: list[str] = []
+    for name, rel in RECORD_DIRS.items():
+        if not include_activity and name in {"session_notes", "agent_runs"}:
+            continue
+        directory = root / rel
+        records = []
+        if directory.exists():
+            records = sorted(
+                path
+                for path in directory.glob("*")
+                if path.is_file() and path.name not in {".gitkeep", "INDEX.md"}
+            )
+        lines.append(f"### {name}")
+        lines.extend(f"- `{relative(path, root)}`" for path in records[:10])
+        if len(records) > 10:
+            lines.append(f"- ... {len(records) - 10} more")
+        if not records:
+            lines.append("None")
+        lines.append("")
+    return "\n".join(lines).rstrip()
+
+
 def print_block(title: str, content: str) -> None:
     print(f"## {title}")
     print()
@@ -71,7 +147,26 @@ def print_block(title: str, content: str) -> None:
     print()
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Orient on AletheiaOS project truth.")
+    parser.add_argument(
+        "--with-runtime",
+        action="store_true",
+        help="Append high-churn current agent run and recent session note references.",
+    )
+    parser.add_argument(
+        "--static",
+        action="store_true",
+        help="Omit record inventory and runtime sections for the most cache-friendly output.",
+    )
+    args = parser.parse_args()
+    if args.static and args.with_runtime:
+        parser.error("--static cannot be combined with --with-runtime")
+    return args
+
+
 def main() -> int:
+    args = parse_args()
     root = repo_root()
     active_text = read(root, TRUTH_FILES["active"])
     skeleton_text = read(root, TRUTH_FILES["skeleton"])
@@ -98,6 +193,9 @@ def main() -> int:
     print_block("Linked Evidence", "\n".join(skeleton_refs(skeleton_text, "evidence_refs")))
     print_block("Linked Contracts", "\n".join(skeleton_refs(skeleton_text, "contract_refs")))
     print_block("Known Risks", read(root, TRUTH_FILES["risks"]))
+    print_block("Capability Map", read(root, ".aletheia/CAPABILITY_MAP.md"))
+    if not args.static:
+        print_block("Truth Record Inventory", record_inventory(root, include_activity=args.with_runtime))
     print_block("Missing Or Stale Truth Warnings", "\n".join(warnings))
     print_block(
         "Global View Checksum",
@@ -114,6 +212,9 @@ Model gate status:
 Checkpoint plan:
 ```""",
     )
+    if args.with_runtime:
+        print_block("Current Agent Run", current_agent_run(root))
+        print_block("Recent Session Notes", recent_session_notes(root))
     return 0
 
 

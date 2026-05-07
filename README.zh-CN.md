@@ -85,6 +85,7 @@ mission -> system graph -> skeleton -> contracts -> evidence -> decisions -> cod
 - 在大量资料场景下，引导 agent 使用外部 LLM Wiki 编译研究空间，再将确认结果沉淀为项目事实。
 - 提供 repo-native validation、overview、bootstrap finalize 和 checkpoint runtime。
 - 通过 model registry 管理 task class、能力层级、注册模型和 denylist。
+- 用 `.aletheia/CAPABILITY_MAP.md` 维护用户动作、agent 能力和 truth record CRUD 覆盖关系。
 
 ## 安装
 
@@ -295,7 +296,9 @@ orient -> work -> update truth -> validate -> checkpoint
   bin/
 ```
 
-`bin/` 提供 orient、context pack、model gate、source inventory、guided bootstrap、overview、validate、bootstrap finalize、checkpoint 和 Claude hook runtime。
+`CAPABILITY_MAP.md` 是 action parity 清单：记录安装、初始化、orient、context pack、truth record create/list/show/archive、model gate、source inventory、bootstrap finalize、validate、overview、checkpoint、truth promotion 和只读审阅 agent 等用户动作与 agent 能力的对应关系。
+
+`bin/` 提供 orient、context pack、truth record、model gate、source inventory、guided bootstrap、overview、validate、bootstrap finalize、checkpoint 和 Claude hook runtime。`orient.py` 默认输出 cache 友好的稳定事实和精简 record inventory；`context_pack.py` 会输出核心 truth files、能力地图、当前 agent run、最近 session notes 和完整 truth record inventory，方便长会话刷新动态上下文。
 
 ## 外部 LLM Wiki 资料摄入
 
@@ -345,7 +348,7 @@ Source index:
 
 详细规则见 `.aletheia/playbooks/external_llm_wiki_handoff.md` 和 `.aletheia/playbooks/wiki_handoff_promotion.md`。Wiki 页面只是 compiled research；使用 `aletheia-promote` 审查 handoff 后，只有晋升到 `.aletheia/evidence/`、`.aletheia/decisions/`、`.aletheia/hypotheses/`、`.aletheia/contracts/`、`.aletheia/risks/`、`.aletheia/nodes/` 或 `.aletheia/state/` 的内容才是 durable project truth。
 
-`orient` 会输出固定的 Global View Checksum，帮助 agent 在动手前明确 active node、父级约束、成功标准、推翻标准、需要更新的 truth records、验证路径和 checkpoint 计划。
+`orient` 会输出固定的 Global View Checksum，并默认包含能力地图和 durable truth record inventory 摘要，帮助 agent 在动手前明确 active node、父级约束、成功标准、推翻标准、需要更新的 truth records、验证路径和 checkpoint 计划。高频变化的当前 agent run 和最近 session notes 需要显式使用 `python3 .aletheia/bin/orient.py --with-runtime`，最稳定的前置上下文可使用 `--static`。
 
 对应的 plugin skills：
 
@@ -361,7 +364,13 @@ Source index:
 ```bash
 python3 .aletheia/bin/bootstrap_finalize.py
 python3 .aletheia/bin/orient.py
+python3 .aletheia/bin/orient.py --with-runtime
+python3 .aletheia/bin/orient.py --static
 python3 .aletheia/bin/context_pack.py
+python3 .aletheia/bin/truth_record.py list evidence
+python3 .aletheia/bin/truth_record.py create evidence --id EV-0001 --title "Claim title"
+python3 .aletheia/bin/truth_record.py show evidence EV-0001
+python3 .aletheia/bin/truth_record.py archive evidence EV-0001 --reason "Superseded by stronger evidence"
 python3 .aletheia/bin/model_gate.py --task-class <task_class> --provider <provider> --model-id <model_id> --record --objective "<objective>"
 python3 .aletheia/bin/model_gate.py --task-class bootstrap_finalize --provider <provider> --model-id <model_id> --tier C3 --operator-approved --record --objective "Initialize AletheiaOS"
 python3 .aletheia/bin/source_inventory.py
@@ -380,7 +389,7 @@ Claude Code 通过 hooks 自动执行门禁和审计；Codex 当前以 skills、
 
 `checkpoint.py` 默认只提交 AletheiaOS state/control-plane 路径；只有显式传入 `--include-worktree` 时才 stage 整个工作树。
 
-`guided_bootstrap.py` 会验证已经记录的 bootstrap gate，不会自行创建新的模型授权。`source_inventory.py` 默认跳过 `.aletheia/`、`.claude/` 和初始化根部控制文件，只扫描项目自身资料。
+`guided_bootstrap.py` 会验证已经记录的 bootstrap gate，不会自行创建新的模型授权。`source_inventory.py` 默认跳过 `.aletheia/`、`.claude/` 和初始化根部控制文件，只扫描项目自身资料。新增或改变用户可执行动作时，应同步更新 `.aletheia/CAPABILITY_MAP.md`。
 
 `overview.py` 和 `source_inventory.py` 默认写入 `.aletheia/` 下的 generated/intermediate 目录，不属于 durable project truth；只有显式使用 `--public-docs` 时才生成 `docs/overview/`。
 

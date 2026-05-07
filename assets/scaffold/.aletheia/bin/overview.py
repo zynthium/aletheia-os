@@ -98,19 +98,29 @@ def tree_health(root: Path, validation: dict) -> dict:
     stderr = validation.get("stderr", "")
     stdout_tree_lines = tree_signal_lines(stdout)
     stderr_tree_lines = tree_signal_lines(stderr)
+    semantic_review_signals = [line.strip(" -") for line in stdout_tree_lines]
+    structural_error_signals = [line.strip(" -") for line in stderr_tree_lines]
     signals = [
         line.strip(" -")
         for line in [*stdout_tree_lines, *stderr_tree_lines]
     ]
     orphan_count = count_orphans(root)
     stale_count = stale_orphan_count(stdout)
+    human_review_needed = bool(semantic_review_signals) or stale_count > 0 or orphan_count > 0
+    structural_fix_needed = bool(structural_error_signals)
     return {
         "skeleton_nodes": count_skeleton_nodes(root),
         "orphan_count": orphan_count,
         "stale_orphan_count": stale_count,
         "warning_count": len(stdout_tree_lines),
         "error_count": len(stderr_tree_lines),
-        "review_needed": stale_count > 0 or orphan_count > 0,
+        "semantic_review_count": len(semantic_review_signals),
+        "structural_error_count": len(structural_error_signals),
+        "human_review_needed": human_review_needed,
+        "structural_fix_needed": structural_fix_needed,
+        "review_needed": human_review_needed,
+        "semantic_review_signals": semantic_review_signals,
+        "structural_error_signals": structural_error_signals,
         "signals": signals,
     }
 

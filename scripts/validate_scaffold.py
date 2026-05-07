@@ -100,6 +100,12 @@ BANNED_TEXT_PATTERNS = [
     re.compile("导入"),
     re.compile("兼容"),
 ]
+BANNED_EXTRA_TREE_SURFACES = [
+    ".aletheia/claims",
+    ".aletheia/theories",
+    ".aletheia/tree",
+    ".aletheia/bin/tree_record.py",
+]
 
 
 def validate_skeleton(root: Path) -> list[str]:
@@ -141,6 +147,14 @@ def validate_no_retired_language(root: Path) -> list[str]:
             if pattern.search(text):
                 errors.append(f"{path.relative_to(root).as_posix()} contains retired language: {pattern.pattern}")
     return errors
+
+
+def validate_no_extra_tree_surfaces(root: Path) -> list[str]:
+    return [
+        f"extra tree-governance surface is not allowed: {rel}"
+        for rel in BANNED_EXTRA_TREE_SURFACES
+        if (root / rel).exists()
+    ]
 
 
 def validate_runtime_policy(root: Path) -> list[str]:
@@ -296,6 +310,7 @@ def main() -> int:
         + validate_actions(root)
         + validate_capability_map(root)
         + validate_no_retired_language(root)
+        + validate_no_extra_tree_surfaces(root)
     )
     if skeleton_errors:
         for error in skeleton_errors:

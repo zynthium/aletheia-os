@@ -280,6 +280,80 @@ def write_iteration_two_truth(target: Path) -> None:
         "Review before implementing the first executable strategy model.\n",
         encoding="utf-8",
     )
+    (target / ".aletheia" / "state" / "SKELETON.yaml").write_text(
+        (target / ".aletheia" / "state" / "SKELETON.yaml").read_text(encoding="utf-8")
+        + "\n"
+        "  market_modeling:\n"
+        "    layer: branch\n"
+        "    parent: theory_model\n"
+        "    children:\n"
+        "      - factor_modeling\n"
+        "      - liquidity_context\n"
+        "    purpose: \"Separate market modeling lenses without accepting either as universal truth.\"\n"
+        "    invariants: []\n"
+        "    inherited_constraints: []\n"
+        "    adds: []\n"
+        "    does_not_explain: []\n"
+        "    interfaces: []\n"
+        "    owned_paths: []\n"
+        "    test_paths: []\n"
+        "    contract_refs: []\n"
+        "    decision_refs:\n"
+        "      - .aletheia/decisions/DEC-001-modeling-lens-policy.md\n"
+        "    evidence_refs:\n"
+        "      - .aletheia/evidence/EV-001-factor-baseline.md\n"
+        "      - .aletheia/evidence/EV-002-game-context-break.md\n"
+        "    expand_when: []\n"
+        "    stop_when: []\n"
+        "    review_triggers: []\n"
+        "    confidence: 0.5\n"
+        "    last_reviewed: 2026-05-08\n"
+        "  factor_modeling:\n"
+        "    layer: leaf\n"
+        "    parent: market_modeling\n"
+        "    children: []\n"
+        "    purpose: \"Track indicator and factor evidence as candidate inputs.\"\n"
+        "    invariants: []\n"
+        "    inherited_constraints: []\n"
+        "    adds: []\n"
+        "    does_not_explain: []\n"
+        "    interfaces: []\n"
+        "    owned_paths: []\n"
+        "    test_paths: []\n"
+        "    contract_refs: []\n"
+        "    decision_refs:\n"
+        "      - .aletheia/decisions/DEC-001-modeling-lens-policy.md\n"
+        "    evidence_refs:\n"
+        "      - .aletheia/evidence/EV-001-factor-baseline.md\n"
+        "    expand_when: []\n"
+        "    stop_when: []\n"
+        "    review_triggers: []\n"
+        "    confidence: 0.3\n"
+        "    last_reviewed: 2026-05-08\n"
+        "  liquidity_context:\n"
+        "    layer: leaf\n"
+        "    parent: market_modeling\n"
+        "    children: []\n"
+        "    purpose: \"Track participant behavior and liquidity pressure evidence that gates factor signals.\"\n"
+        "    invariants: []\n"
+        "    inherited_constraints: []\n"
+        "    adds: []\n"
+        "    does_not_explain: []\n"
+        "    interfaces: []\n"
+        "    owned_paths: []\n"
+        "    test_paths: []\n"
+        "    contract_refs: []\n"
+        "    decision_refs:\n"
+        "      - .aletheia/decisions/DEC-001-modeling-lens-policy.md\n"
+        "    evidence_refs:\n"
+        "      - .aletheia/evidence/EV-002-game-context-break.md\n"
+        "    expand_when: []\n"
+        "    stop_when: []\n"
+        "    review_triggers: []\n"
+        "    confidence: 0.4\n"
+        "    last_reviewed: 2026-05-08\n",
+        encoding="utf-8",
+    )
     (target / ".aletheia" / "state" / "ACTIVE_STATE.md").write_text(
         "# Active State\n\n"
         "## Current project identity\n\n"
@@ -292,7 +366,7 @@ def write_iteration_two_truth(target: Path) -> None:
         "Next research frontier: operationalize liquidity-context checks without hindsight.\n"
         "```\n\n"
         "## Active nodes\n\n"
-        "- `theory_model`\n"
+        "- `liquidity_context`\n"
         "- `evidence_validation`\n\n"
         "## Current blockers\n\n"
         "| Blocker | Type A/B/C/D | Affected node | Impact | Next action |\n"
@@ -1028,6 +1102,21 @@ class ResearchIterationFlowTests(unittest.TestCase):
             orient = run_repo(target, sys.executable, ".aletheia/bin/orient.py")
             self.assertEqual(orient.returncode, 0, orient.stdout + orient.stderr)
             self.assertIn("factor signals are candidate inputs gated by game-theoretic participant", orient.stdout)
+            self.assertIn("market_modeling", orient.stdout)
+            self.assertIn("liquidity_context", orient.stdout)
+
+            status = run_repo(target, sys.executable, ".aletheia/bin/status.py", "--json")
+            self.assertEqual(status.returncode, 0, status.stdout + status.stderr)
+            status_payload = json.loads(status.stdout)
+            self.assertGreaterEqual(status_payload["tree_health"]["skeleton_nodes"], 4)
+            self.assertEqual(status_payload["tree_health"]["orphan_count"], 0)
+            self.assertFalse(status_payload["tree_health"]["review_needed"])
+
+            overview = run_repo(target, sys.executable, ".aletheia/bin/overview.py")
+            self.assertEqual(overview.returncode, 0, overview.stdout + overview.stderr)
+            overview_status = json.loads((target / ".aletheia" / "overview" / "status.json").read_text(encoding="utf-8"))
+            self.assertGreaterEqual(overview_status["tree_health"]["skeleton_nodes"], 4)
+            self.assertFalse(overview_status["tree_health"]["review_needed"])
 
             checkpoint = run_repo(
                 target,

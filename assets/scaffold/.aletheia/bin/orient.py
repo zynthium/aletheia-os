@@ -4,6 +4,8 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 
@@ -97,6 +99,42 @@ def orphan_summary(orphan_text: str) -> str:
         return "No incubating orphan entries."
     cleaned = [item.strip().strip("\"'") for item in ids[:20]]
     return "\n".join(f"- {item}" for item in cleaned)
+
+
+def tree_health_lens(root: Path) -> str:
+    result = subprocess.run(
+        [sys.executable, ".aletheia/bin/status.py", "--json"],
+        cwd=root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode != 0:
+        return "Tree health lens unavailable: status.py did not complete."
+    try:
+        payload = json.loads(result.stdout)
+    except Exception as exc:
+        return f"Tree health lens unavailable: status.py emitted invalid JSON: {exc}"
+    tree = payload.get("tree_health")
+    if not isinstance(tree, dict):
+        return "Tree health lens unavailable: status.py did not emit tree_health."
+
+    lines = [
+        f"- Semantic review signals: {tree.get('semantic_review_count', 0)}",
+        f"- Structural errors: {tree.get('structural_error_count', 0)}",
+        f"- Human review needed: {tree.get('human_review_needed', False)}",
+        f"- Structural fix needed: {tree.get('structural_fix_needed', False)}",
+    ]
+    semantic = tree.get("semantic_review_signals", [])
+    if isinstance(semantic, list) and semantic:
+        lines.append("- Semantic review signals detail:")
+        lines.extend(f"  - {signal}" for signal in semantic[:5])
+    structural = tree.get("structural_error_signals", [])
+    if isinstance(structural, list) and structural:
+        lines.append("- Structural errors detail:")
+        lines.extend(f"  - {signal}" for signal in structural[:5])
+    return "\n".join(lines)
 
 
 def relative(path: Path, root: Path) -> str:
@@ -216,6 +254,7 @@ def main() -> int:
     print_block("Tree Governance", read(root, TRUTH_FILES["tree_governance"]))
     print_block("Tree Nodes", skeleton_node_summary(skeleton_text))
     print_block("Incubator Orphans", orphan_summary(read(root, TRUTH_FILES["orphans"])))
+    print_block("Tree Health Lens", tree_health_lens(root))
     print_block("Linked Evidence", "\n".join(skeleton_refs(skeleton_text, "evidence_refs")))
     print_block("Linked Contracts", "\n".join(skeleton_refs(skeleton_text, "contract_refs")))
     print_block("Known Risks", read(root, TRUTH_FILES["risks"]))

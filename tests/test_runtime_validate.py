@@ -785,6 +785,9 @@ class RuntimeValidateTests(unittest.TestCase):
             )
             self.assertEqual(orient.returncode, 0, orient.stdout + orient.stderr)
             self.assertIn("## Tree Governance", orient.stdout)
+            self.assertIn("## Tree Health Lens", orient.stdout)
+            self.assertIn("Semantic review signals", orient.stdout)
+            self.assertIn("Structural errors", orient.stdout)
             self.assertIn("## Incubator Orphans", orient.stdout)
             self.assertIn("OR-001", orient.stdout)
 
@@ -800,6 +803,13 @@ class RuntimeValidateTests(unittest.TestCase):
             payload = json.loads(status.stdout)
             self.assertEqual(payload["tree_health"]["orphan_count"], 1)
             self.assertEqual(payload["tree_health"]["stale_orphan_count"], 1)
+            self.assertEqual(payload["tree_health"]["semantic_review_count"], payload["tree_health"]["warning_count"])
+            self.assertEqual(payload["tree_health"]["structural_error_count"], 0)
+            self.assertTrue(payload["tree_health"]["human_review_needed"])
+            self.assertTrue(
+                any("orphan review is stale" in signal.lower() for signal in payload["tree_health"]["semantic_review_signals"])
+            )
+            self.assertEqual(payload["tree_health"]["structural_error_signals"], [])
             self.assertGreaterEqual(payload["tree_health"]["warning_count"], 1)
             self.assertEqual(payload["tree_health"]["error_count"], 0)
             self.assertTrue(payload["tree_health"]["review_needed"])
@@ -817,6 +827,9 @@ class RuntimeValidateTests(unittest.TestCase):
             overview_status = json.loads((target / ".aletheia" / "overview" / "status.json").read_text(encoding="utf-8"))
             self.assertEqual(overview_status["tree_health"]["orphan_count"], 1)
             self.assertEqual(overview_status["tree_health"]["stale_orphan_count"], 1)
+            self.assertEqual(overview_status["tree_health"]["semantic_review_count"], overview_status["tree_health"]["warning_count"])
+            self.assertEqual(overview_status["tree_health"]["structural_error_count"], 0)
+            self.assertTrue(overview_status["tree_health"]["human_review_needed"])
             self.assertGreaterEqual(overview_status["tree_health"]["warning_count"], 1)
             self.assertEqual(overview_status["tree_health"]["error_count"], 0)
             self.assertTrue(overview_status["tree_health"]["review_needed"])
@@ -824,6 +837,58 @@ class RuntimeValidateTests(unittest.TestCase):
             validate = validate_target(target)
             self.assertEqual(validate.returncode, 0, validate.stdout + validate.stderr)
             self.assertIn("orphan review is stale: OR-001", validate.stdout)
+
+    def test_status_separates_tree_semantic_review_from_structural_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            skeleton = target / ".aletheia" / "state" / "SKELETON.yaml"
+            skeleton.write_text(
+                skeleton.read_text(encoding="utf-8")
+                + "\n"
+                "  detached_leaf:\n"
+                "    layer: leaf\n"
+                "    parent: root\n"
+                "    children: []\n"
+                "    purpose: \"Intentionally detached leaf for structural health classification.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs: []\n"
+                "    evidence_refs: []\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.1\n"
+                "    last_reviewed: 2026-05-08\n",
+                encoding="utf-8",
+            )
+
+            status = subprocess.run(
+                [sys.executable, ".aletheia/bin/status.py", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(status.returncode, 0, status.stdout + status.stderr)
+            payload = json.loads(status.stdout)
+            self.assertEqual(payload["validation"]["returncode"], 1)
+            self.assertEqual(payload["tree_health"]["semantic_review_count"], 0)
+            self.assertGreaterEqual(payload["tree_health"]["structural_error_count"], 1)
+            self.assertFalse(payload["tree_health"]["human_review_needed"])
+            self.assertTrue(payload["tree_health"]["structural_fix_needed"])
+            self.assertTrue(
+                any("skeleton parent missing child link" in signal for signal in payload["tree_health"]["structural_error_signals"])
+            )
 
     def test_overview_can_watch_for_refresh_iterations(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

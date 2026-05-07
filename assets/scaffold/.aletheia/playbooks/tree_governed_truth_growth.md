@@ -34,6 +34,44 @@ If the answer is unclear, do not force it into the main tree. Put it in
 7. Run validation.
 8. Checkpoint only when the user wants the truth update committed.
 
+## Minimal Tree Refactor Recipes
+
+No new command. No new record family. Use the existing truth files, scripts, and
+review records below.
+
+### Attach orphan
+
+1. Read `ORPHANS.yaml` and confirm the candidate parent from evidence.
+2. Add or update the target node in `SKELETON.yaml`.
+3. Move the orphan disposition out of incubating or remove the cleared entry.
+4. Link the supporting `evidence` and `decisions`.
+5. Run `validate.py`, then inspect `status.py`, `orient.py`, and `overview.py`.
+
+### Insert parent
+
+1. Identify siblings that share an unmodeled intermediate purpose.
+2. Add the parent branch to `SKELETON.yaml`.
+3. Reparent the existing children under that branch.
+4. Record the refactor in `decisions` with evidence links and rollback criteria.
+5. Run `validate.py`, then inspect `status.py`, `orient.py`, and `overview.py`.
+
+### Split node
+
+1. Identify the overloaded node and the separate mechanisms it is carrying.
+2. Keep the old node as the parent or archive it through a decision if it no
+   longer has a clean purpose.
+3. Add the new child nodes in `SKELETON.yaml`.
+4. Move supporting refs to the child that now owns them.
+5. Run `validate.py`, then inspect `status.py`, `orient.py`, and `overview.py`.
+
+### Merge nodes
+
+1. Identify duplicate or overlapping siblings.
+2. Keep one canonical node in `SKELETON.yaml`.
+3. Mark the duplicate node `status: archived` when history should stay visible.
+4. Keep supporting `evidence` and `decisions` linked to the retained branch.
+5. Run `validate.py`, then inspect `status.py`, `orient.py`, and `overview.py`.
+
 ## Human Confirmation Required
 
 Ask before changing:

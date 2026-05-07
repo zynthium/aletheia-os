@@ -169,19 +169,29 @@ def tree_health(root: Path, validation_state: dict[str, Any]) -> dict[str, Any]:
     stderr = validation_state.get("stderr", "")
     stdout_tree_lines = tree_signal_lines(stdout)
     stderr_tree_lines = tree_signal_lines(stderr)
+    semantic_review_signals = [line.strip(" -") for line in stdout_tree_lines]
+    structural_error_signals = [line.strip(" -") for line in stderr_tree_lines]
     tree_lines = [
         line.strip(" -")
         for line in [*stdout_tree_lines, *stderr_tree_lines]
     ]
     orphan_count = count_orphans(root)
     stale_count = stale_orphan_count(stdout)
+    human_review_needed = bool(semantic_review_signals) or stale_count > 0 or orphan_count > 0
+    structural_fix_needed = bool(structural_error_signals)
     return {
         "skeleton_nodes": count_skeleton_nodes(root),
         "orphan_count": orphan_count,
         "stale_orphan_count": stale_count,
         "warning_count": len(stdout_tree_lines),
         "error_count": len(stderr_tree_lines),
-        "review_needed": stale_count > 0 or orphan_count > 0,
+        "semantic_review_count": len(semantic_review_signals),
+        "structural_error_count": len(structural_error_signals),
+        "human_review_needed": human_review_needed,
+        "structural_fix_needed": structural_fix_needed,
+        "review_needed": human_review_needed,
+        "semantic_review_signals": semantic_review_signals,
+        "structural_error_signals": structural_error_signals,
         "signals": tree_lines,
     }
 
@@ -231,7 +241,21 @@ def print_markdown(status: dict[str, Any]) -> None:
     print(f"- stale orphan count: {tree['stale_orphan_count']}")
     print(f"- tree warning count: {tree['warning_count']}")
     print(f"- tree error count: {tree['error_count']}")
+    print(f"- semantic review signal count: {tree['semantic_review_count']}")
+    print(f"- structural error signal count: {tree['structural_error_count']}")
+    print(f"- human review needed: {tree['human_review_needed']}")
+    print(f"- structural fix needed: {tree['structural_fix_needed']}")
     print(f"- review needed: {tree['review_needed']}")
+    if tree["semantic_review_signals"]:
+        for signal in tree["semantic_review_signals"]:
+            print(f"- semantic review signal: {signal}")
+    else:
+        print("- semantic review signals: none")
+    if tree["structural_error_signals"]:
+        for signal in tree["structural_error_signals"]:
+            print(f"- structural error signal: {signal}")
+    else:
+        print("- structural error signals: none")
     if tree["signals"]:
         for signal in tree["signals"]:
             print(f"- signal: {signal}")

@@ -409,6 +409,28 @@ class PluginManifestTests(unittest.TestCase):
             self.assertIn("runtime policy protected_path_patterns invalid regex", output)
             self.assertNotIn("Traceback", output)
 
+    def test_validate_scaffold_rejects_extra_tree_record_surfaces_before_packaging(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            scaffold = Path(tmp) / "scaffold"
+            shutil.copytree(ROOT / "assets" / "scaffold", scaffold)
+            (scaffold / ".aletheia" / "claims").mkdir()
+            (scaffold / ".aletheia" / "bin" / "tree_record.py").write_text("# extra surface\n", encoding="utf-8")
+
+            validate = subprocess.run(
+                [sys.executable, "scripts/validate_scaffold.py", str(scaffold)],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = validate.stdout + validate.stderr
+            self.assertNotEqual(validate.returncode, 0, output)
+            self.assertIn("extra tree-governance surface is not allowed: .aletheia/claims", output)
+            self.assertIn("extra tree-governance surface is not allowed: .aletheia/bin/tree_record.py", output)
+            self.assertNotIn("Traceback", output)
+
     def test_package_checks_wiki_handoff_promotion_protocol(self) -> None:
         result = subprocess.run(
             [sys.executable, "scripts/package_plugin.py"],
@@ -476,6 +498,35 @@ class PluginManifestTests(unittest.TestCase):
             "guided_bootstrap.py",
             "bootstrap_finalize.py",
             "checkpoint.py",
+        ]:
+            self.assertIn(required, playbook)
+
+    def test_tree_growth_playbook_documents_lightweight_refactor_recipes(self) -> None:
+        playbook = (
+            ROOT
+            / "assets"
+            / "scaffold"
+            / ".aletheia"
+            / "playbooks"
+            / "tree_governed_truth_growth.md"
+        ).read_text(encoding="utf-8")
+
+        for required in [
+            "Minimal Tree Refactor Recipes",
+            "Attach orphan",
+            "Insert parent",
+            "Split node",
+            "Merge nodes",
+            "SKELETON.yaml",
+            "ORPHANS.yaml",
+            "evidence",
+            "decisions",
+            "status.py",
+            "orient.py",
+            "overview.py",
+            "validate.py",
+            "No new command",
+            "No new record family",
         ]:
             self.assertIn(required, playbook)
 

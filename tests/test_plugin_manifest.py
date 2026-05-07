@@ -121,6 +121,7 @@ class PluginManifestTests(unittest.TestCase):
             "help.py",
             "orient.py",
             "context_pack.py",
+            "status.py",
             "truth_record.py",
             "model_gate.py",
             "source_inventory.py",

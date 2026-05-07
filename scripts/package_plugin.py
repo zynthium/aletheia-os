@@ -56,6 +56,7 @@ REQUIRED = [
     "assets/scaffold/.aletheia/bin/help.py",
     "assets/scaffold/.aletheia/bin/orient.py",
     "assets/scaffold/.aletheia/bin/context_pack.py",
+    "assets/scaffold/.aletheia/bin/status.py",
     "assets/scaffold/.aletheia/bin/truth_record.py",
     "assets/scaffold/.aletheia/bin/model_gate.py",
     "assets/scaffold/.aletheia/bin/validate.py",

@@ -13,6 +13,7 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 | Discover AletheiaOS capabilities | `python3 .aletheia/bin/help.py` | Print outcome-level capability guide | Done | Use when the user asks what AletheiaOS can do. |
 | Orient on project truth | `python3 .aletheia/bin/orient.py` or `aletheia-orient` | Read truth files and active node records | Done | Default output is stable and compact; use `--with-runtime` for current run/session context or `--static` for the smallest output. |
 | Build context pack | `python3 .aletheia/bin/context_pack.py` | Read core truth, capabilities, source summary, and record inventory | Done | Default output keeps stable truth first; use `--with-runtime` to append current run and recent session notes. |
+| Refresh current status | `python3 .aletheia/bin/status.py` | Read active state, validation, record counts, and runtime gate status | Done | Explicit dynamic refresh; use `--json` for agent-readable status. |
 | List truth records | `python3 .aletheia/bin/truth_record.py list <entity>` | Read truth record directory | Done | Supported entities include evidence, decisions, contracts, hypotheses, risks, nodes, session notes, and agent runs where applicable. |
 | Create truth record | `python3 .aletheia/bin/truth_record.py create <entity> --id <id> --title <title>` | Create from template | Done | Creates a template-backed record in the relevant `.aletheia/` directory. |
 | Show truth record | `python3 .aletheia/bin/truth_record.py show <entity> <id>` | Read one truth record | Done | Emits record content for agent grounding or user review. |
@@ -42,15 +43,15 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 | Project scaffold | `init_aletheia.py` | filesystem | rerun init merges missing hooks/files | manual removal | Existing files are not overwritten. |
 | Capability map | edit file | `context_pack.py` | edit file | manual removal | Validate should require this file. |
 | Charter and governance files | edit files | `orient.py`, `context_pack.py` | edit files | manual removal | Root-level changes require human confirmation by prompt policy. |
-| Active state and state files | edit files | `orient.py`, `context_pack.py`, `overview.py` | edit files | manual removal | Validate checks critical TBD markers after bootstrap. |
+| Active state and state files | edit files | `orient.py`, `context_pack.py`, `status.py`, `overview.py` | edit files | manual removal | Validate checks critical TBD markers after bootstrap. |
 | Nodes | template/file write | `orient.py`, `context_pack.py`, `overview.py` | edit files | manual removal | Validate checks active node references. |
 | Evidence | template/file write | `context_pack.py`, `overview.py` | edit files | manual removal | Validate checks required sections. |
 | Decisions | template/file write | `context_pack.py`, `overview.py` | edit files | manual removal | Accepted decisions need evidence links. |
 | Contracts | template/file write | `context_pack.py`, `overview.py` | edit files | manual removal | Skeleton refs are validated. |
 | Hypotheses | template/file write | `context_pack.py`, `overview.py` | edit files | manual removal | Validate checks invalidation criteria. |
 | Risks | template/file write | `context_pack.py`, `overview.py` | edit files | manual removal | Risk register also carries portfolio-level risks. |
-| Session notes | template/file write | `context_pack.py` | edit files | manual removal | Bootstrap finalize writes one automatically. |
-| Agent runs | `model_gate.py --record` | runtime files, context pack | create a new run | manual removal | Current run lives in `.aletheia/runtime/`. |
+| Session notes | template/file write | `context_pack.py`, `status.py` | edit files | manual removal | Bootstrap finalize writes one automatically. |
+| Agent runs | `model_gate.py --record` | runtime files, context pack, status refresh | create a new run | manual removal | Current run lives in `.aletheia/runtime/`. |
 
 ## Maintenance Rule
 

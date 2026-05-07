@@ -44,6 +44,7 @@ READ_ONLY_LOCAL_COMMANDS = {"ls", "pwd", "sed", "rg", "find"}
 READ_ONLY_ALETHEIA_SCRIPTS = {
     ".aletheia/bin/orient.py",
     ".aletheia/bin/context_pack.py",
+    ".aletheia/bin/status.py",
     ".aletheia/bin/validate.py",
 }
 SHELL_CONTROL_TOKENS = ("&&", "||", ";", "|", ">", "<", "\n", "`", "$(")

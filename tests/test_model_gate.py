@@ -258,6 +258,7 @@ class ModelGateTests(unittest.TestCase):
                 "find .aletheia -maxdepth 1 -type f",
                 "python3 .aletheia/bin/orient.py",
                 "python3 .aletheia/bin/context_pack.py",
+                "python3 .aletheia/bin/status.py",
                 "python3 .aletheia/bin/validate.py",
                 "python3 .aletheia/bin/truth_record.py list evidence",
                 "python3 .aletheia/bin/truth_record.py show evidence EV-0001",

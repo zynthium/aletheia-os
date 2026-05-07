@@ -40,6 +40,7 @@ REQUIRED_PATHS = [
     ".aletheia/bin/help.py",
     ".aletheia/bin/orient.py",
     ".aletheia/bin/context_pack.py",
+    ".aletheia/bin/status.py",
     ".aletheia/bin/truth_record.py",
     ".aletheia/bin/model_gate.py",
     ".aletheia/bin/validate.py",

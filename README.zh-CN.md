@@ -299,7 +299,7 @@ orient -> work -> update truth -> validate -> checkpoint
 
 `CAPABILITY_MAP.md` 是 action parity 清单：记录安装、初始化、orient、context pack、truth record create/list/show/archive、model gate、source inventory、bootstrap finalize、validate、overview、checkpoint、truth promotion 和只读审阅 agent 等用户动作与 agent 能力的对应关系。
 
-`bin/` 提供 orient、context pack、truth record、model gate、source inventory、guided bootstrap、overview、validate、bootstrap finalize、checkpoint 和 Claude hook runtime。`orient.py` 默认输出 cache 友好的稳定事实和精简 record inventory；`context_pack.py` 默认输出核心 truth files、能力地图、精简 source inventory summary 和完整 truth record inventory。当前 agent run 与最近 session notes 需要显式使用 `--with-runtime`，并追加在稳定上下文之后。
+`bin/` 提供 orient、context pack、status refresh、truth record、model gate、source inventory、guided bootstrap、overview、validate、bootstrap finalize、checkpoint 和 Claude hook runtime。`orient.py` 默认输出 cache 友好的稳定事实和精简 record inventory；`context_pack.py` 默认输出核心 truth files、能力地图、精简 source inventory summary 和完整 truth record inventory。当前 agent run 与最近 session notes 需要显式使用 `--with-runtime`，并追加在稳定上下文之后。`status.py` 是显式动态刷新入口，用于按需查看 active state、validation、record counts 和 runtime gate。
 
 ## 外部 LLM Wiki 资料摄入
 
@@ -370,6 +370,8 @@ python3 .aletheia/bin/orient.py --with-runtime
 python3 .aletheia/bin/orient.py --static
 python3 .aletheia/bin/context_pack.py
 python3 .aletheia/bin/context_pack.py --with-runtime
+python3 .aletheia/bin/status.py
+python3 .aletheia/bin/status.py --json
 python3 .aletheia/bin/truth_record.py list evidence
 python3 .aletheia/bin/truth_record.py create evidence --id EV-0001 --title "Claim title"
 python3 .aletheia/bin/truth_record.py show evidence EV-0001
@@ -392,7 +394,7 @@ Claude Code 通过 hooks 自动执行门禁和审计；Codex 当前以 skills、
 
 `checkpoint.py` 默认只提交 AletheiaOS state/control-plane 路径；只有显式传入 `--include-worktree` 时才 stage 整个工作树。
 
-`guided_bootstrap.py` 会验证已经记录的 bootstrap gate，不会自行创建新的模型授权。`source_inventory.py` 默认跳过 `.aletheia/`、`.claude/` 和初始化根部控制文件，只扫描项目自身资料。`context_pack.py` 只引用 source inventory 的聚合摘要，不默认展开高频变化的运行时记录。新增或改变用户可执行动作时，应同步更新 `.aletheia/CAPABILITY_MAP.md`。
+`guided_bootstrap.py` 会验证已经记录的 bootstrap gate，不会自行创建新的模型授权。`source_inventory.py` 默认跳过 `.aletheia/`、`.claude/` 和初始化根部控制文件，只扫描项目自身资料。`context_pack.py` 只引用 source inventory 的聚合摘要，不默认展开高频变化的运行时记录；需要刷新当前状态时运行 `status.py`，不要把动态状态前移到默认 orient/context pack。新增或改变用户可执行动作时，应同步更新 `.aletheia/CAPABILITY_MAP.md`。
 
 `overview.py` 和 `source_inventory.py` 默认写入 `.aletheia/` 下的 generated/intermediate 目录，不属于 durable project truth；只有显式使用 `--public-docs` 时才生成 `docs/overview/`。
 

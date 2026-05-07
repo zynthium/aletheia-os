@@ -96,6 +96,86 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("overview output path exists and is not a directory", output)
             self.assertNotIn("Traceback", output)
 
+    def test_status_refresh_reports_active_state_validation_records_and_runtime_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".aletheia" / "runtime").mkdir()
+            (target / ".aletheia" / "runtime" / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-status",
+                        "provider": "openai",
+                        "model_id": "gpt-test",
+                        "capability_tier": "C3",
+                        "task_class": "research_design",
+                        "gate_status": "allowed",
+                        "objective": "Refresh status",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "evidence" / "EV-001.md").write_text(
+                "# Evidence: sample\n\n"
+                "## Source refs\n\n- `README.md`\n\n"
+                "## Method\n\nRead docs.\n\n"
+                "## Result\n\nResult.\n\n"
+                "## Limitations\n\nSingle source.\n\n"
+                "## Invalidation criteria\n\nContradiction.\n\n"
+                "## Confidence impact\n\nRaises confidence.\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/status.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("# AletheiaOS Status Refresh", output)
+            self.assertIn("## Active State", output)
+            self.assertIn("- active nodes: root", output)
+            self.assertIn("- current phase: bootstrap", output)
+            self.assertIn("## Validation", output)
+            self.assertIn("- returncode: 0", output)
+            self.assertIn("## Records", output)
+            self.assertIn("- evidence: 1", output)
+            self.assertIn("## Runtime Gate", output)
+            self.assertIn("- run_id: RUN-status", output)
+            self.assertIn("- gate_status: allowed", output)
+            self.assertNotIn("Traceback", output)
+
+    def test_status_refresh_can_emit_json_for_agents(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/status.py", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["active_state"]["active_nodes"], ["root"])
+            self.assertEqual(payload["active_state"]["current_phase"], "bootstrap")
+            self.assertEqual(payload["validation"]["returncode"], 0)
+            self.assertIn("decisions", payload["records"])
+            self.assertIsNone(payload["runtime_gate"])
+
     def test_context_pack_includes_core_truth_files_missing_markers_and_truncation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

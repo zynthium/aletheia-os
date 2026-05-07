@@ -59,6 +59,7 @@ class GreenfieldInitTests(unittest.TestCase):
                 ".aletheia/templates/SOURCE_INVENTORY_MANIFEST.yaml",
                 ".aletheia/bin/help.py",
                 ".aletheia/bin/context_pack.py",
+                ".aletheia/bin/status.py",
                 ".aletheia/bin/truth_record.py",
                 ".aletheia/bin/source_inventory.py",
                 ".aletheia/bin/guided_bootstrap.py",

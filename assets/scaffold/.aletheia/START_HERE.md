@@ -80,5 +80,6 @@ python3 .aletheia/bin/bootstrap_finalize.py
 ```bash
 python3 .aletheia/bin/context_pack.py
 python3 .aletheia/bin/context_pack.py --with-runtime
+python3 .aletheia/bin/status.py
 python3 .aletheia/bin/overview.py
 ```

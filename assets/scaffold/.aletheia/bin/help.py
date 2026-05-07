@@ -28,6 +28,11 @@ CAPABILITIES = [
         ["python3 .aletheia/bin/context_pack.py", "python3 .aletheia/bin/context_pack.py --with-runtime"],
     ),
     (
+        "Refresh status",
+        "Read active state, validation, record counts, and runtime gate status on demand.",
+        ["python3 .aletheia/bin/status.py", "python3 .aletheia/bin/status.py --json"],
+    ),
+    (
         "Create truth records",
         "Create, read, and archive evidence, decisions, contracts, hypotheses, risks, nodes, session notes, and agent runs.",
         [

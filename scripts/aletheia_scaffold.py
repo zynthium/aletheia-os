@@ -60,9 +60,13 @@ def ensure_claude_settings(target: Path) -> str:
 
     existing = load_json(dst)
     existing_hooks = existing.setdefault("hooks", {})
+    if not isinstance(existing_hooks, dict):
+        raise ValueError(f"Claude settings JSON invalid: {dst}: hooks must be object")
     changed = False
     for event_name, required_entries in (required.get("hooks", {}) or {}).items():
         current_entries = existing_hooks.setdefault(event_name, [])
+        if not isinstance(current_entries, list):
+            raise ValueError(f"Claude settings JSON invalid: {dst}: hooks.{event_name} must be array")
         current_keys = {hook_entry_key(entry) for entry in current_entries if isinstance(entry, dict)}
         for required_entry in required_entries:
             key = hook_entry_key(required_entry)

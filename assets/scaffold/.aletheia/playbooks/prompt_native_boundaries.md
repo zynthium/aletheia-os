@@ -6,10 +6,12 @@ This note classifies AletheiaOS runtime behavior so future changes keep scripts 
 
 These scripts should stay small and capability-oriented:
 
+- `action.py`: list, explain, recommend, and run declarative action contracts from `actions.json`.
 - `truth_record.py`: create, list, show, update, and archive truth records.
 - `capability_audit.py`: check that the capability map covers runtime scripts, skills, review agents, and CRUD commands.
 - `orient.py`: read stable project truth and print an orientation pack.
 - `context_pack.py`: read stable truth, source summaries, and record inventory.
+- `system_context.py`: compose prompt-ready context from stable truth, user preferences, capabilities, and optional runtime context.
 - `status.py`: refresh validation, active state, record counts, and runtime gate state.
 - `preflight.py`: read hook-free context, model gate, validation, git status, checkpoint candidate state, and next actions.
 - `model_gate.py`: evaluate model registry policy, manage model registry entries, and record attribution.
@@ -45,6 +47,27 @@ Move behavior toward skills or playbooks when it is judgment, sequencing advice,
 - how to interpret evidence limitations and invalidation criteria;
 - when an architecture boundary change requires decisions, contracts, or risks;
 - which truth records a task should update before checkpointing.
+
+## Delete Policy
+
+AletheiaOS treats deletion of durable truth records as archive-by-default.
+For agent-facing CRUD, `truth_record.py archive` is the Delete equivalent because it
+preserves auditability and keeps old links reviewable. Permanent removal remains a
+manual/admin repository operation and should not be advertised as a normal agent
+primitive unless reference checks and recovery guidance are added.
+
+## Primitive-To-Workflow Map
+
+Prompt workflows should compose the runtime primitives above instead of hiding new
+business logic inside Python:
+
+| Workflow | Primitive capabilities it should compose |
+|---|---|
+| Bootstrap | `model_gate.py`, `source_inventory.py`, `guided_bootstrap.py`, `truth_record.py`, `validate.py`, `checkpoint.py` |
+| Promotion | `context_pack.py`, `truth_record.py list/show/create/update/archive`, `validate.py`, optional `checkpoint.py` |
+| Architecture evolution | `orient.py`, `truth_record.py`, `system_context.py`, `validate.py`, optional `checkpoint.py` |
+| Checkpoint | `status.py`, `preflight.py`, `validate.py`, `checkpoint.py` |
+| Review agents | `orient.py`, `context_pack.py`, `truth_record.py list/show`, source reads, `validate.py` |
 
 ## Review trigger
 

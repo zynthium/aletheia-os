@@ -146,6 +146,7 @@ class PluginManifestTests(unittest.TestCase):
             "preflight.py",
             "status.py",
             "truth_record.py",
+            "truth_record.py list/show/create/update/archive",
             "truth_record.py update",
             "model_gate.py",
             "runtime_policy.json",
@@ -167,10 +168,31 @@ class PluginManifestTests(unittest.TestCase):
             "architecture-reviewer",
             "Codex enablement",
             "archive-only",
+            "Delete means archive-by-default",
+            "Agent Primitive Matrix",
+            "Primitive-To-Workflow Map",
             "host limitation",
         ]
         for term in expected_terms:
             self.assertIn(term, capability_map)
+
+        boundaries = (
+            ROOT
+            / "assets"
+            / "scaffold"
+            / ".aletheia"
+            / "playbooks"
+            / "prompt_native_boundaries.md"
+        ).read_text(encoding="utf-8")
+        for term in [
+            "Delete Policy",
+            "truth_record.py archive",
+            "Permanent removal remains a",
+            "Primitive-To-Workflow Map",
+            "system_context.py",
+            "action.py",
+        ]:
+            self.assertIn(term, boundaries)
 
     def test_capability_audit_passes_for_scaffold_and_fails_when_map_drifts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

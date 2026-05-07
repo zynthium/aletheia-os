@@ -45,14 +45,31 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 | Create truth record | `truth_record.py create` or templates under `.aletheia/templates/` | Write a new record file in the relevant `.aletheia/` directory | Done | Use templates for evidence, decisions, contracts, hypotheses, risks, nodes, and session notes. |
 | Read truth record | `truth_record.py list/show`, `.aletheia/` files and indexes | Read files directly, or use context pack and overview | Done | Context pack lists current records; runtime details require `--with-runtime`. |
 | Update truth record | `truth_record.py update` or edit existing `.aletheia/` file | Modify title, status, or section, then validate and checkpoint | Done | Deduplicate before creating a new record; use direct file edits for broad rewrites. |
-| Delete truth record | `truth_record.py archive` | Archive record, then validate refs | Partial | archive-only policy; no permanent delete command is provided. |
+| Delete truth record | `truth_record.py archive` | Archive record, then validate refs | Done | Delete means archive-by-default for durable truth records; this is the archive-only agent primitive. Permanent removal is manual/admin repository maintenance. |
 | Read fixed truth file | `truth_record.py show capability-map current` | Read fixed governance/state files through the same CRUD entrypoint | Done | Fixed entities use `current` as the record id. |
 | Update fixed truth file | `truth_record.py update active-state current --section ...` | Update selected fixed markdown truth files through the same CRUD entrypoint | Done | Direct edits remain available for broad rewrites. |
 | Archive fixed truth file | `truth_record.py archive runtime-policy current --reason ...` | Move fixed truth files into `.aletheia/archive/` | Done | Use only for admin/history workflows; validation may require recreating required files. |
 
+## Agent Primitive Matrix
+
+These are the atomic capabilities that prompt workflows and review agents should compose.
+See `.aletheia/playbooks/prompt_native_boundaries.md` for the Primitive-To-Workflow Map.
+
+| Primitive | Script or file | Scope |
+|---|---|---|
+| List/explain/run action contract | `action.py`, `actions.json` | Discover and execute declared agent actions. |
+| Read project truth | `orient.py`, `context_pack.py`, `system_context.py` | Load stable truth, preferences, capabilities, inventory, and optional runtime context. |
+| Refresh dynamic state | `status.py`, `preflight.py`, `overview.py` | Observe validation, record counts, runtime gate, git/checkpoint state, and recent changes. |
+| Manage truth records | `truth_record.py list/show/create/update/archive` | Create, read, update, and archive durable truth records. |
+| Manage model policy | `model_gate.py --registry ...` | List, register, show, enable, disable, deprecate, remove, deny, and undeny model entries. |
+| Validate truth layer | `validate.py`, `capability_audit.py` | Check scaffold, refs, registry, action contracts, capability coverage, and record semantics. |
+| Checkpoint state | `checkpoint.py` | Validate, screen, stage, and commit attributed truth updates. |
+
 ## CRUD Matrix
 
-| Entity | Create | Read | Update | Delete Or Archive | Notes |
+Delete for durable truth records means archive-by-default. Permanent removal is an explicit manual/admin repository operation, not the normal agent primitive.
+
+| Entity | Create | Read | Update | Delete Equivalent | Notes |
 |---|---|---|---|---|---|
 | Project scaffold | `init_aletheia.py` | filesystem | rerun init merges missing hooks/files | manual removal | Existing files are not overwritten. |
 | Capability map | scaffold creates file | `truth_record.py show capability-map current`, `context_pack.py` | `truth_record.py update capability-map current --section ...` or edit file | `truth_record.py archive capability-map current` | Validate should require this file. |

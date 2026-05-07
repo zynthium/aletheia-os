@@ -57,6 +57,7 @@ class GreenfieldInitTests(unittest.TestCase):
                 ".aletheia/templates/AGENT_RUN.json",
                 ".aletheia/templates/TRUTH_INVENTORY_REPORT.md",
                 ".aletheia/templates/SOURCE_INVENTORY_MANIFEST.yaml",
+                ".aletheia/bin/help.py",
                 ".aletheia/bin/context_pack.py",
                 ".aletheia/bin/truth_record.py",
                 ".aletheia/bin/source_inventory.py",

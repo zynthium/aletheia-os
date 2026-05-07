@@ -33,6 +33,7 @@ REQUIRED_PATHS = [
     ".aletheia/playbooks/drift_audit.md",
     ".aletheia/playbooks/external_llm_wiki_handoff.md",
     ".aletheia/playbooks/wiki_handoff_promotion.md",
+    ".aletheia/bin/help.py",
     ".aletheia/bin/orient.py",
     ".aletheia/bin/context_pack.py",
     ".aletheia/bin/truth_record.py",

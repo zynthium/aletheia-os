@@ -8,7 +8,9 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 | Install AletheiaOS for Claude Code | `python3 scripts/install_aletheia.py --host claude` | Run installer script | Done | Claude marketplace registration and install are CLI-driven. |
 | Register AletheiaOS for Codex | `python3 scripts/install_aletheia.py --host codex` | Run installer script | Partial | Codex marketplace registration is scripted; plugin enablement currently happens in `/plugins`. |
 | Copy optional Codex agent profiles | `--with-codex-agents` | Run installer script | Done | Writes profiles to `.codex/agents/` or user agent directory. |
-| Initialize AletheiaOS scaffold | `python3 scripts/init_aletheia.py <repo>` | Run init script | Done | Writes `.aletheia/`, root guidance, and Claude hooks without overwriting existing files. |
+| Enable AletheiaOS in Codex | `/plugins` | Not available as a repo script | Partial | Codex enablement is a host UI action after marketplace registration. |
+| Initialize AletheiaOS scaffold | `python3 scripts/init_aletheia.py <repo>` or `aletheia-bootstrap` | Run init script | Done | Writes `.aletheia/`, root guidance, and Claude hooks without overwriting existing files. |
+| Discover AletheiaOS capabilities | `python3 .aletheia/bin/help.py` | Print outcome-level capability guide | Done | Use when the user asks what AletheiaOS can do. |
 | Orient on project truth | `python3 .aletheia/bin/orient.py` or `aletheia-orient` | Read truth files and active node records | Done | Default output is stable and compact; use `--with-runtime` for current run/session context or `--static` for the smallest output. |
 | Build context pack | `python3 .aletheia/bin/context_pack.py` | Read core truth, capabilities, activity, and record inventory | Done | Use for full dynamic grounding in long sessions. |
 | List truth records | `python3 .aletheia/bin/truth_record.py list <entity>` | Read truth record directory | Done | Supported entities include evidence, decisions, contracts, hypotheses, risks, nodes, session notes, and agent runs where applicable. |
@@ -21,7 +23,7 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 | Finalize bootstrap | `python3 .aletheia/bin/bootstrap_finalize.py` | Run finalize script | Done | Validates, installs Git hooks, writes session note, and checkpoints unless skipped. |
 | Validate project truth | `python3 .aletheia/bin/validate.py` | Run validator | Done | Checks scaffold, graph, model registry, refs, and truth record semantics. |
 | Generate overview | `python3 .aletheia/bin/overview.py` | Run overview script | Done | Writes generated status JSON and HTML under `.aletheia/overview/` by default. |
-| Create checkpoint | `python3 .aletheia/bin/checkpoint.py` | Run checkpoint script | Done | Validates, screens protected-looking paths, stages state paths, and commits with attribution trailers. |
+| Create checkpoint | `python3 .aletheia/bin/checkpoint.py` or `aletheia-checkpoint` | Run checkpoint script | Done | Validates, screens protected-looking paths, stages state paths, and commits with attribution trailers. |
 | Promote reviewed wiki handoff | `aletheia-promote` skill | Read handoff, write truth records, validate, optionally checkpoint | Done | Human confirmation required for root mission, priority order, root theory, or durable architecture decisions. |
 | Design falsifiable evidence | `aletheia-design-evidence` skill | Create or revise evidence and related truth records | Done | Keeps source refs, method, limits, interpretation, invalidation criteria, and graph impact attached. |
 | Evolve architecture truth | `aletheia-architecture-evolution` skill | Update decisions, contracts, skeleton, evidence, and active state | Done | Use for boundary, contract, dependency, or skeleton changes. |
@@ -31,7 +33,7 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 | Create truth record | `truth_record.py create` or templates under `.aletheia/templates/` | Write a new record file in the relevant `.aletheia/` directory | Done | Use templates for evidence, decisions, contracts, hypotheses, risks, nodes, and session notes. |
 | Read truth record | `truth_record.py list/show`, `.aletheia/` files and indexes | Read files directly, or use context pack and overview | Done | Context pack lists current records. |
 | Update truth record | Edit existing `.aletheia/` file | Modify file, then validate and checkpoint | Done | Deduplicate before creating a new record. |
-| Delete truth record | `truth_record.py archive` or file removal by user or agent | Archive or remove file, then validate refs | Partial | Prefer archiving by status change; no permanent delete command is provided. |
+| Delete truth record | `truth_record.py archive` | Archive record, then validate refs | Partial | archive-only policy; no permanent delete command is provided. |
 
 ## CRUD Matrix
 

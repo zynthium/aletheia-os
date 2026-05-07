@@ -125,6 +125,37 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("MISSING", output)
             self.assertIn("...[truncated]", output)
 
+    def test_help_outputs_outcome_level_capabilities(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/help.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("# AletheiaOS Capabilities", output)
+            self.assertIn("## What you can ask", output)
+            for phrase in [
+                "Initialize project truth",
+                "Orient on current truth",
+                "Refresh context",
+                "Create truth records",
+                "Validate and checkpoint",
+                "Review truth alignment",
+            ]:
+                self.assertIn(phrase, output)
+            self.assertIn("## Runtime commands", output)
+            self.assertIn("python3 .aletheia/bin/orient.py", output)
+
     def test_context_pack_includes_dynamic_capabilities_activity_and_record_inventory(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

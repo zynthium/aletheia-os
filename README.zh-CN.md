@@ -83,6 +83,7 @@ mission -> system graph -> skeleton -> contracts -> evidence -> decisions -> cod
 - 记录 evidence、decisions、contracts、risks 和 session notes。
 - 支持复杂项目的架构演进、约束追踪和逐层展开。
 - 在大量资料场景下，引导 agent 使用外部 LLM Wiki 编译研究空间，再将确认结果沉淀为项目事实。
+- 通过 `python3 .aletheia/bin/help.py` 和 `.aletheia/CAPABILITY_MAP.md` 发现 agent 可完成的项目事实动作。
 - 提供 repo-native validation、overview、bootstrap finalize 和 checkpoint runtime。
 - 通过 model registry 管理 task class、能力层级、注册模型和 denylist。
 - 用 `.aletheia/CAPABILITY_MAP.md` 维护用户动作、agent 能力和 truth record CRUD 覆盖关系。
@@ -363,6 +364,7 @@ Source index:
 
 ```bash
 python3 .aletheia/bin/bootstrap_finalize.py
+python3 .aletheia/bin/help.py
 python3 .aletheia/bin/orient.py
 python3 .aletheia/bin/orient.py --with-runtime
 python3 .aletheia/bin/orient.py --static

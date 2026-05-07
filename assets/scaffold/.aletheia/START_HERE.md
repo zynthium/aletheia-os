@@ -11,9 +11,25 @@ orient -> work -> update truth -> validate -> checkpoint
 Use this command set for normal work:
 
 ```bash
+python3 .aletheia/bin/help.py
 python3 .aletheia/bin/orient.py
 python3 .aletheia/bin/validate.py
 python3 .aletheia/bin/checkpoint.py
+```
+
+## What You Can Ask AletheiaOS To Do
+
+- Initialize project truth for a new or existing repository.
+- Orient on the current mission, active state, system graph, skeleton, risks, and capabilities.
+- Refresh context for long sessions with a context pack.
+- Create, read, and archive truth records for evidence, decisions, contracts, hypotheses, risks, nodes, session notes, and agent runs.
+- Validate project truth and checkpoint coherent state updates.
+- Review truth alignment, evidence quality, and architecture drift with read-focused agents.
+
+For the full capability guide, run:
+
+```bash
+python3 .aletheia/bin/help.py
 ```
 
 ## Read Order

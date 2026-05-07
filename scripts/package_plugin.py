@@ -53,6 +53,7 @@ REQUIRED = [
     "assets/scaffold/.aletheia/playbooks/guided_bootstrap.md",
     "assets/scaffold/.aletheia/playbooks/drift_audit.md",
     "assets/scaffold/.aletheia/playbooks/wiki_handoff_promotion.md",
+    "assets/scaffold/.aletheia/bin/help.py",
     "assets/scaffold/.aletheia/bin/orient.py",
     "assets/scaffold/.aletheia/bin/context_pack.py",
     "assets/scaffold/.aletheia/bin/truth_record.py",

@@ -68,6 +68,7 @@ class PluginManifestTests(unittest.TestCase):
             self.assertTrue((release_root / "skills" / "aletheia-promote" / "SKILL.md").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "CAPABILITY_MAP.md").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "playbooks" / "drift_audit.md").exists())
+            self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "help.py").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "truth_record.py").exists())
             self.assertFalse((release_root / "docs" / "superpowers").exists())
             self.assertFalse(any(release_root.rglob("__pycache__")))
@@ -110,6 +111,38 @@ class PluginManifestTests(unittest.TestCase):
             "不要把挂起结果标记为通过",
         ]:
             self.assertIn(required, checklist)
+
+    def test_capability_map_covers_runtime_scripts_skills_and_review_agents(self) -> None:
+        capability_map = (ROOT / "assets" / "scaffold" / ".aletheia" / "CAPABILITY_MAP.md").read_text(
+            encoding="utf-8"
+        )
+
+        expected_terms = [
+            "help.py",
+            "orient.py",
+            "context_pack.py",
+            "truth_record.py",
+            "model_gate.py",
+            "source_inventory.py",
+            "guided_bootstrap.py",
+            "bootstrap_finalize.py",
+            "validate.py",
+            "overview.py",
+            "checkpoint.py",
+            "aletheia-bootstrap",
+            "aletheia-orient",
+            "aletheia-checkpoint",
+            "aletheia-design-evidence",
+            "aletheia-architecture-evolution",
+            "aletheia-promote",
+            "truth-auditor",
+            "evidence-curator",
+            "architecture-reviewer",
+            "Codex enablement",
+            "archive-only",
+        ]
+        for term in expected_terms:
+            self.assertIn(term, capability_map)
 
     def test_package_output_replaces_stale_release_directory(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

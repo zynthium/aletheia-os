@@ -126,6 +126,131 @@ class CheckpointTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, output)
             self.assertIn("checkpoint candidate:", output)
 
+    def test_checkpoint_blocks_protected_files_even_with_full_worktree(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-test",
+                        "provider": "test",
+                        "model_id": "test-model",
+                        "capability_tier": "C3",
+                        "task_class": "research_design",
+                        "gate_status": "allowed",
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(active_state.read_text(encoding="utf-8") + "\nProtected file checkpoint note.\n", encoding="utf-8")
+            (target / ".env.local").write_text("TOKEN=secret\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/checkpoint.py", "--auto", "--dry-run", "--include-worktree"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 2, output)
+            self.assertIn("checkpoint blocked: protected-looking files are present", output)
+            self.assertIn(".env.local", output)
+
+    def test_checkpoint_allow_code_only_env_and_no_validate_paths_are_explicit(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=False)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=target, check=False)
+            subprocess.run(["git", "add", "-A"], cwd=target, check=False)
+            baseline = subprocess.run(
+                ["git", "commit", "-m", "test: initial scaffold"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(baseline.returncode, 0, baseline.stdout + baseline.stderr)
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-test",
+                        "provider": "test",
+                        "model_id": "test-model",
+                        "capability_tier": "C3",
+                        "task_class": "mechanical_implementation",
+                        "gate_status": "allowed",
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            src = target / "src"
+            src.mkdir()
+            (src / "only_code.py").write_text("print('code only')\n", encoding="utf-8")
+
+            blocked = subprocess.run(
+                [sys.executable, ".aletheia/bin/checkpoint.py", "--auto", "--dry-run", "--include-worktree", "--no-validate"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            blocked_output = blocked.stdout + blocked.stderr
+            self.assertEqual(blocked.returncode, 3, blocked_output)
+            self.assertIn("changes do not include durable project-state update", blocked_output)
+
+            env = os.environ.copy()
+            env["AIOS_ALLOW_CODE_ONLY_COMMIT"] = "1"
+            allowed = subprocess.run(
+                [sys.executable, ".aletheia/bin/checkpoint.py", "--auto", "--dry-run", "--include-worktree", "--no-validate"],
+                cwd=target,
+                env=env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            allowed_output = allowed.stdout + allowed.stderr
+            self.assertEqual(allowed.returncode, 0, allowed_output)
+            self.assertIn("checkpoint candidate:", allowed_output)
+            self.assertIn("src/", allowed_output)
+            self.assertNotIn("missing required path: .claude/settings.json", allowed_output)
+
+            (target / ".claude" / "settings.json").unlink()
+            no_validate = subprocess.run(
+                [sys.executable, ".aletheia/bin/checkpoint.py", "--auto", "--dry-run", "--include-worktree", "--no-validate"],
+                cwd=target,
+                env=env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            no_validate_output = no_validate.stdout + no_validate.stderr
+            self.assertEqual(no_validate.returncode, 0, no_validate_output)
+            self.assertNotIn("missing required path: .claude/settings.json", no_validate_output)
+
     def test_checkpoint_default_commit_stages_only_state_paths(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

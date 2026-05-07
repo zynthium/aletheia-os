@@ -89,6 +89,69 @@ class GreenfieldInitTests(unittest.TestCase):
             )
             self.assertEqual(validate.returncode, 0, validate.stdout + validate.stderr)
 
+    def test_init_merges_existing_claude_hooks_without_overwriting_root_docs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            (target / "AGENTS.md").write_text("# Existing Agents\n", encoding="utf-8")
+            (target / "START_HERE.md").write_text("# Existing Start\n", encoding="utf-8")
+            claude = target / ".claude"
+            claude.mkdir()
+            settings = claude / "settings.json"
+            settings.write_text(
+                json.dumps(
+                    {
+                        "hooks": {
+                            "PreToolUse": [
+                                {
+                                    "matcher": "Bash",
+                                    "hooks": [
+                                        {
+                                            "type": "command",
+                                            "command": "python3 custom_pretool.py",
+                                        }
+                                    ],
+                                }
+                            ]
+                        }
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            result = run_script("scripts/init_aletheia.py", str(target))
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual((target / "AGENTS.md").read_text(encoding="utf-8"), "# Existing Agents\n")
+            self.assertEqual((target / "START_HERE.md").read_text(encoding="utf-8"), "# Existing Start\n")
+            merged = json.loads(settings.read_text(encoding="utf-8"))
+            pretool_commands = [
+                hook["command"]
+                for entry in merged["hooks"]["PreToolUse"]
+                for hook in entry["hooks"]
+            ]
+            self.assertIn("python3 custom_pretool.py", pretool_commands)
+            self.assertIn("python3 .aletheia/bin/model_gate.py --hook-mode pretooluse", pretool_commands)
+            self.assertIn("SessionStart", merged["hooks"])
+            self.assertIn("PostToolUse", merged["hooks"])
+            self.assertIn("Stop", merged["hooks"])
+
+    def test_init_fails_clearly_for_invalid_existing_claude_settings(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            claude = target / ".claude"
+            claude.mkdir()
+            (claude / "settings.json").write_text("{invalid json", encoding="utf-8")
+
+            result = run_script("scripts/init_aletheia.py", str(target))
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn("Claude settings JSON invalid", output)
+
 
 if __name__ == "__main__":
     unittest.main()

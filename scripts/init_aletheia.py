@@ -19,7 +19,10 @@ def main() -> int:
         parser.error(f"missing scaffold root: {SCAFFOLD_ROOT}")
 
     written = copy_tree_without_overwrite(SCAFFOLD_ROOT, target)
-    claude_status = ensure_claude_settings(target)
+    try:
+        claude_status = ensure_claude_settings(target)
+    except ValueError as exc:
+        parser.error(str(exc))
     print(f"initialized AletheiaOS scaffold in {target}")
     print(f"files written: {len(written)}")
     print(f"claude settings: {claude_status}")

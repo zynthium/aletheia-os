@@ -75,6 +75,89 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(public.returncode, 0, public_output)
             self.assertTrue((target / "docs" / "overview" / "status.json").exists())
 
+    def test_context_pack_includes_core_truth_files_missing_markers_and_truncation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            charter = target / ".aletheia" / "governance" / "CHARTER.md"
+            charter.write_text(
+                charter.read_text(encoding="utf-8") + "\n" + ("Long charter context.\n" * 400),
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "state" / "SYSTEM_GRAPH.yaml").unlink()
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/context_pack.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("# AletheiaOS Project Truth Context Pack", output)
+            self.assertIn("## .aletheia/governance/CHARTER.md", output)
+            self.assertIn("## .aletheia/state/SYSTEM_GRAPH.yaml", output)
+            self.assertIn("MISSING", output)
+            self.assertIn("...[truncated]", output)
+
+    def test_overview_records_validation_failure_and_truth_record_inventory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".aletheia" / "evidence" / "EV-001.md").write_text(
+                "# Evidence: sample\n\n"
+                "## Source refs\n\n- `README.md`\n\n"
+                "## Method\n\nRead project docs.\n\n"
+                "## Result\n\nObserved a project fact.\n\n"
+                "## Limitations\n\nSingle source.\n\n"
+                "## Invalidation criteria\n\nContradicting source.\n\n"
+                "## Confidence impact\n\nRaises confidence.\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "decisions" / "DEC-001.md").write_text(
+                "# Decision: sample\n\n"
+                "Status: proposed\n\n"
+                "## Context\n\nContext.\n\n"
+                "## Decision\n\nDecision.\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "contracts" / "CON-001.md").write_text("# Contract: sample\n", encoding="utf-8")
+            (target / ".aletheia" / "hypotheses" / "HYP-001.md").write_text(
+                "# Hypothesis: sample\n\n## Invalidation criteria\n\nA failed test.\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "nodes" / "feature.yaml").write_text("id: feature\n", encoding="utf-8")
+            (target / ".aletheia" / "risks" / "RISK-001.md").write_text("# Risk: sample\n", encoding="utf-8")
+            (target / ".aletheia" / "agent_runs" / "RUN-test.json").write_text("{}\n", encoding="utf-8")
+            (target / ".claude" / "settings.json").unlink()
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/overview.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            status = json.loads((target / ".aletheia" / "overview" / "status.json").read_text(encoding="utf-8"))
+            self.assertNotEqual(status["validation"]["returncode"], 0)
+            self.assertIn("missing required path: .claude/settings.json", status["validation"]["stderr"])
+            self.assertIn(".aletheia/evidence/EV-001.md", status["records"]["evidence"])
+            self.assertIn(".aletheia/decisions/DEC-001.md", status["records"]["decisions"])
+            self.assertIn(".aletheia/contracts/CON-001.md", status["records"]["contracts"])
+            self.assertIn(".aletheia/hypotheses/HYP-001.md", status["records"]["hypotheses"])
+            self.assertIn(".aletheia/nodes/feature.yaml", status["records"]["nodes"])
+            self.assertIn(".aletheia/risks/RISK-001.md", status["records"]["risks"])
+            self.assertIn(".aletheia/agent_runs/RUN-test.json", status["records"]["agent_runs"])
+
     def test_scaffold_gitignore_marks_generated_aletheia_outputs(self) -> None:
         ignore = (ROOT / "assets" / "scaffold" / ".aletheia" / ".gitignore").read_text(encoding="utf-8")
 
@@ -105,6 +188,38 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertNotIn("BOOTSTRAP.md", paths)
             self.assertFalse(any(path.startswith(".aletheia/") for path in paths))
             self.assertFalse(any(path.startswith(".claude/") for path in paths))
+
+    def test_source_inventory_classifies_sensitive_large_and_historical_project_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".env.local").write_text("TOKEN=secret\n", encoding="utf-8")
+            reports = target / "reports"
+            reports.mkdir()
+            (reports / "big.csv").write_text("x" * 1_000_001, encoding="utf-8")
+            archive = target / "docs" / "archive"
+            archive.mkdir(parents=True)
+            (archive / "old-design.md").write_text("# Old design\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/source_inventory.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            inventory = json.loads((target / ".aletheia" / "source_inventory" / "inventory.json").read_text(encoding="utf-8"))
+            by_path = {item["path"]: item for item in inventory["items"]}
+            self.assertEqual(by_path[".env.local"]["initial_classification"], "unsafe_or_sensitive")
+            self.assertFalse(by_path[".env.local"]["should_read_full_content"])
+            self.assertEqual(by_path["reports/big.csv"]["initial_classification"], "deferred_due_to_size")
+            self.assertFalse(by_path["reports/big.csv"]["should_read_full_content"])
+            self.assertEqual(by_path["docs/archive/old-design.md"]["initial_classification"], "historical_context")
 
     def test_guided_bootstrap_detects_existing_repository_from_real_project_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

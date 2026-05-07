@@ -317,6 +317,11 @@ def pre_tool_use(args: argparse.Namespace) -> int:
         payload = {}
     if not payload_has_write_intent(payload):
         return 0
+    if args.task_class:
+        registry = load_registry(repo_root())
+        task_classes = registry.get("task_classes", DEFAULT_TASK_CLASSES) or DEFAULT_TASK_CLASSES
+        if args.task_class not in task_classes:
+            return hook_deny(f"unknown task class: {args.task_class}")
     if payload_is_standalone_model_gate_record(payload):
         return 0
     current = load_current_run(repo_root())

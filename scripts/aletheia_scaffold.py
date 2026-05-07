@@ -27,9 +27,12 @@ def copy_tree_without_overwrite(src: Path, dst: Path) -> list[Path]:
 
 
 def load_json(path: Path) -> dict[str, Any]:
-    data = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Claude settings JSON invalid: {path}: {exc}") from exc
     if not isinstance(data, dict):
-        raise ValueError(f"JSON root must be object: {path}")
+        raise ValueError(f"Claude settings JSON invalid: {path}: JSON root must be object")
     return data
 
 

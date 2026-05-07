@@ -186,5 +186,173 @@ class ModelGateTests(unittest.TestCase):
             self.assertIn("permissionDecision", output)
             self.assertIn("does not allow write-capable tool calls", output)
 
+    def test_registered_model_alias_denied_model_and_self_attested_policy_matrix(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+
+            registry_path = target / ".aletheia" / "governance" / "model_registry.json"
+            registry = json.loads(registry_path.read_text(encoding="utf-8"))
+            registry["registered_models"] = {
+                "openai/codex-e2e": {
+                    "tier": "C3",
+                    "aliases": ["codex-e2e", "openai/codex-alias"],
+                    "notes": "test model",
+                }
+            }
+            registry["denylist"] = ["blocked-model"]
+            registry.setdefault("default_policy", {})["allow_self_attested_tier"] = False
+            registry_path.write_text(json.dumps(registry, indent=2) + "\n", encoding="utf-8")
+
+            alias = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "research_design",
+                    "--provider",
+                    "openai",
+                    "--model-id",
+                    "codex-alias",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(alias.returncode, 0, alias.stdout + alias.stderr)
+            alias_gate = json.loads(alias.stdout)
+            self.assertEqual(alias_gate["gate_status"], "allowed")
+            self.assertEqual(alias_gate["registry_status"], "registered:openai/codex-e2e")
+
+            denied = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "orientation",
+                    "--provider",
+                    "test",
+                    "--model-id",
+                    "blocked-model",
+                    "--tier",
+                    "C4",
+                    "--operator-approved",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertNotEqual(denied.returncode, 0, denied.stdout + denied.stderr)
+            denied_gate = json.loads(denied.stdout)
+            self.assertEqual(denied_gate["gate_status"], "rejected")
+            self.assertIn("denied", denied_gate["reason"])
+
+            self_attested = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "research_design",
+                    "--provider",
+                    "test",
+                    "--model-id",
+                    "self-model",
+                    "--tier",
+                    "C3",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertNotEqual(self_attested.returncode, 0, self_attested.stdout + self_attested.stderr)
+            self_attested_gate = json.loads(self_attested.stdout)
+            self.assertEqual(self_attested_gate["registry_status"], "self_attested_rejected")
+
+            registry["default_policy"]["allow_self_attested_tier"] = True
+            registry_path.write_text(json.dumps(registry, indent=2) + "\n", encoding="utf-8")
+            allowed_self_attested = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "research_design",
+                    "--provider",
+                    "test",
+                    "--model-id",
+                    "self-model",
+                    "--tier",
+                    "C3",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(allowed_self_attested.returncode, 0, allowed_self_attested.stdout + allowed_self_attested.stderr)
+            allowed_self_attested_gate = json.loads(allowed_self_attested.stdout)
+            self.assertEqual(allowed_self_attested_gate["gate_status"], "allowed")
+            self.assertEqual(allowed_self_attested_gate["registry_status"], "self_attested")
+
+    def test_unknown_task_class_has_clear_cli_and_hook_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+
+            cli = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "unknown_task",
+                    "--provider",
+                    "test",
+                    "--model-id",
+                    "test-model",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(cli.returncode, 2, cli.stdout + cli.stderr)
+            self.assertIn("unknown task class: unknown_task", cli.stderr)
+
+            hook = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--hook-mode",
+                    "pretooluse",
+                    "--task-class",
+                    "unknown_task",
+                ],
+                cwd=target,
+                input=json.dumps({"tool_name": "Write", "tool_input": {"file_path": "x.txt"}}),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            output = hook.stdout + hook.stderr
+            self.assertEqual(hook.returncode, 0, output)
+            self.assertIn("permissionDecision", output)
+            self.assertIn("unknown task class: unknown_task", output)
+
 if __name__ == "__main__":
     unittest.main()

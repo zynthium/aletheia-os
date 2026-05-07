@@ -22,7 +22,7 @@ python3 .aletheia/bin/checkpoint.py
 - Initialize project truth for a new or existing repository.
 - Orient on the current mission, active state, system graph, skeleton, risks, and capabilities.
 - Refresh context for long sessions with a context pack.
-- Create, read, and archive truth records for evidence, decisions, contracts, hypotheses, risks, nodes, session notes, and agent runs.
+- Create, read, update, and archive truth records for evidence, decisions, contracts, hypotheses, risks, nodes, session notes, and agent runs.
 - Validate project truth and checkpoint coherent state updates.
 - Review truth alignment, evidence quality, and architecture drift with read-focused agents.
 

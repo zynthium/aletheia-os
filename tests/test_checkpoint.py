@@ -626,6 +626,78 @@ class CheckpointTests(unittest.TestCase):
             self.assertIn("non-checkpoint worktree changes remain", output)
             self.assertIn("__pycache__/", output)
 
+    def test_checkpoint_default_output_excludes_generated_and_runtime_paths_from_candidates(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-test",
+                        "provider": "test",
+                        "model_id": "test-model",
+                        "capability_tier": "C3",
+                        "task_class": "research_design",
+                        "gate_status": "allowed",
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(active_state.read_text(encoding="utf-8") + "\nState checkpoint note.\n", encoding="utf-8")
+            overview = target / ".aletheia" / "overview"
+            overview.mkdir()
+            (overview / "status.json").write_text("{}\n", encoding="utf-8")
+            source_inventory = target / ".aletheia" / "source_inventory"
+            source_inventory.mkdir()
+            (source_inventory / "inventory.json").write_text("{}\n", encoding="utf-8")
+            (runtime / "change_log.jsonl").write_text("{}\n", encoding="utf-8")
+            subprocess.run(
+                [
+                    "git",
+                    "add",
+                    "-f",
+                    ".aletheia/overview/status.json",
+                    ".aletheia/source_inventory/inventory.json",
+                    ".aletheia/runtime/change_log.jsonl",
+                ],
+                cwd=target,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/checkpoint.py", "--auto", "--dry-run", "--message", "state: dry run"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            candidate_block = output.split("checkpoint candidate:", 1)[1].split(
+                "non-checkpoint worktree changes remain:",
+                1,
+            )[0]
+            self.assertIn(".aletheia/state/ACTIVE_STATE.md", candidate_block)
+            self.assertNotIn(".aletheia/overview/status.json", candidate_block)
+            self.assertNotIn(".aletheia/source_inventory/inventory.json", candidate_block)
+            self.assertNotIn(".aletheia/runtime/change_log.jsonl", candidate_block)
+            self.assertIn(".aletheia/overview/status.json", output)
+            self.assertIn(".aletheia/source_inventory/inventory.json", output)
+            self.assertIn(".aletheia/runtime/change_log.jsonl", output)
+
     def test_checkpoint_include_worktree_stages_project_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
@@ -688,6 +760,82 @@ class CheckpointTests(unittest.TestCase):
             committed_paths = set(committed.stdout.splitlines())
             self.assertIn(".aletheia/state/ACTIVE_STATE.md", committed_paths)
             self.assertIn("src/included.py", committed_paths)
+
+    def test_checkpoint_commit_excludes_forced_generated_and_runtime_paths_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=False)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=target, check=False)
+
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-test",
+                        "provider": "test",
+                        "model_id": "test-model",
+                        "capability_tier": "C3",
+                        "task_class": "research_design",
+                        "gate_status": "allowed",
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(active_state.read_text(encoding="utf-8") + "\nState checkpoint note.\n", encoding="utf-8")
+            overview = target / ".aletheia" / "overview"
+            overview.mkdir()
+            (overview / "status.json").write_text("{}\n", encoding="utf-8")
+            source_inventory = target / ".aletheia" / "source_inventory"
+            source_inventory.mkdir()
+            (source_inventory / "inventory.json").write_text("{}\n", encoding="utf-8")
+            (runtime / "change_log.jsonl").write_text("{}\n", encoding="utf-8")
+            subprocess.run(
+                [
+                    "git",
+                    "add",
+                    "-f",
+                    ".aletheia/overview/status.json",
+                    ".aletheia/source_inventory/inventory.json",
+                    ".aletheia/runtime/change_log.jsonl",
+                ],
+                cwd=target,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/checkpoint.py", "--auto", "--message", "state: checkpoint"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            committed = subprocess.run(
+                ["git", "show", "--name-only", "--format=", "HEAD"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            committed_paths = set(committed.stdout.splitlines())
+            self.assertIn(".aletheia/state/ACTIVE_STATE.md", committed_paths)
+            self.assertNotIn(".aletheia/overview/status.json", committed_paths)
+            self.assertNotIn(".aletheia/source_inventory/inventory.json", committed_paths)
+            self.assertNotIn(".aletheia/runtime/change_log.jsonl", committed_paths)
 
     def test_checkpoint_default_output_reports_truth_record_rename_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

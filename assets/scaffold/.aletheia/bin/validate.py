@@ -37,6 +37,7 @@ REQUIRED_PATHS = [
     ".aletheia/bin/help.py",
     ".aletheia/bin/orient.py",
     ".aletheia/bin/context_pack.py",
+    ".aletheia/bin/preflight.py",
     ".aletheia/bin/status.py",
     ".aletheia/bin/truth_record.py",
     ".aletheia/bin/model_gate.py",
@@ -352,6 +353,7 @@ def validate_runtime_policy(root: Path, errors: list[str]) -> None:
         "read_only_aletheia_scripts",
         "read_only_truth_record_actions",
         "checkpoint_state_patterns",
+        "checkpoint_excluded_patterns",
         "protected_path_patterns",
     ]
     for section in required_sections:

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import os
 import re
@@ -22,6 +23,13 @@ STATE_PATTERNS = [
     "BOOTSTRAP.md",
     ".claude/settings.json",
     ".aletheia/",
+]
+CHECKPOINT_EXCLUDED_PATTERNS = [
+    ".aletheia/runtime/",
+    ".aletheia/overview/",
+    ".aletheia/source_inventory/",
+    "**/__pycache__/",
+    "**/*.pyc",
 ]
 RUNTIME_POLICY = ".aletheia/governance/runtime_policy.json"
 
@@ -96,8 +104,27 @@ def status_files(root: Path) -> list[str]:
     return files
 
 
-def has_state_update(files: list[str], patterns: list[str]) -> bool:
+def checkpoint_excluded(file: str, patterns: list[str]) -> bool:
+    path_parts = Path(file).parts
+    for pattern in patterns:
+        if pattern.startswith("**/") and pattern.endswith("/"):
+            if pattern[3:].rstrip("/") in path_parts:
+                return True
+            continue
+        if pattern.endswith("/") and file.startswith(pattern):
+            return True
+        if any(marker in pattern for marker in "*?[") and fnmatch.fnmatch(file, pattern):
+            return True
+        if file == pattern:
+            return True
+    return False
+
+
+def has_state_update(files: list[str], patterns: list[str], excluded_patterns: list[str] | None = None) -> bool:
+    excluded_patterns = excluded_patterns or []
     for file in files:
+        if checkpoint_excluded(file, excluded_patterns):
+            continue
         for pattern in patterns:
             if pattern.endswith("/"):
                 if file.startswith(pattern):
@@ -107,9 +134,12 @@ def has_state_update(files: list[str], patterns: list[str]) -> bool:
     return False
 
 
-def state_files(root: Path, files: list[str], patterns: list[str]) -> list[str]:
+def state_files(root: Path, files: list[str], patterns: list[str], excluded_patterns: list[str] | None = None) -> list[str]:
+    excluded_patterns = excluded_patterns or []
     state: list[str] = []
     for file in files:
+        if checkpoint_excluded(file, excluded_patterns):
+            continue
         for pattern in patterns:
             if pattern.endswith("/"):
                 if file.startswith(pattern):
@@ -156,6 +186,11 @@ def runtime_policy(root: Path) -> dict:
     policy = load_json(root / RUNTIME_POLICY)
     return {
         "checkpoint_state_patterns": list_policy_values(policy, "checkpoint_state_patterns", STATE_PATTERNS),
+        "checkpoint_excluded_patterns": list_policy_values(
+            policy,
+            "checkpoint_excluded_patterns",
+            CHECKPOINT_EXCLUDED_PATTERNS,
+        ),
         "protected_path_patterns": list_policy_values(
             policy,
             "protected_path_patterns",
@@ -217,16 +252,11 @@ def validate(root: Path) -> int:
     return subprocess.run([sys.executable, ".aletheia/bin/validate.py"], cwd=root, text=True).returncode
 
 
-def state_pathspecs(root: Path, patterns: list[str]) -> list[str]:
-    return [pattern for pattern in patterns if (root / pattern.rstrip("/")).exists()]
-
-
-def stage_state_paths(root: Path, patterns: list[str]) -> int:
-    existing = state_pathspecs(root, patterns)
-    if not existing:
+def stage_state_files(root: Path, files: list[str]) -> int:
+    if not files:
         print("checkpoint blocked: no AletheiaOS state paths exist")
         return 1
-    result = run(["git", "add", *existing], root, capture=True)
+    result = run(["git", "add", "--", *files], root, capture=True)
     if result.returncode != 0:
         print(result.stderr, end="")
     return result.returncode
@@ -257,6 +287,7 @@ def main() -> int:
         return 1
     policy = runtime_policy(root)
     checkpoint_patterns = policy["checkpoint_state_patterns"]
+    checkpoint_excluded_patterns = policy["checkpoint_excluded_patterns"]
     protected_patterns = policy["protected_path_patterns"]
     if not files:
         print("checkpoint skipped: working tree is clean")
@@ -275,7 +306,7 @@ def main() -> int:
             print("checkpoint blocked: validation failed")
             return rc
 
-    if not has_state_update(files, checkpoint_patterns) and not (
+    if not has_state_update(files, checkpoint_patterns, checkpoint_excluded_patterns) and not (
         args.allow_code_only or os.environ.get("AIOS_ALLOW_CODE_ONLY_COMMIT") == "1"
     ):
         print("checkpoint blocked: changes do not include durable project-state update")
@@ -298,7 +329,12 @@ def main() -> int:
         print(f"  gate_status: {run_data.get('gate_status')}")
         return 5
 
-    candidate_files = files if args.include_worktree else state_files(root, files, checkpoint_patterns)
+    candidate_files = files if args.include_worktree else state_files(
+        root,
+        files,
+        checkpoint_patterns,
+        checkpoint_excluded_patterns,
+    )
     non_checkpoint_files = [] if args.include_worktree else [file for file in files if file not in set(candidate_files)]
     message = args.message or infer_message(candidate_files or files)
     print("checkpoint candidate:")
@@ -330,13 +366,13 @@ def main() -> int:
             print(add.stderr, end="")
             return add.returncode
     else:
-        rc = stage_state_paths(root, checkpoint_patterns)
+        rc = stage_state_files(root, candidate_files)
         if rc != 0:
             return rc
 
     commit_cmd = ["git", "commit", "-m", message + attribution_trailers(run_data)]
     if not args.include_worktree:
-        commit_cmd.extend(["--", *state_pathspecs(root, checkpoint_patterns)])
+        commit_cmd.extend(["--", *candidate_files])
     commit = run(commit_cmd, root, capture=True)
     print(commit.stdout, end="")
     if commit.returncode != 0:

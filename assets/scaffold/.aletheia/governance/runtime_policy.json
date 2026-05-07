@@ -15,6 +15,7 @@
   "read_only_aletheia_scripts": [
     ".aletheia/bin/orient.py",
     ".aletheia/bin/context_pack.py",
+    ".aletheia/bin/preflight.py",
     ".aletheia/bin/status.py",
     ".aletheia/bin/validate.py"
   ],
@@ -28,6 +29,13 @@
     "BOOTSTRAP.md",
     ".claude/settings.json",
     ".aletheia/"
+  ],
+  "checkpoint_excluded_patterns": [
+    ".aletheia/runtime/",
+    ".aletheia/overview/",
+    ".aletheia/source_inventory/",
+    "**/__pycache__/",
+    "**/*.pyc"
   ],
   "protected_path_patterns": [
     "(^|/)\\.env(\\.|$)",

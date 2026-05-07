@@ -6,21 +6,23 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 | User Action | User Surface | Agent Capability | Status | Notes |
 |---|---|---|---|---|
 | Install AletheiaOS for Claude Code | `python3 scripts/install_aletheia.py --host claude` | Run installer script | Done | Claude marketplace registration and install are CLI-driven. |
-| Register AletheiaOS for Codex | `python3 scripts/install_aletheia.py --host codex` | Run installer script | Partial | Codex marketplace registration is scripted; plugin enablement currently happens in `/plugins`. |
+| Register AletheiaOS for Codex | `python3 scripts/install_aletheia.py --host codex` | Run installer script | Partial | Codex marketplace registration is scripted; plugin enablement currently happens in `/plugins` as a host limitation. |
 | Copy optional Codex agent profiles | `--with-codex-agents` | Run installer script | Done | Writes profiles to `.codex/agents/` or user agent directory. |
-| Enable AletheiaOS in Codex | `/plugins` | Not available as a repo script | Partial | Codex enablement is a host UI action after marketplace registration. |
+| Enable AletheiaOS in Codex | `/plugins` | Not available as a repo script | Partial | Codex enablement is a host UI action after marketplace registration; this is a host limitation, not a repo capability gap. |
 | Initialize AletheiaOS scaffold | `python3 scripts/init_aletheia.py <repo>` or `aletheia-bootstrap` | Run init script | Done | Writes `.aletheia/`, root guidance, and Claude hooks without overwriting existing files. |
 | Discover AletheiaOS capabilities | `python3 .aletheia/bin/help.py` | Print outcome-level capability guide | Done | Use when the user asks what AletheiaOS can do. |
 | Orient on project truth | `python3 .aletheia/bin/orient.py` or `aletheia-orient` | Read truth files and active node records | Done | Default output is stable and compact; use `--with-runtime` for current run/session context or `--static` for the smallest output. |
 | Build context pack | `python3 .aletheia/bin/context_pack.py` | Read core truth, capabilities, source summary, and record inventory | Done | Default output keeps stable truth first; use `--with-runtime` to append current run and recent session notes. |
 | Refresh current status | `python3 .aletheia/bin/status.py` | Read active state, validation, record counts, and runtime gate status | Done | Explicit dynamic refresh; use `--json` for agent-readable status. |
+| Run hook-free preflight | `python3 .aletheia/bin/preflight.py` | Read model gate, validation, git status, and checkpoint candidate state | Done | Use on Codex or other hosts without automatic hook enforcement; supports `--json`. |
 | List truth records | `python3 .aletheia/bin/truth_record.py list <entity>` | Read truth record directory | Done | Supported entities include evidence, decisions, contracts, hypotheses, risks, nodes, session notes, and agent runs where applicable. |
 | Create truth record | `python3 .aletheia/bin/truth_record.py create <entity> --id <id> --title <title>` | Create from template | Done | Creates a template-backed record in the relevant `.aletheia/` directory. |
 | Show truth record | `python3 .aletheia/bin/truth_record.py show <entity> <id>` | Read one truth record | Done | Emits record content for agent grounding or user review. |
+| Update truth record | `python3 .aletheia/bin/truth_record.py update <entity> <id> --status <status>` | Update title, status, or markdown section | Done | Supports `--title`, `--status`, and markdown `--section` plus `--content`; use `--json` for agent-readable output. |
 | Archive truth record | `python3 .aletheia/bin/truth_record.py archive <entity> <id> --reason <reason>` | Mark record archived | Done | Preferred safe alternative to deletion. |
 | Record model gate attribution | `python3 .aletheia/bin/model_gate.py --record ...` | Run model gate | Done | Writes `agent_runs/` and runtime current run record. |
 | Manage model registry | `python3 .aletheia/bin/model_gate.py --registry <command>` | List, register, show, enable, disable, deny, and undeny models | Done | Keeps model gate policy editable through explicit commands instead of hand-editing JSON. |
-| Configure runtime policy | `.aletheia/governance/runtime_policy.json` | Read declarative read-only, checkpoint state, and protected path rules | Done | Used by model gate and checkpoint runtime, with code fallbacks if the file is unavailable. |
+| Configure runtime policy | `.aletheia/governance/runtime_policy.json` | Read declarative read-only, checkpoint state, checkpoint excluded, and protected path rules | Done | Used by model gate, preflight, and checkpoint runtime, with code fallbacks if the file is unavailable. |
 | Inventory project sources | `python3 .aletheia/bin/source_inventory.py` | Run source inventory | Done | Writes generated inventory under `.aletheia/source_inventory/`. |
 | Prepare guided bootstrap report | `python3 .aletheia/bin/guided_bootstrap.py` | Run guided bootstrap helper | Done | Requires bootstrap model gate unless explicitly skipped. |
 | Finalize bootstrap | `python3 .aletheia/bin/bootstrap_finalize.py` | Run finalize script | Done | Validates, installs Git hooks, writes session note, and checkpoints unless skipped. |
@@ -35,7 +37,7 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 | Review architecture drift | `architecture-reviewer` profile | Read state, nodes, contracts, decisions, and source boundaries | Done | Read-focused only. |
 | Create truth record | `truth_record.py create` or templates under `.aletheia/templates/` | Write a new record file in the relevant `.aletheia/` directory | Done | Use templates for evidence, decisions, contracts, hypotheses, risks, nodes, and session notes. |
 | Read truth record | `truth_record.py list/show`, `.aletheia/` files and indexes | Read files directly, or use context pack and overview | Done | Context pack lists current records; runtime details require `--with-runtime`. |
-| Update truth record | Edit existing `.aletheia/` file | Modify file, then validate and checkpoint | Done | Deduplicate before creating a new record. |
+| Update truth record | `truth_record.py update` or edit existing `.aletheia/` file | Modify title, status, or section, then validate and checkpoint | Done | Deduplicate before creating a new record; use direct file edits for broad rewrites. |
 | Delete truth record | `truth_record.py archive` | Archive record, then validate refs | Partial | archive-only policy; no permanent delete command is provided. |
 
 ## CRUD Matrix
@@ -46,15 +48,15 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 | Capability map | edit file | `context_pack.py` | edit file | manual removal | Validate should require this file. |
 | Charter and governance files | edit files | `orient.py`, `context_pack.py` | edit files | manual removal | Root-level changes require human confirmation by prompt policy. |
 | Model registry | `model_gate.py --registry register` | `model_gate.py --registry list/show` | `model_gate.py --registry enable/disable/deny/undeny` | manual removal | Gate uses enabled registered models, aliases, and denylist entries. |
-| Runtime policy | edit `runtime_policy.json` | `model_gate.py`, `checkpoint.py` | edit file | manual removal | Controls strict read-only commands, checkpoint state paths, and protected path patterns. |
+| Runtime policy | edit `runtime_policy.json` | `model_gate.py`, `checkpoint.py` | edit file | manual removal | Controls strict read-only commands, checkpoint state paths, checkpoint excluded generated/runtime paths, and protected path patterns. |
 | Active state and state files | edit files | `orient.py`, `context_pack.py`, `status.py`, `overview.py` | edit files | manual removal | Validate checks critical TBD markers after bootstrap. |
-| Nodes | template/file write | `orient.py`, `context_pack.py`, `overview.py` | edit files | manual removal | Validate checks active node references. |
-| Evidence | template/file write | `context_pack.py`, `overview.py` | edit files | manual removal | Validate checks required sections. |
-| Decisions | template/file write | `context_pack.py`, `overview.py` | edit files | manual removal | Accepted decisions need evidence links. |
-| Contracts | template/file write | `context_pack.py`, `overview.py` | edit files | manual removal | Skeleton refs are validated. |
-| Hypotheses | template/file write | `context_pack.py`, `overview.py` | edit files | manual removal | Validate checks invalidation criteria. |
-| Risks | template/file write | `context_pack.py`, `overview.py` | edit files | manual removal | Risk register also carries portfolio-level risks. |
-| Session notes | template/file write | `context_pack.py`, `status.py` | edit files | manual removal | Bootstrap finalize writes one automatically. |
+| Nodes | `truth_record.py create` | `truth_record.py list/show`, `orient.py`, `context_pack.py`, `overview.py` | `truth_record.py update` or edit files | `truth_record.py archive` | Validate checks active node references; permanent removal is manual/admin only. |
+| Evidence | `truth_record.py create` | `truth_record.py list/show`, `context_pack.py`, `overview.py` | `truth_record.py update` or edit files | `truth_record.py archive` | Validate checks required sections; permanent removal is manual/admin only. |
+| Decisions | `truth_record.py create` | `truth_record.py list/show`, `context_pack.py`, `overview.py` | `truth_record.py update` or edit files | `truth_record.py archive` | Accepted decisions need evidence links; permanent removal is manual/admin only. |
+| Contracts | `truth_record.py create` | `truth_record.py list/show`, `context_pack.py`, `overview.py` | `truth_record.py update` or edit files | `truth_record.py archive` | Skeleton refs are validated; permanent removal is manual/admin only. |
+| Hypotheses | `truth_record.py create` | `truth_record.py list/show`, `context_pack.py`, `overview.py` | `truth_record.py update` or edit files | `truth_record.py archive` | Validate checks invalidation criteria; permanent removal is manual/admin only. |
+| Risks | `truth_record.py create` | `truth_record.py list/show`, `context_pack.py`, `overview.py` | `truth_record.py update` or edit files | `truth_record.py archive` | Risk register also carries portfolio-level risks; permanent removal is manual/admin only. |
+| Session notes | `truth_record.py create` | `truth_record.py list/show`, `context_pack.py`, `status.py` | `truth_record.py update` or edit files | `truth_record.py archive` | Bootstrap finalize writes one automatically; permanent removal is manual/admin only. |
 | Agent runs | `model_gate.py --record` | runtime files, context pack, status refresh | create a new run | manual removal | Current run lives in `.aletheia/runtime/`. |
 
 ## Maintenance Rule

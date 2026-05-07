@@ -29,8 +29,13 @@ CAPABILITIES = [
     ),
     (
         "Refresh status",
-        "Read active state, validation, record counts, and runtime gate status on demand.",
-        ["python3 .aletheia/bin/status.py", "python3 .aletheia/bin/status.py --json"],
+        "Read active state, validation, record counts, runtime gate status, and hook-free preflight state on demand.",
+        [
+            "python3 .aletheia/bin/status.py",
+            "python3 .aletheia/bin/status.py --json",
+            "python3 .aletheia/bin/preflight.py",
+            "python3 .aletheia/bin/preflight.py --json",
+        ],
     ),
     (
         "Manage model registry",
@@ -44,11 +49,12 @@ CAPABILITIES = [
     ),
     (
         "Create truth records",
-        "Create, read, and archive evidence, decisions, contracts, hypotheses, risks, nodes, session notes, and agent runs.",
+        "Create, read, update, and archive evidence, decisions, contracts, hypotheses, risks, nodes, session notes, and agent runs.",
         [
             "python3 .aletheia/bin/truth_record.py list evidence",
             "python3 .aletheia/bin/truth_record.py create evidence --id EV-0001 --title \"Claim title\"",
             "python3 .aletheia/bin/truth_record.py show evidence EV-0001",
+            "python3 .aletheia/bin/truth_record.py update evidence EV-0001 --status active",
             "python3 .aletheia/bin/truth_record.py archive evidence EV-0001 --reason \"Superseded by stronger evidence\"",
         ],
     ),

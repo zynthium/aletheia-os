@@ -292,7 +292,7 @@ class ModelGateTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, output)
             self.assertNotIn("permissionDecision", output)
 
-    def test_pretooluse_treats_truth_record_create_and_archive_as_write_capable(self) -> None:
+    def test_pretooluse_treats_truth_record_create_update_and_archive_as_write_capable(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
             target.mkdir()
@@ -301,6 +301,7 @@ class ModelGateTests(unittest.TestCase):
 
             for command in [
                 "python3 .aletheia/bin/truth_record.py create evidence --id EV-0001 --title Claim",
+                "python3 .aletheia/bin/truth_record.py update evidence EV-0001 --status active",
                 "python3 .aletheia/bin/truth_record.py archive evidence EV-0001 --reason stale",
             ]:
                 result = self.run_pretooluse_hook(

@@ -176,6 +176,69 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("decisions", payload["records"])
             self.assertIsNone(payload["runtime_gate"])
 
+    def test_preflight_reports_validation_gate_and_checkpoint_candidate_for_no_hooks_hosts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-preflight",
+                        "provider": "openai",
+                        "model_id": "gpt-test",
+                        "capability_tier": "C3",
+                        "task_class": "research_design",
+                        "gate_status": "allowed",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(active_state.read_text(encoding="utf-8") + "\nPreflight state note.\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/preflight.py", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["runtime_gate"]["run_id"], "RUN-preflight")
+            self.assertEqual(payload["validation"]["returncode"], 0)
+            self.assertTrue(payload["checkpoint"]["has_candidate"])
+            self.assertIn(".aletheia/state/ACTIVE_STATE.md", payload["checkpoint"]["candidate_files"])
+
+    def test_preflight_markdown_names_codex_no_hooks_use_case(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/preflight.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("# AletheiaOS Preflight", output)
+            self.assertIn("Use this on hosts without automatic hook enforcement", output)
+            self.assertIn("## Validation", output)
+            self.assertIn("## Checkpoint Candidate", output)
+
     def test_context_pack_includes_core_truth_files_missing_markers_and_truncation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
@@ -235,6 +298,8 @@ class RuntimeValidateTests(unittest.TestCase):
                 self.assertIn(phrase, output)
             self.assertIn("## Runtime commands", output)
             self.assertIn("python3 .aletheia/bin/orient.py", output)
+            self.assertIn("python3 .aletheia/bin/truth_record.py update evidence EV-0001", output)
+            self.assertIn("archive-only", output)
 
     def test_context_pack_defaults_to_stable_capabilities_source_summary_and_record_inventory(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -491,6 +556,146 @@ class RuntimeValidateTests(unittest.TestCase):
             archived = record.read_text(encoding="utf-8")
             self.assertIn("Status: archived", archived)
             self.assertIn("Archive reason: Superseded by later evidence.", archived)
+
+    def test_truth_record_script_updates_records_and_emits_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+
+            create = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "create",
+                    "evidence",
+                    "--id",
+                    "EV-0001",
+                    "--title",
+                    "Initial claim",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(create.returncode, 0, create.stdout + create.stderr)
+
+            update = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "update",
+                    "evidence",
+                    "EV-0001",
+                    "--title",
+                    "Updated claim",
+                    "--status",
+                    "active",
+                    "--section",
+                    "Result",
+                    "--content",
+                    "Observed project behavior supports the updated claim.",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            update_output = update.stdout + update.stderr
+            self.assertEqual(update.returncode, 0, update_output)
+            payload = json.loads(update.stdout)
+            self.assertEqual(payload["action"], "update")
+            self.assertEqual(payload["entity"], "evidence")
+            self.assertEqual(payload["path"], ".aletheia/evidence/EV-0001.md")
+            self.assertEqual(payload["updated"], ["title", "status", "section:Result"])
+
+            text = (target / ".aletheia" / "evidence" / "EV-0001.md").read_text(encoding="utf-8")
+            self.assertIn("# Evidence: Updated claim", text)
+            self.assertIn("Status: active", text)
+            self.assertIn("## Result\n\nObserved project behavior supports the updated claim.", text)
+
+            show = subprocess.run(
+                [sys.executable, ".aletheia/bin/truth_record.py", "show", "evidence", "EV-0001", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(show.returncode, 0, show.stdout + show.stderr)
+            show_payload = json.loads(show.stdout)
+            self.assertEqual(show_payload["path"], ".aletheia/evidence/EV-0001.md")
+            self.assertIn("# Evidence: Updated claim", show_payload["content"])
+
+    def test_truth_record_script_updates_yaml_records_and_lists_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+
+            create = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "create",
+                    "node",
+                    "--id",
+                    "feature_node",
+                    "--title",
+                    "Feature Node",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(create.returncode, 0, create.stdout + create.stderr)
+
+            update = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "update",
+                    "node",
+                    "feature_node",
+                    "--title",
+                    "Updated Feature Node",
+                    "--status",
+                    "active",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(update.returncode, 0, update.stdout + update.stderr)
+            payload = json.loads(update.stdout)
+            self.assertEqual(payload["updated"], ["title", "status"])
+
+            node_text = (target / ".aletheia" / "nodes" / "feature_node.yaml").read_text(encoding="utf-8")
+            self.assertIn("title: Updated Feature Node", node_text)
+            self.assertIn("status: active", node_text)
+
+            listing = subprocess.run(
+                [sys.executable, ".aletheia/bin/truth_record.py", "list", "nodes", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(listing.returncode, 0, listing.stdout + listing.stderr)
+            listing_payload = json.loads(listing.stdout)
+            self.assertEqual(listing_payload["entity"], "nodes")
+            self.assertIn(".aletheia/nodes/feature_node.yaml", listing_payload["records"])
 
     def test_truth_record_script_rejects_unknown_entity_and_path_traversal(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -69,7 +69,9 @@ class PluginManifestTests(unittest.TestCase):
             self.assertTrue((release_root / "skills" / "aletheia-promote" / "SKILL.md").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "CAPABILITY_MAP.md").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "playbooks" / "drift_audit.md").exists())
+            self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "playbooks" / "prompt_native_boundaries.md").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "help.py").exists())
+            self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "preflight.py").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "truth_record.py").exists())
             self.assertFalse((release_root / "docs" / "superpowers").exists())
             self.assertFalse(any(release_root.rglob("__pycache__")))
@@ -122,8 +124,10 @@ class PluginManifestTests(unittest.TestCase):
             "help.py",
             "orient.py",
             "context_pack.py",
+            "preflight.py",
             "status.py",
             "truth_record.py",
+            "truth_record.py update",
             "model_gate.py",
             "runtime_policy.json",
             "source_inventory.py",
@@ -143,9 +147,34 @@ class PluginManifestTests(unittest.TestCase):
             "architecture-reviewer",
             "Codex enablement",
             "archive-only",
+            "host limitation",
         ]
         for term in expected_terms:
             self.assertIn(term, capability_map)
+
+    def test_capability_discovery_surfaces_core_truth_record_crud_consistently(self) -> None:
+        capability_map = (ROOT / "assets" / "scaffold" / ".aletheia" / "CAPABILITY_MAP.md").read_text(
+            encoding="utf-8"
+        )
+        help_text = (ROOT / "assets" / "scaffold" / ".aletheia" / "bin" / "help.py").read_text(
+            encoding="utf-8"
+        )
+
+        for command in [
+            "truth_record.py list",
+            "truth_record.py create",
+            "truth_record.py show",
+            "truth_record.py update",
+            "truth_record.py archive",
+        ]:
+            self.assertIn(command, capability_map)
+            self.assertIn(command, help_text)
+
+        for entity in ["Evidence", "Decisions", "Contracts", "Hypotheses", "Risks", "Nodes", "Session notes"]:
+            self.assertRegex(capability_map, rf"\| {re.escape(entity)} \| .*truth_record\.py create")
+            self.assertRegex(capability_map, rf"\| {re.escape(entity)} \| .*truth_record\.py list/show")
+            self.assertRegex(capability_map, rf"\| {re.escape(entity)} \| .*truth_record\.py update")
+            self.assertRegex(capability_map, rf"\| {re.escape(entity)} \| .*truth_record\.py archive")
 
     def test_package_output_replaces_stale_release_directory(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -264,6 +293,30 @@ class PluginManifestTests(unittest.TestCase):
         ]:
             self.assertIn(required, combined)
 
+    def test_prompt_native_boundary_playbook_classifies_primitives_and_workflows(self) -> None:
+        playbook = (
+            ROOT
+            / "assets"
+            / "scaffold"
+            / ".aletheia"
+            / "playbooks"
+            / "prompt_native_boundaries.md"
+        ).read_text(encoding="utf-8")
+
+        for required in [
+            "Prompt-Native Boundary Assessment",
+            "Primitive runtime scripts",
+            "Workflow-coded scripts",
+            "Keep in Python",
+            "Move to skills or playbooks",
+            "truth_record.py",
+            "preflight.py",
+            "guided_bootstrap.py",
+            "bootstrap_finalize.py",
+            "checkpoint.py",
+        ]:
+            self.assertIn(required, playbook)
+
     def test_readme_documents_simple_installation(self) -> None:
         readme = (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
 
@@ -294,6 +347,16 @@ class PluginManifestTests(unittest.TestCase):
         self.assertIn("python3 /path/to/aletheia-os/scripts/init_aletheia.py .", readme)
         self.assertIn("git status --short", readme)
         self.assertIn("docs/verification/host-smoke.zh-CN.md", readme)
+        self.assertIn("python3 .aletheia/bin/truth_record.py update evidence EV-0001 --status active", readme)
+        self.assertIn("truth_record.py 支持 `--json`", readme)
+        self.assertIn("Codex 插件启用是宿主 UI 限制", readme)
+        self.assertIn("`preflight.py` 是 Codex 等无自动 hook enforcement 宿主的显式检查入口", readme)
+        self.assertIn("prompt_native_boundaries.md", readme)
+
+        start_here = (ROOT / "assets" / "scaffold" / ".aletheia" / "START_HERE.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("Create, read, update, and archive truth records", start_here)
 
     def test_plugin_content_avoids_migration_and_compatibility_language(self) -> None:
         banned_patterns = [

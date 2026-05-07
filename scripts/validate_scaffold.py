@@ -24,6 +24,7 @@ REQUIRED_PATHS = [
     ".aletheia/governance/SOURCE_POLICY.md",
     ".aletheia/governance/runtime_policy.json",
     ".aletheia/governance/model_registry.json",
+    ".aletheia/governance/actions.json",
     ".aletheia/state/ACTIVE_STATE.md",
     ".aletheia/state/SYSTEM_GRAPH.yaml",
     ".aletheia/state/SKELETON.yaml",
@@ -40,6 +41,7 @@ REQUIRED_PATHS = [
     ".aletheia/playbooks/drift_audit.md",
     ".aletheia/playbooks/wiki_handoff_promotion.md",
     ".aletheia/bin/help.py",
+    ".aletheia/bin/action.py",
     ".aletheia/bin/capability_audit.py",
     ".aletheia/bin/orient.py",
     ".aletheia/bin/context_pack.py",
@@ -197,6 +199,59 @@ def validate_runtime_policy(root: Path) -> list[str]:
     return errors
 
 
+def validate_actions(root: Path) -> list[str]:
+    path = root / ".aletheia" / "governance" / "actions.json"
+    errors: list[str] = []
+    try:
+        registry = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return [f"actions registry JSON invalid: {exc}"]
+    if not isinstance(registry, dict):
+        return ["actions registry JSON invalid: expected object"]
+    if registry.get("schema_version") != 1:
+        errors.append("actions registry schema_version must be 1")
+    actions = registry.get("actions")
+    if not isinstance(actions, list) or not actions:
+        errors.append("actions registry actions must be a non-empty list")
+        return errors
+    seen: set[str] = set()
+    valid_risks = {"read-only", "writes-state", "admin", "checkpoint"}
+    for action in actions:
+        if not isinstance(action, dict):
+            errors.append("actions registry action must be an object")
+            continue
+        action_id = action.get("id")
+        if not isinstance(action_id, str) or not re.match(r"^[a-z][a-z0-9]*(\.[a-z][a-z0-9_]*)+$", action_id):
+            errors.append(f"actions registry invalid action id: {action_id}")
+            continue
+        if action_id in seen:
+            errors.append(f"actions registry duplicate action id: {action_id}")
+        seen.add(action_id)
+        if action.get("risk") not in valid_risks:
+            errors.append(f"actions registry invalid risk for {action_id}")
+        command = action.get("command")
+        if not isinstance(command, list) or not command or not all(isinstance(part, str) for part in command):
+            errors.append(f"actions registry invalid command for {action_id}")
+        else:
+            inputs = action.get("inputs")
+            for part in command:
+                if part.startswith("{{") and part.endswith("}}"):
+                    key = part[2:-2]
+                    if not isinstance(inputs, dict) or key not in inputs:
+                        errors.append(f"actions registry command placeholder missing input for {action_id}: {key}")
+        verification = action.get("verification")
+        if not isinstance(verification, dict) or verification.get("returncode") != 0:
+            errors.append(f"actions registry invalid verification for {action_id}")
+    recommended = registry.get("recommended_actions", [])
+    if not isinstance(recommended, list) or not all(isinstance(item, str) for item in recommended):
+        errors.append("actions registry recommended_actions must be a list of strings")
+    else:
+        for action_id in recommended:
+            if action_id not in seen:
+                errors.append(f"actions registry recommended action is missing: {action_id}")
+    return errors
+
+
 def validate_capability_map(root: Path) -> list[str]:
     path = root / ".aletheia" / "CAPABILITY_MAP.md"
     if not path.exists():
@@ -204,6 +259,11 @@ def validate_capability_map(root: Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     required_terms = [
         "help.py",
+        "action.py",
+        "actions.json",
+        "truth.validate",
+        "truth.preflight",
+        "truth.checkpoint.dry_run",
         "capability_audit.py",
         "truth_record.py list",
         "truth_record.py create",
@@ -231,6 +291,7 @@ def main() -> int:
     skeleton_errors = (
         validate_skeleton(root)
         + validate_runtime_policy(root)
+        + validate_actions(root)
         + validate_capability_map(root)
         + validate_no_retired_language(root)
     )

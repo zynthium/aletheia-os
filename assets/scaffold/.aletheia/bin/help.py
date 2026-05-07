@@ -31,6 +31,10 @@ CAPABILITIES = [
         "Refresh status",
         "Read active state, validation, record counts, runtime gate status, and hook-free preflight state on demand.",
         [
+            "python3 .aletheia/bin/action.py list --json",
+            "python3 .aletheia/bin/action.py next --json",
+            "python3 .aletheia/bin/action.py explain truth.validate --json",
+            "python3 .aletheia/bin/action.py run truth.validate --json",
             "python3 .aletheia/bin/capability_audit.py",
             "python3 .aletheia/bin/status.py",
             "python3 .aletheia/bin/status.py --json",

@@ -220,6 +220,111 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(payload["context"]["active_nodes"], ["root"])
             self.assertIn("python3 .aletheia/bin/orient.py --with-runtime", payload["next_actions"])
             self.assertIn("python3 .aletheia/bin/checkpoint.py --dry-run", payload["next_actions"])
+            self.assertIn("truth.orient.runtime", payload["recommended_actions"])
+            self.assertIn("truth.checkpoint.dry_run", payload["recommended_actions"])
+
+    def test_action_layer_lists_explains_runs_and_recommends_agent_actions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+
+            listed = subprocess.run(
+                [sys.executable, ".aletheia/bin/action.py", "list", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(listed.returncode, 0, listed.stdout + listed.stderr)
+            list_payload = json.loads(listed.stdout)
+            self.assertEqual(list_payload["schema_version"], 1)
+            action_ids = {action["id"] for action in list_payload["actions"]}
+            self.assertIn("truth.validate", action_ids)
+            self.assertIn("truth.preflight", action_ids)
+            self.assertIn("truth.checkpoint.dry_run", action_ids)
+
+            explained = subprocess.run(
+                [sys.executable, ".aletheia/bin/action.py", "explain", "truth.validate", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(explained.returncode, 0, explained.stdout + explained.stderr)
+            explain_payload = json.loads(explained.stdout)
+            self.assertEqual(explain_payload["action"]["id"], "truth.validate")
+            self.assertEqual(explain_payload["action"]["risk"], "read-only")
+            self.assertEqual(explain_payload["action"]["verification"]["returncode"], 0)
+
+            ran = subprocess.run(
+                [sys.executable, ".aletheia/bin/action.py", "run", "truth.validate", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(ran.returncode, 0, ran.stdout + ran.stderr)
+            run_payload = json.loads(ran.stdout)
+            self.assertEqual(run_payload["action_id"], "truth.validate")
+            self.assertEqual(run_payload["result"]["returncode"], 0)
+            self.assertTrue(run_payload["verification"]["passed"])
+
+            listed_records = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/action.py",
+                    "run",
+                    "truth.record.list",
+                    "--arg",
+                    "entity=decisions",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(listed_records.returncode, 0, listed_records.stdout + listed_records.stderr)
+            record_payload = json.loads(listed_records.stdout)
+            self.assertEqual(record_payload["action_id"], "truth.record.list")
+            self.assertIn("decisions", record_payload["command"])
+            self.assertTrue(record_payload["verification"]["passed"])
+
+            blocked_write = subprocess.run(
+                [sys.executable, ".aletheia/bin/action.py", "run", "truth.checkpoint.create"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertNotEqual(blocked_write.returncode, 0, blocked_write.stdout + blocked_write.stderr)
+            self.assertIn("requires --confirm-risk", blocked_write.stderr)
+
+            next_result = subprocess.run(
+                [sys.executable, ".aletheia/bin/action.py", "next", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(next_result.returncode, 0, next_result.stdout + next_result.stderr)
+            next_payload = json.loads(next_result.stdout)
+            self.assertIn("truth.orient.runtime", next_payload["recommended_actions"])
+            self.assertIn("truth.validate", next_payload["recommended_actions"])
+            self.assertIn("truth.checkpoint.dry_run", next_payload["recommended_actions"])
 
     def test_preflight_markdown_names_codex_no_hooks_use_case(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -7,7 +7,13 @@ from pathlib import Path
 
 REQUIRED_TERMS = [
     "help.py",
+    "action.py",
     "capability_audit.py",
+    "actions.json",
+    "truth.validate",
+    "truth.preflight",
+    "truth.checkpoint.dry_run",
+    "capability.audit",
     "orient.py",
     "context_pack.py",
     "preflight.py",

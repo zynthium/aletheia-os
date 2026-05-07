@@ -71,9 +71,20 @@ class PluginManifestTests(unittest.TestCase):
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "playbooks" / "drift_audit.md").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "playbooks" / "prompt_native_boundaries.md").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "help.py").exists())
+            self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "action.py").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "capability_audit.py").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "preflight.py").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "truth_record.py").exists())
+            self.assertTrue(
+                (
+                    release_root
+                    / "assets"
+                    / "scaffold"
+                    / ".aletheia"
+                    / "governance"
+                    / "actions.json"
+                ).exists()
+            )
             self.assertFalse((release_root / "docs" / "superpowers").exists())
             self.assertFalse(any(release_root.rglob("__pycache__")))
             self.assertFalse(any(release_root.rglob("*.pyc")))
@@ -123,6 +134,11 @@ class PluginManifestTests(unittest.TestCase):
 
         expected_terms = [
             "help.py",
+            "action.py",
+            "actions.json",
+            "truth.validate",
+            "truth.preflight",
+            "truth.checkpoint.dry_run",
             "capability_audit.py",
             "orient.py",
             "context_pack.py",
@@ -185,6 +201,32 @@ class PluginManifestTests(unittest.TestCase):
             output = drifted.stdout + drifted.stderr
             self.assertNotEqual(drifted.returncode, 0, output)
             self.assertIn("capability audit failed", output)
+
+    def test_action_registry_defines_agent_native_contracts(self) -> None:
+        actions_path = ROOT / "assets" / "scaffold" / ".aletheia" / "governance" / "actions.json"
+        actions = json.loads(actions_path.read_text(encoding="utf-8"))
+
+        self.assertIsInstance(actions.get("actions"), list)
+        action_ids = {action["id"] for action in actions["actions"]}
+        for required_id in [
+            "truth.orient",
+            "truth.validate",
+            "truth.preflight",
+            "truth.checkpoint.dry_run",
+            "capability.audit",
+            "truth.record.list",
+            "model.registry.list",
+        ]:
+            self.assertIn(required_id, action_ids)
+
+        for action in actions["actions"]:
+            with self.subTest(action=action.get("id")):
+                self.assertRegex(action["id"], r"^[a-z][a-z0-9]*(\.[a-z][a-z0-9_]*)+$")
+                self.assertIn(action["risk"], {"read-only", "writes-state", "admin", "checkpoint"})
+                self.assertIsInstance(action["command"], list)
+                self.assertTrue(action["command"])
+                self.assertIsInstance(action["verification"], dict)
+                self.assertEqual(action["verification"].get("returncode"), 0)
 
     def test_capability_discovery_surfaces_core_truth_record_crud_consistently(self) -> None:
         capability_map = (ROOT / "assets" / "scaffold" / ".aletheia" / "CAPABILITY_MAP.md").read_text(

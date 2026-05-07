@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "recommended_actions": [
+    "truth.orient.runtime",
+    "truth.validate",
+    "truth.checkpoint.dry_run"
+  ],
+  "actions": [
+    {
+      "id": "truth.orient",
+      "title": "Orient on project truth",
+      "intent": "Read stable AletheiaOS truth files and active node records.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/orient.py"],
+      "inputs": {},
+      "outputs": {"format": "markdown"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.orient.runtime",
+      "title": "Orient with runtime context",
+      "intent": "Read stable project truth and append current run/session context.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/orient.py", "--with-runtime"],
+      "inputs": {},
+      "outputs": {"format": "markdown"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.context_pack",
+      "title": "Build context pack",
+      "intent": "Build a compact context pack from stable truth, capabilities, source summary, and record inventory.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/context_pack.py"],
+      "inputs": {},
+      "outputs": {"format": "markdown"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.status",
+      "title": "Refresh status",
+      "intent": "Read active state, validation, record counts, and runtime gate status.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/status.py", "--json"],
+      "inputs": {},
+      "outputs": {"format": "json"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.preflight",
+      "title": "Run hook-free preflight",
+      "intent": "Read context, model gate, validation, git status, checkpoint candidate state, and recommended next actions.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/preflight.py", "--json"],
+      "inputs": {},
+      "outputs": {"format": "json"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.validate",
+      "title": "Validate project truth",
+      "intent": "Check whether AletheiaOS truth state is coherent.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/validate.py"],
+      "inputs": {},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.checkpoint.dry_run",
+      "title": "Preview checkpoint",
+      "intent": "Validate and show checkpoint candidates without staging or committing files.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/checkpoint.py", "--dry-run"],
+      "inputs": {},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.checkpoint.create",
+      "title": "Create checkpoint",
+      "intent": "Validate, screen paths, stage durable AletheiaOS state files, and create an attributed commit.",
+      "risk": "checkpoint",
+      "command": ["python3", ".aletheia/bin/checkpoint.py"],
+      "inputs": {},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "capability.audit",
+      "title": "Audit capability coverage",
+      "intent": "Check that runtime scripts, skills, review agents, CRUD commands, and action layer entries are documented.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/capability_audit.py"],
+      "inputs": {},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.record.list",
+      "title": "List truth records",
+      "intent": "List records for a truth entity such as evidence, decisions, contracts, hypotheses, risks, nodes, or session notes.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/truth_record.py", "list", "{{entity}}", "--json"],
+      "inputs": {"entity": "Truth entity to list, for example evidence or decisions."},
+      "outputs": {"format": "json"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.record.create",
+      "title": "Create truth record",
+      "intent": "Create a template-backed truth record.",
+      "risk": "writes-state",
+      "command": ["python3", ".aletheia/bin/truth_record.py", "create"],
+      "inputs": {"entity": "Required when running manually.", "id": "Required.", "title": "Required."},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.record.update",
+      "title": "Update truth record",
+      "intent": "Update title, status, or a markdown section for an existing truth record.",
+      "risk": "writes-state",
+      "command": ["python3", ".aletheia/bin/truth_record.py", "update"],
+      "inputs": {"entity": "Required when running manually.", "id": "Required."},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.record.archive",
+      "title": "Archive truth record",
+      "intent": "Archive a truth record or fixed truth file with a reason.",
+      "risk": "admin",
+      "command": ["python3", ".aletheia/bin/truth_record.py", "archive"],
+      "inputs": {"entity": "Required when running manually.", "id": "Required.", "reason": "Required."},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "model.registry.list",
+      "title": "List model registry entries",
+      "intent": "Read registered models and model gate policy state.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/model_gate.py", "--registry", "list"],
+      "inputs": {},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "model.registry.deprecate",
+      "title": "Deprecate model registry entry",
+      "intent": "Mark a model registry entry deprecated with an explicit reason.",
+      "risk": "admin",
+      "command": ["python3", ".aletheia/bin/model_gate.py", "--registry", "deprecate"],
+      "inputs": {"name": "Required when running manually.", "reason": "Required."},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    }
+  ]
+}

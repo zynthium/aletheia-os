@@ -184,6 +184,11 @@ def build_preflight(root: Path) -> dict:
             "python3 .aletheia/bin/validate.py",
             "python3 .aletheia/bin/checkpoint.py --dry-run",
         ],
+        "recommended_actions": [
+            "truth.orient.runtime",
+            "truth.validate",
+            "truth.checkpoint.dry_run",
+        ],
     }
 
 
@@ -226,6 +231,8 @@ def print_markdown(payload: dict) -> None:
     print()
     print("## Next Actions")
     print()
+    for action_id in payload["recommended_actions"]:
+        print(f"- action: `{action_id}`")
     for command in payload["next_actions"]:
         print(f"- `{command}`")
     print()

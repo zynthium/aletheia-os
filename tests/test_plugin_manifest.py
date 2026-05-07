@@ -66,6 +66,9 @@ class PluginManifestTests(unittest.TestCase):
             self.assertTrue((release_root / ".codex-plugin" / "plugin.json").exists())
             self.assertTrue((release_root / ".claude-plugin" / "plugin.json").exists())
             self.assertTrue((release_root / "skills" / "aletheia-promote" / "SKILL.md").exists())
+            self.assertFalse((release_root / "docs" / "superpowers").exists())
+            self.assertFalse(any(release_root.rglob("__pycache__")))
+            self.assertFalse(any(release_root.rglob("*.pyc")))
 
     def test_package_output_contains_readme_link_targets_and_host_smoke_checklist(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

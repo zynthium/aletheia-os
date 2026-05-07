@@ -280,6 +280,10 @@ class BootstrapFinalizeTests(unittest.TestCase):
             output = result.stdout + result.stderr
             self.assertNotEqual(result.returncode, 0, output)
             self.assertIn("no AI model gate run recorded", output)
+            self.assertIn("--provider <provider>", output)
+            self.assertIn("--model-id <model_id>", output)
+            self.assertIn("--tier C3", output)
+            self.assertIn("--operator-approved", output)
             self.assertTrue((target / "BOOTSTRAP.md").exists())
 
     def test_bootstrap_finalize_blocks_when_critical_state_still_has_tbd(self) -> None:

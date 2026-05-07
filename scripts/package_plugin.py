@@ -88,6 +88,18 @@ PACKAGE_DIRS = [
     "README.zh-CN.md",
 ]
 
+PACKAGE_EXCLUDES = {
+    Path("docs") / "superpowers",
+}
+PACKAGE_IGNORE_PATTERNS = ["__pycache__", "*.pyc"]
+
+
+def release_ignore_patterns(rel: str) -> list[str]:
+    patterns = list(PACKAGE_IGNORE_PATTERNS)
+    rel_path = Path(rel)
+    patterns.extend(exclude.name for exclude in PACKAGE_EXCLUDES if exclude.parent == rel_path)
+    return patterns
+
 
 def validate_manifest(manifest: dict) -> list[str]:
     errors: list[str] = []
@@ -211,7 +223,11 @@ def copy_release(root: Path, output: Path, plugin_name: str) -> Path:
         src = root / rel
         dst = release_root / rel
         if src.is_dir():
-            shutil.copytree(src, dst)
+            shutil.copytree(
+                src,
+                dst,
+                ignore=shutil.ignore_patterns(*release_ignore_patterns(rel)),
+            )
         else:
             shutil.copy2(src, dst)
 

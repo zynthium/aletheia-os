@@ -11,6 +11,11 @@ from pathlib import Path
 
 
 TIER_ORDER = {"C0": 0, "C1": 1, "C2": 2, "C3": 3, "C4": 4}
+BOOTSTRAP_GATE_COMMAND = (
+    "python3 .aletheia/bin/model_gate.py --task-class bootstrap_finalize "
+    "--provider <provider> --model-id <model_id> --tier C3 --operator-approved "
+    '--record --objective "Initialize AletheiaOS"'
+)
 POST_BOOTSTRAP_REQUIRED_NO_TBD = [
     ".aletheia/governance/CHARTER.md",
     ".aletheia/state/SYSTEM_GRAPH.yaml",
@@ -45,7 +50,7 @@ def bootstrap_model_gate_ready(root: Path) -> int:
     current_run_path = root / ".aletheia" / "runtime" / "current_agent_run.json"
     if not current_run_path.exists():
         print("bootstrap blocked: no AI model gate run recorded")
-        print('Run: python3 .aletheia/bin/model_gate.py --task-class bootstrap_finalize --record --objective "Initialize AletheiaOS"')
+        print(f"Run: {BOOTSTRAP_GATE_COMMAND}")
         return 1
     try:
         run_data = json.loads(current_run_path.read_text(encoding="utf-8"))

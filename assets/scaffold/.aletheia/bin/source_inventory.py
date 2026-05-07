@@ -120,6 +120,8 @@ def iter_files(root: Path):
             continue
         for name in files:
             path = base_path / name
+            if path.is_symlink() and not points_inside_root(path, root):
+                continue
             rel = path.relative_to(root)
             if rel.parts and rel.parts[0] in EXCLUDED_DIRS:
                 continue
@@ -128,10 +130,33 @@ def iter_files(root: Path):
             yield rel
 
 
+def points_inside_root(path: Path, root: Path) -> bool:
+    try:
+        resolved = path.resolve(strict=True)
+        resolved_root = root.resolve(strict=True)
+    except OSError:
+        return False
+    return resolved == resolved_root or resolved_root in resolved.parents
+
+
+def ensure_output_dir(path: Path, root: Path) -> None:
+    if path.exists() and not path.is_dir():
+        rel = path.relative_to(root)
+        raise RuntimeError(f"{rel} exists and is not a directory")
+    path.mkdir(parents=True, exist_ok=True)
+
+
 def main() -> int:
     root = repo_root()
     out_dir = root / ".aletheia" / "source_inventory"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        ensure_output_dir(out_dir, root)
+    except OSError as exc:
+        print(f"source inventory failed: cannot create {out_dir.relative_to(root)}: {exc}")
+        return 1
+    except RuntimeError as exc:
+        print(f"source inventory failed: {exc}")
+        return 1
     items = []
     for rel in sorted(iter_files(root), key=lambda item: str(item)):
         full = root / rel

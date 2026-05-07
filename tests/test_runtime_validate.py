@@ -280,6 +280,58 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertFalse(any(path.startswith("vendor/") for path in paths))
             self.assertFalse(any(path.startswith(".pytest_cache/") for path in paths))
 
+    def test_source_inventory_handles_unicode_paths_and_skips_external_symlinks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target with space"
+            target.mkdir()
+            init_target(target)
+            notes = target / "研究 资料"
+            notes.mkdir()
+            (notes / "市场 建模.md").write_text("# Market modeling\n", encoding="utf-8")
+            outside = Path(tmp) / "outside-secret.md"
+            outside.write_text("# outside\n", encoding="utf-8")
+            os.symlink(outside, target / "outside-link.md")
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/source_inventory.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertNotIn("Traceback", output)
+            inventory = json.loads((target / ".aletheia" / "source_inventory" / "inventory.json").read_text(encoding="utf-8"))
+            paths = {item["path"] for item in inventory["items"]}
+            self.assertIn("研究 资料/市场 建模.md", paths)
+            self.assertNotIn("outside-link.md", paths)
+
+    def test_source_inventory_reports_output_path_conflict_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            conflict = target / ".aletheia" / "source_inventory"
+            conflict.write_text("not a directory\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/source_inventory.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn("source inventory failed:", output)
+            self.assertIn(".aletheia/source_inventory exists and is not a directory", output)
+            self.assertNotIn("Traceback", output)
+
     def test_guided_bootstrap_detects_existing_repository_from_real_project_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

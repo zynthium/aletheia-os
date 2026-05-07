@@ -24,6 +24,13 @@ STATE_PATTERNS = [
     ".aletheia/",
 ]
 
+INTERRUPTED_GIT_MARKERS = [
+    "MERGE_HEAD",
+    "REBASE_HEAD",
+    "CHERRY_PICK_HEAD",
+    "REVERT_HEAD",
+]
+
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
@@ -50,6 +57,27 @@ def ensure_git(root: Path) -> None:
     inside = run(["git", "rev-parse", "--is-inside-work-tree"], root, capture=True)
     if inside.returncode != 0:
         run(["git", "init"], root)
+
+
+def git_dir(root: Path) -> Path:
+    result = run(["git", "rev-parse", "--git-dir"], root, capture=True)
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr or "git rev-parse --git-dir failed")
+    path = Path(result.stdout.strip())
+    if not path.is_absolute():
+        path = root / path
+    return path
+
+
+def interrupted_git_operation(root: Path) -> str | None:
+    git_path = git_dir(root)
+    for marker in INTERRUPTED_GIT_MARKERS:
+        if (git_path / marker).exists():
+            return marker
+    for directory in ["rebase-merge", "rebase-apply"]:
+        if (git_path / directory).exists():
+            return directory
+    return None
 
 
 def status_files(root: Path) -> list[str]:
@@ -168,8 +196,12 @@ def validate(root: Path) -> int:
     return subprocess.run([sys.executable, ".aletheia/bin/validate.py"], cwd=root, text=True).returncode
 
 
+def state_pathspecs(root: Path) -> list[str]:
+    return [pattern for pattern in STATE_PATTERNS if (root / pattern.rstrip("/")).exists()]
+
+
 def stage_state_paths(root: Path) -> int:
-    existing = [pattern for pattern in STATE_PATTERNS if (root / pattern.rstrip("/")).exists()]
+    existing = state_pathspecs(root)
     if not existing:
         print("checkpoint blocked: no AletheiaOS state paths exist")
         return 1
@@ -193,6 +225,11 @@ def main() -> int:
     root = repo_root()
     try:
         ensure_git(root)
+        interrupted = interrupted_git_operation(root)
+        if interrupted:
+            print(f"checkpoint blocked: git operation in progress ({interrupted})")
+            print("finish or abort the current merge/rebase/cherry-pick before checkpointing")
+            return 6
         files = status_files(root)
     except RuntimeError as exc:
         print(f"checkpoint blocked: {exc}")
@@ -271,7 +308,10 @@ def main() -> int:
         if rc != 0:
             return rc
 
-    commit = run(["git", "commit", "-m", message + attribution_trailers(run_data)], root, capture=True)
+    commit_cmd = ["git", "commit", "-m", message + attribution_trailers(run_data)]
+    if not args.include_worktree:
+        commit_cmd.extend(["--", *state_pathspecs(root)])
+    commit = run(commit_cmd, root, capture=True)
     print(commit.stdout, end="")
     if commit.returncode != 0:
         print(commit.stderr, end="")

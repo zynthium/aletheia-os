@@ -1648,6 +1648,50 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertNotEqual(rejected.returncode, 0, output)
             self.assertIn("active state references unknown graph or skeleton nodes: missing_branch", output)
 
+    def test_validate_rejects_active_node_that_points_to_archived_skeleton_branch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            skeleton = target / ".aletheia" / "state" / "SKELETON.yaml"
+            skeleton.write_text(
+                skeleton.read_text(encoding="utf-8")
+                + "\n"
+                "  obsolete_branch:\n"
+                "    layer: leaf\n"
+                "    status: archived\n"
+                "    parent: engineering_execution\n"
+                "    children: []\n"
+                "    purpose: \"Retired execution branch.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs: []\n"
+                "    evidence_refs: []\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.1\n"
+                "    last_reviewed: 2026-05-08\n",
+                encoding="utf-8",
+            )
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(
+                active_state.read_text(encoding="utf-8").replace("- `root`", "- `obsolete_branch`"),
+                encoding="utf-8",
+            )
+
+            result = validate_target(target)
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn("active state references archived skeleton node: obsolete_branch", output)
+
     def test_validate_rejects_skeleton_parent_child_link_drift(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

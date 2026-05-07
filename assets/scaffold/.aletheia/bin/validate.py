@@ -668,6 +668,13 @@ def validate_graph_and_skeleton(root: Path, errors: list[str], warnings: list[st
         missing = sorted(node for node in active_nodes if node not in valid_active_nodes)
         if missing:
             errors.append("active state references unknown graph or skeleton nodes: " + ", ".join(missing))
+        archived = sorted(
+            node
+            for node in active_nodes
+            if node in skeleton_nodes and skeleton_nodes[node].get("status") == "archived"
+        )
+        if archived:
+            errors.append("active state references archived skeleton node: " + ", ".join(archived))
     if "TBD" in graph_text:
         (warnings if bootstrap_mode else errors).append("system graph still contains TBD markers")
     for ref in extract_skeleton_refs(skeleton_text):

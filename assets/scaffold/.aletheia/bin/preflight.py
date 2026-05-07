@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import fnmatch
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -122,6 +123,35 @@ def validation(root: Path) -> dict:
     }
 
 
+def section(text: str, name: str) -> str:
+    match = re.search(rf"(?ms)^## {re.escape(name)}\n(.*?)(?=^## |\Z)", text)
+    return match.group(1).strip() if match else ""
+
+
+def active_nodes(active_text: str) -> list[str]:
+    nodes: list[str] = []
+    for value in re.findall(r"`([A-Za-z0-9_.-]+)`", section(active_text, "Active nodes")):
+        if value not in nodes:
+            nodes.append(value)
+    return nodes or ["root"]
+
+
+def current_phase(active_text: str) -> str:
+    match = re.search(r"(?im)^\s*-\s*Current phase:\s*(.+?)\s*$", active_text)
+    return match.group(1).strip() if match else "unknown"
+
+
+def context_state(root: Path) -> dict:
+    path = root / ".aletheia" / "state" / "ACTIVE_STATE.md"
+    text = path.read_text(encoding="utf-8") if path.exists() else ""
+    return {
+        "active_state_path": ".aletheia/state/ACTIVE_STATE.md",
+        "current_phase": current_phase(text),
+        "active_nodes": active_nodes(text),
+        "active_frontier": section(text, "Active frontier") or "unknown",
+    }
+
+
 def runtime_gate(root: Path) -> dict | None:
     path = root / ".aletheia" / "runtime" / "current_agent_run.json"
     if not path.exists():
@@ -140,6 +170,7 @@ def build_preflight(root: Path) -> dict:
     return {
         "repo": str(root),
         "host_note": "Use this on hosts without automatic hook enforcement, including Codex.",
+        "context": context_state(root),
         "runtime_gate": runtime_gate(root),
         "validation": validation(root),
         "git": status,
@@ -148,6 +179,11 @@ def build_preflight(root: Path) -> dict:
             "candidate_files": candidate_files,
             "excluded_patterns": policy["checkpoint_excluded_patterns"],
         },
+        "next_actions": [
+            "python3 .aletheia/bin/orient.py --with-runtime",
+            "python3 .aletheia/bin/validate.py",
+            "python3 .aletheia/bin/checkpoint.py --dry-run",
+        ],
     }
 
 
@@ -155,6 +191,12 @@ def print_markdown(payload: dict) -> None:
     print("# AletheiaOS Preflight")
     print()
     print("Use this on hosts without automatic hook enforcement, including Codex.")
+    print()
+    print("## Context")
+    print()
+    context = payload["context"]
+    print(f"- current_phase: {context['current_phase']}")
+    print(f"- active_nodes: {', '.join(context['active_nodes'])}")
     print()
     print("## Runtime Gate")
     print()
@@ -181,6 +223,11 @@ def print_markdown(payload: dict) -> None:
     print(f"- has_candidate: {checkpoint['has_candidate']}")
     for path in checkpoint["candidate_files"]:
         print(f"- {path}")
+    print()
+    print("## Next Actions")
+    print()
+    for command in payload["next_actions"]:
+        print(f"- `{command}`")
     print()
 
 

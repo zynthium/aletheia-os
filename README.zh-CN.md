@@ -390,8 +390,10 @@ python3 .aletheia/bin/model_gate.py --registry deny <model_id> --reason "<reason
 python3 .aletheia/bin/source_inventory.py
 python3 .aletheia/bin/guided_bootstrap.py --objective "<objective>"
 python3 .aletheia/bin/overview.py
+python3 .aletheia/bin/overview.py --watch
 python3 .aletheia/bin/overview.py --public-docs
 python3 .aletheia/bin/validate.py
+python3 .aletheia/bin/checkpoint.py --dry-run
 python3 .aletheia/bin/checkpoint.py
 ```
 
@@ -405,9 +407,9 @@ truth_record.py 支持 `--json` 输出，便于 agent 稳定组合 list、create
 
 `checkpoint.py` 默认只提交 AletheiaOS state/control-plane 路径；只有显式传入 `--include-worktree` 时才 stage 整个工作树。
 
-`guided_bootstrap.py` 会验证已经记录的 bootstrap gate，不会自行创建新的模型授权。`source_inventory.py` 默认跳过 `.aletheia/`、`.claude/` 和初始化根部控制文件，只扫描项目自身资料。`context_pack.py` 只引用 source inventory 的聚合摘要，不默认展开高频变化的运行时记录；需要刷新当前状态时运行 `status.py`，不要把动态状态前移到默认 orient/context pack。`runtime_policy.json` 保存只读命令、checkpoint state paths、checkpoint excluded generated/runtime paths 和 protected path patterns，让 hook/checkpoint 规则可审查。新增或改变用户可执行动作时，应同步更新 `.aletheia/CAPABILITY_MAP.md`。
+`guided_bootstrap.py` 会验证已经记录的 bootstrap gate，不会自行创建新的模型授权。`source_inventory.py` 默认跳过 `.aletheia/`、`.claude/` 和初始化根部控制文件，只扫描项目自身资料。`context_pack.py` 只引用 source inventory 的聚合摘要，不默认展开高频变化的运行时记录；需要刷新当前状态时运行 `status.py`，不要把动态状态前移到默认 orient/context pack。`preflight.py` 会在 Codex 等无自动 hook enforcement 宿主中输出 context、runtime gate、validation、checkpoint candidate 和建议下一步。`runtime_policy.json` 保存只读命令、source inventory 规则、checkpoint state paths、checkpoint excluded generated/runtime paths 和 protected path patterns，让 hook/checkpoint 规则可审查。新增或改变用户可执行动作时，应同步更新 `.aletheia/CAPABILITY_MAP.md`。
 
-`overview.py` 和 `source_inventory.py` 默认写入 `.aletheia/` 下的 generated/intermediate 目录，不属于 durable project truth；只有显式使用 `--public-docs` 时才生成 `docs/overview/`。
+`overview.py` 和 `source_inventory.py` 默认写入 `.aletheia/` 下的 generated/intermediate 目录，不属于 durable project truth；`overview.py --watch` 可重复刷新本地 status JSON/HTML，只有显式使用 `--public-docs` 时才生成 `docs/overview/`。
 
 ## 设计原则
 

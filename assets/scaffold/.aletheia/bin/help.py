@@ -69,6 +69,16 @@ CAPABILITIES = [
         [
             "python3 .aletheia/bin/validate.py",
             "python3 .aletheia/bin/checkpoint.py",
+            "python3 .aletheia/bin/checkpoint.py --dry-run",
+        ],
+    ),
+    (
+        "Monitor overview",
+        "Generate a local HTML/JSON overview once or refresh it repeatedly while reviewing state.",
+        [
+            "python3 .aletheia/bin/overview.py",
+            "python3 .aletheia/bin/overview.py --watch",
+            "python3 .aletheia/bin/overview.py --public-docs",
         ],
     ),
     (

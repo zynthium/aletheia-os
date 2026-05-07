@@ -216,6 +216,10 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(payload["validation"]["returncode"], 0)
             self.assertTrue(payload["checkpoint"]["has_candidate"])
             self.assertIn(".aletheia/state/ACTIVE_STATE.md", payload["checkpoint"]["candidate_files"])
+            self.assertIn("context", payload)
+            self.assertEqual(payload["context"]["active_nodes"], ["root"])
+            self.assertIn("python3 .aletheia/bin/orient.py --with-runtime", payload["next_actions"])
+            self.assertIn("python3 .aletheia/bin/checkpoint.py --dry-run", payload["next_actions"])
 
     def test_preflight_markdown_names_codex_no_hooks_use_case(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -475,6 +479,28 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn(".aletheia/nodes/feature.yaml", status["records"]["nodes"])
             self.assertIn(".aletheia/risks/RISK-001.md", status["records"]["risks"])
             self.assertIn(".aletheia/agent_runs/RUN-test.json", status["records"]["agent_runs"])
+
+    def test_overview_can_watch_for_refresh_iterations(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/overview.py", "--watch", "--interval", "0", "--iterations", "2"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertGreaterEqual(output.count("overview written:"), 2)
+            status = json.loads((target / ".aletheia" / "overview" / "status.json").read_text(encoding="utf-8"))
+            self.assertEqual(status["refresh"]["mode"], "watch")
+            self.assertEqual(status["refresh"]["iteration"], 2)
 
     def test_truth_record_script_creates_lists_shows_and_archives_records(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

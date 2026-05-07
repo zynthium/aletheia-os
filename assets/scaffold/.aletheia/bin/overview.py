@@ -5,6 +5,7 @@ import argparse
 import json
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
@@ -104,6 +105,9 @@ def ensure_output_dir(path: Path) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate an AletheiaOS overview.")
     parser.add_argument("--public-docs", action="store_true", help="Write overview to docs/overview instead of .aletheia/overview")
+    parser.add_argument("--watch", action="store_true", help="Refresh overview repeatedly for local UI monitoring")
+    parser.add_argument("--interval", type=float, default=2.0, help="Seconds between watch refreshes")
+    parser.add_argument("--iterations", type=int, default=0, help="Number of watch refreshes; 0 means run until interrupted")
     args = parser.parse_args()
 
     root = repo_root()
@@ -111,25 +115,34 @@ def main() -> int:
     rc = ensure_output_dir(output)
     if rc != 0:
         return rc
-    status = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "repo": str(root),
-        "state_files": [file_state(root, rel) for rel in STATE_FILES],
-        "validation": validation_state(root),
-        "records": {
-            "decisions": list_records(root, ".aletheia/decisions"),
-            "evidence": list_records(root, ".aletheia/evidence"),
-            "contracts": list_records(root, ".aletheia/contracts"),
-            "hypotheses": list_records(root, ".aletheia/hypotheses"),
-            "nodes": list_records(root, ".aletheia/nodes"),
-            "risks": list_records(root, ".aletheia/risks"),
-            "agent_runs": list_records(root, ".aletheia/agent_runs"),
-        },
-    }
-    (output / "status.json").write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")
-    write_index(output / "index.html", status)
-    print(f"overview written: {output}")
-    return 0
+    iteration = 0
+    while True:
+        iteration += 1
+        status = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "repo": str(root),
+            "refresh": {
+                "mode": "watch" if args.watch else "single",
+                "iteration": iteration,
+            },
+            "state_files": [file_state(root, rel) for rel in STATE_FILES],
+            "validation": validation_state(root),
+            "records": {
+                "decisions": list_records(root, ".aletheia/decisions"),
+                "evidence": list_records(root, ".aletheia/evidence"),
+                "contracts": list_records(root, ".aletheia/contracts"),
+                "hypotheses": list_records(root, ".aletheia/hypotheses"),
+                "nodes": list_records(root, ".aletheia/nodes"),
+                "risks": list_records(root, ".aletheia/risks"),
+                "agent_runs": list_records(root, ".aletheia/agent_runs"),
+            },
+        }
+        (output / "status.json").write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")
+        write_index(output / "index.html", status)
+        print(f"overview written: {output}")
+        if not args.watch or (args.iterations and iteration >= args.iterations):
+            return 0
+        time.sleep(max(args.interval, 0))
 
 
 if __name__ == "__main__":

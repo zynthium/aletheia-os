@@ -7,11 +7,12 @@ This note classifies AletheiaOS runtime behavior so future changes keep scripts 
 These scripts should stay small and capability-oriented:
 
 - `truth_record.py`: create, list, show, update, and archive truth records.
+- `capability_audit.py`: check that the capability map covers runtime scripts, skills, review agents, and CRUD commands.
 - `orient.py`: read stable project truth and print an orientation pack.
 - `context_pack.py`: read stable truth, source summaries, and record inventory.
 - `status.py`: refresh validation, active state, record counts, and runtime gate state.
-- `preflight.py`: read hook-free model gate, validation, git status, and checkpoint candidate state.
-- `model_gate.py`: evaluate model registry policy and record attribution.
+- `preflight.py`: read hook-free context, model gate, validation, git status, checkpoint candidate state, and next actions.
+- `model_gate.py`: evaluate model registry policy, manage model registry entries, and record attribution.
 - `validate.py`: check scaffold, graph, registry, runtime policy, refs, and truth record semantics.
 
 ## Workflow-coded scripts
@@ -21,8 +22,8 @@ These scripts intentionally contain more orchestration and should be reviewed be
 - `guided_bootstrap.py`: prepares a first-run truth inventory report and enforces bootstrap gate prerequisites.
 - `bootstrap_finalize.py`: validates bootstrap readiness, installs Git hooks, writes a session note, and optionally checkpoints.
 - `checkpoint.py`: validates state, screens paths, stages durable state files, and writes attributed commits.
-- `source_inventory.py`: classifies source material heuristically before truth synthesis.
-- `overview.py`: generates status JSON and HTML for human review.
+- `source_inventory.py`: classifies source material before truth synthesis using declarative runtime policy rules.
+- `overview.py`: generates and optionally refreshes status JSON and HTML for human review.
 
 ## Keep in Python
 
@@ -31,6 +32,7 @@ Keep behavior in Python when it must be deterministic, locally verifiable, or ha
 - path containment and traversal checks;
 - Git status, staging, commit, and hook installation mechanics;
 - protected path and generated/runtime exclusion handling;
+- source inventory ignore, sensitive, size, keyword, and suffix rules declared in `runtime_policy.json`;
 - JSON parsing, schema presence checks, and validation exit codes;
 - stable machine-readable output.
 

@@ -33,6 +33,16 @@ CAPABILITIES = [
         ["python3 .aletheia/bin/status.py", "python3 .aletheia/bin/status.py --json"],
     ),
     (
+        "Manage model registry",
+        "List, register, enable, disable, deny, and undeny models used by model gate decisions.",
+        [
+            "python3 .aletheia/bin/model_gate.py --registry list",
+            "python3 .aletheia/bin/model_gate.py --registry register <name> --provider <provider> --model-id <model_id> --tier C3",
+            "python3 .aletheia/bin/model_gate.py --registry disable <name>",
+            "python3 .aletheia/bin/model_gate.py --registry deny <model_id> --reason \"Reason\"",
+        ],
+    ),
+    (
         "Create truth records",
         "Create, read, and archive evidence, decisions, contracts, hypotheses, risks, nodes, session notes, and agent runs.",
         [

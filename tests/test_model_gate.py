@@ -461,6 +461,162 @@ class ModelGateTests(unittest.TestCase):
             self.assertIn("permissionDecision", output)
             self.assertIn("unknown task class: unknown_task", output)
 
+    def test_model_registry_cli_registers_lists_shows_toggles_and_denies_models(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+
+            register = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--registry",
+                    "register",
+                    "openai/codex-test",
+                    "--provider",
+                    "openai",
+                    "--model-id",
+                    "codex-test",
+                    "--tier",
+                    "C3",
+                    "--alias",
+                    "codex-latest",
+                    "--notes",
+                    "Primary agent model",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(register.returncode, 0, register.stdout + register.stderr)
+            registered = json.loads(register.stdout)
+            self.assertEqual(registered["registered_models"]["openai/codex-test"]["tier"], "C3")
+            self.assertEqual(registered["registered_models"]["openai/codex-test"]["provider"], "openai")
+            self.assertIn("codex-latest", registered["registered_models"]["openai/codex-test"]["aliases"])
+
+            gate = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "research_design",
+                    "--provider",
+                    "openai",
+                    "--model-id",
+                    "codex-latest",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+            self.assertEqual(json.loads(gate.stdout)["registry_status"], "registered:openai/codex-test")
+
+            show = subprocess.run(
+                [sys.executable, ".aletheia/bin/model_gate.py", "--registry", "show", "openai/codex-test", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(show.returncode, 0, show.stdout + show.stderr)
+            self.assertEqual(json.loads(show.stdout)["tier"], "C3")
+
+            listing = subprocess.run(
+                [sys.executable, ".aletheia/bin/model_gate.py", "--registry", "list"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(listing.returncode, 0, listing.stdout + listing.stderr)
+            self.assertIn("openai/codex-test", listing.stdout)
+            self.assertIn("C3", listing.stdout)
+
+            disable = subprocess.run(
+                [sys.executable, ".aletheia/bin/model_gate.py", "--registry", "disable", "openai/codex-test", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(disable.returncode, 0, disable.stdout + disable.stderr)
+            self.assertFalse(json.loads(disable.stdout)["registered_models"]["openai/codex-test"]["enabled"])
+
+            disabled_gate = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "research_design",
+                    "--provider",
+                    "openai",
+                    "--model-id",
+                    "codex-latest",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertNotEqual(disabled_gate.returncode, 0, disabled_gate.stdout + disabled_gate.stderr)
+            self.assertEqual(json.loads(disabled_gate.stdout)["registry_status"], "registered_disabled:openai/codex-test")
+
+            enable = subprocess.run(
+                [sys.executable, ".aletheia/bin/model_gate.py", "--registry", "enable", "openai/codex-test", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(enable.returncode, 0, enable.stdout + enable.stderr)
+            self.assertTrue(json.loads(enable.stdout)["registered_models"]["openai/codex-test"]["enabled"])
+
+            deny = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--registry",
+                    "deny",
+                    "blocked-model",
+                    "--reason",
+                    "Known bad fit",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(deny.returncode, 0, deny.stdout + deny.stderr)
+            self.assertIn({"model_id": "blocked-model", "reason": "Known bad fit"}, json.loads(deny.stdout)["denylist"])
+
+            undeny = subprocess.run(
+                [sys.executable, ".aletheia/bin/model_gate.py", "--registry", "undeny", "blocked-model", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(undeny.returncode, 0, undeny.stdout + undeny.stderr)
+            self.assertEqual(json.loads(undeny.stdout)["denylist"], [])
+
     def test_invalid_model_registry_object_falls_back_to_default_policy(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

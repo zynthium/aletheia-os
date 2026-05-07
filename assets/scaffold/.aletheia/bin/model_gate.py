@@ -72,8 +72,12 @@ def write_json(path: Path, data: Any) -> None:
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
 
+def registry_path(root: Path) -> Path:
+    return root / ".aletheia" / "governance" / "model_registry.json"
+
+
 def load_registry(root: Path) -> dict[str, Any]:
-    registry = load_json(root / ".aletheia" / "governance" / "model_registry.json", {})
+    registry = load_json(registry_path(root), {})
     if not isinstance(registry, dict):
         registry = {}
     registry.setdefault("default_policy", DEFAULT_POLICY.copy())
@@ -106,6 +110,13 @@ def registered_entry(registry: dict[str, Any], provider: str, model_id: str) -> 
         if any(alias in candidate_model_keys(provider, model_id) for alias in aliases):
             return key, entry
     return "", None
+
+
+def resolved_registered_entry(registry: dict[str, Any], provider: str, model_id: str) -> tuple[str, dict[str, Any] | None, bool]:
+    key, entry = registered_entry(registry, provider, model_id)
+    if not entry:
+        return "", None, False
+    return key, entry, entry.get("enabled", True) is False
 
 
 def tier_rank(tier: str | None) -> int:
@@ -163,8 +174,10 @@ def resolve_tier(
     requested_tier: str | None,
     operator_approved: bool,
 ) -> tuple[str, str]:
-    key, entry = registered_entry(registry, provider, model_id)
+    key, entry, disabled = resolved_registered_entry(registry, provider, model_id)
     if entry:
+        if disabled:
+            return "unknown", f"registered_disabled:{key}"
         return str(entry.get("tier", "unknown")), f"registered:{key}"
     if operator_approved and requested_tier:
         return requested_tier, "operator_approved"
@@ -196,6 +209,9 @@ def evaluate_gate(args: argparse.Namespace, payload: dict[str, Any] | None = Non
     allowed = tier_rank(actual_tier) >= tier_rank(required) and not denied
     if denied:
         reason = "model is denied or unknown"
+    elif registry_status.startswith("registered_disabled:"):
+        reason = "registered model is disabled"
+        allowed = False
     elif registry_status == "self_attested_rejected":
         reason = "self-attested tier requires operator approval or registry entry"
         allowed = False
@@ -377,8 +393,121 @@ def cli_gate(args: argparse.Namespace) -> int:
     return 0 if gate["gate_status"] == "allowed" else 1
 
 
+def normalize_aliases(values: list[str] | None) -> list[str]:
+    aliases: list[str] = []
+    for value in values or []:
+        if value and value not in aliases:
+            aliases.append(value)
+    return aliases
+
+
+def registry_emit(data: Any, as_json: bool) -> None:
+    if as_json:
+        print(json.dumps(data, indent=2))
+        return
+    if isinstance(data, dict) and "registered_models" in data:
+        models = data.get("registered_models", {}) or {}
+        if not models:
+            print("No registered models.")
+            return
+        for key, entry in sorted(models.items()):
+            if not isinstance(entry, dict):
+                continue
+            enabled = entry.get("enabled", True)
+            print(f"- {key}: tier={entry.get('tier', 'unknown')} enabled={enabled}")
+        return
+    print(json.dumps(data, indent=2))
+
+
+def save_registry(root: Path, registry: dict[str, Any]) -> dict[str, Any]:
+    write_json(registry_path(root), registry)
+    return registry
+
+
+def registry_command(args: argparse.Namespace) -> int:
+    root = repo_root()
+    registry = load_registry(root)
+    models = registry.setdefault("registered_models", {})
+    denylist = registry.setdefault("denylist", [])
+    command = args.registry
+
+    if command == "list":
+        registry_emit(registry, args.json)
+        return 0
+
+    if command == "show":
+        entry = models.get(args.name)
+        if not isinstance(entry, dict):
+            print(f"model registry entry not found: {args.name}", file=sys.stderr)
+            return 1
+        registry_emit(entry, args.json)
+        return 0
+
+    if command == "register":
+        if args.tier not in TIER_RANK:
+            print(f"unknown capability tier: {args.tier}", file=sys.stderr)
+            return 1
+        entry = dict(models.get(args.name) or {})
+        entry.update(
+            {
+                "tier": args.tier,
+                "provider": args.provider,
+                "model_id": args.model_id,
+                "enabled": True,
+            }
+        )
+        aliases = normalize_aliases([*entry.get("aliases", []), *(args.alias or [])])
+        if aliases:
+            entry["aliases"] = aliases
+        if args.notes:
+            entry["notes"] = args.notes
+        models[args.name] = entry
+        registry_emit(save_registry(root, registry), args.json)
+        return 0
+
+    if command in {"enable", "disable"}:
+        entry = models.get(args.name)
+        if not isinstance(entry, dict):
+            print(f"model registry entry not found: {args.name}", file=sys.stderr)
+            return 1
+        entry["enabled"] = command == "enable"
+        registry_emit(save_registry(root, registry), args.json)
+        return 0
+
+    if command == "deny":
+        remaining = [
+            item
+            for item in denylist
+            if not (
+                (isinstance(item, str) and item == args.name)
+                or (isinstance(item, dict) and item.get("model_id") == args.name)
+            )
+        ]
+        remaining.append({"model_id": args.name, "reason": args.reason} if args.reason else args.name)
+        registry["denylist"] = remaining
+        registry_emit(save_registry(root, registry), args.json)
+        return 0
+
+    if command == "undeny":
+        registry["denylist"] = [
+            item
+            for item in denylist
+            if not (
+                (isinstance(item, str) and item == args.name)
+                or (isinstance(item, dict) and item.get("model_id") == args.name)
+            )
+        ]
+        registry_emit(save_registry(root, registry), args.json)
+        return 0
+
+    print(f"unknown model registry command: {command}", file=sys.stderr)
+    return 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run the AletheiaOS model gate.")
+    parser.add_argument("--registry", choices=["list", "register", "show", "enable", "disable", "deny", "undeny"])
+    parser.add_argument("name", nargs="?")
     parser.add_argument("--hook-mode", choices=["sessionstart", "pretooluse"], default=None)
     parser.add_argument("--task-class", default=None)
     parser.add_argument("--objective", default=None)
@@ -391,9 +520,18 @@ def main() -> int:
     parser.add_argument("--operator-approved", action="store_true")
     parser.add_argument("--record", action="store_true")
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--alias", action="append")
+    parser.add_argument("--notes")
+    parser.add_argument("--reason")
     args = parser.parse_args()
 
     try:
+        if args.registry:
+            if args.registry != "list" and not args.name:
+                parser.error(f"--registry {args.registry} requires name")
+            if args.registry == "register" and not (args.provider and args.model_id and args.tier):
+                parser.error("--registry register requires --provider, --model-id, and --tier")
+            return registry_command(args)
         if args.hook_mode == "sessionstart":
             return session_start(args)
         if args.hook_mode == "pretooluse":

@@ -378,6 +378,10 @@ python3 .aletheia/bin/truth_record.py show evidence EV-0001
 python3 .aletheia/bin/truth_record.py archive evidence EV-0001 --reason "Superseded by stronger evidence"
 python3 .aletheia/bin/model_gate.py --task-class <task_class> --provider <provider> --model-id <model_id> --record --objective "<objective>"
 python3 .aletheia/bin/model_gate.py --task-class bootstrap_finalize --provider <provider> --model-id <model_id> --tier C3 --operator-approved --record --objective "Initialize AletheiaOS"
+python3 .aletheia/bin/model_gate.py --registry list
+python3 .aletheia/bin/model_gate.py --registry register <name> --provider <provider> --model-id <model_id> --tier C3
+python3 .aletheia/bin/model_gate.py --registry disable <name>
+python3 .aletheia/bin/model_gate.py --registry deny <model_id> --reason "<reason>"
 python3 .aletheia/bin/source_inventory.py
 python3 .aletheia/bin/guided_bootstrap.py --objective "<objective>"
 python3 .aletheia/bin/overview.py
@@ -386,7 +390,7 @@ python3 .aletheia/bin/validate.py
 python3 .aletheia/bin/checkpoint.py
 ```
 
-首次 bootstrap 可以用 `--operator-approved` 明确授权当前模型完成初始化；项目固定后，应把可信模型登记到 `.aletheia/governance/model_registry.json`，后续 durable writes 由 registry 决定。
+首次 bootstrap 可以用 `--operator-approved` 明确授权当前模型完成初始化；项目固定后，应把可信模型登记到 `.aletheia/governance/model_registry.json`，后续 durable writes 由 registry 决定。可用 `model_gate.py --registry list/register/show/enable/disable/deny/undeny` 显式维护 registry，避免依赖手改 JSON。
 
 `model_gate.py` 是治理、归因和审计边界，不是安全沙箱，也不是不可绕过的权限系统。它用于让 agent 在写入前显式声明 task class、model、tier 和 objective，并留下可审查记录。
 

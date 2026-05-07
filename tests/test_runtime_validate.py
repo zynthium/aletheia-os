@@ -1903,6 +1903,44 @@ class RuntimeValidateTests(unittest.TestCase):
                 output,
             )
 
+    def test_validate_allows_weakened_hypothesis_when_review_note_explains_decision_dependency(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".aletheia" / "evidence" / "EV-0001.md").write_text(
+                "# Evidence: weakens hypothesis\n\n"
+                "## Source refs\n\n- `README.md`\n\n"
+                "## Method\n\nRead source.\n\n"
+                "## Result\n\nPartial contradiction.\n\n"
+                "## Limitations\n\nSingle source.\n\n"
+                "## Invalidation criteria\n\nNew evidence.\n\n"
+                "## Confidence impact\n\nLowers confidence.\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "hypotheses" / "HYP-weakened.md").write_text(
+                "# Hypothesis: weakened support\n\n"
+                "- Lifecycle: weakened\n\n"
+                "## Claim\n\nA partially weakened explanation.\n\n"
+                "## Invalidation criteria\n\nContradiction.\n\n"
+                "## Review Note\n\n"
+                "Decision DEC-0001 keeps this hypothesis as a historical constraint only; it no longer serves as primary support.\n",
+                encoding="utf-8",
+            )
+            (target / ".aletheia" / "decisions" / "DEC-0001.md").write_text(
+                "# Decision: keeps weakened hypothesis under review\n\n"
+                "Status: accepted\n\n"
+                "## Context\n\nContext.\n\n"
+                "## Decision\n\nChosen path with explicit review boundary.\n\n"
+                "## Evidence links\n\n- `.aletheia/evidence/EV-0001.md`\n\n"
+                "## Hypothesis links\n\n- `.aletheia/hypotheses/HYP-weakened.md`\n",
+                encoding="utf-8",
+            )
+
+            result = validate_target(target)
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_validate_rejects_accepted_decision_without_evidence_links(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

@@ -66,6 +66,7 @@ class PluginManifestTests(unittest.TestCase):
             self.assertTrue((release_root / ".codex-plugin" / "plugin.json").exists())
             self.assertTrue((release_root / ".claude-plugin" / "plugin.json").exists())
             self.assertTrue((release_root / "skills" / "aletheia-promote" / "SKILL.md").exists())
+            self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "playbooks" / "drift_audit.md").exists())
             self.assertFalse((release_root / "docs" / "superpowers").exists())
             self.assertFalse(any(release_root.rglob("__pycache__")))
             self.assertFalse(any(release_root.rglob("*.pyc")))

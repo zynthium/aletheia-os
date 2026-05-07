@@ -29,6 +29,7 @@ REQUIRED_PATHS = [
     ".aletheia/contracts/INDEX.md",
     ".aletheia/evidence/INDEX.md",
     ".aletheia/nodes/ROOT.yaml",
+    ".aletheia/playbooks/drift_audit.md",
     ".aletheia/playbooks/external_llm_wiki_handoff.md",
     ".aletheia/playbooks/wiki_handoff_promotion.md",
     ".aletheia/bin/orient.py",

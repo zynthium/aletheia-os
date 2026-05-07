@@ -34,6 +34,7 @@ REQUIRED_PATHS = [
     ".aletheia/nodes/ROOT.yaml",
     ".aletheia/playbooks/external_llm_wiki_handoff.md",
     ".aletheia/playbooks/guided_bootstrap.md",
+    ".aletheia/playbooks/drift_audit.md",
     ".aletheia/playbooks/wiki_handoff_promotion.md",
     ".aletheia/bin/orient.py",
     ".aletheia/bin/context_pack.py",

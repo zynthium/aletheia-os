@@ -50,6 +50,7 @@ REQUIRED = [
     "assets/scaffold/.aletheia/nodes/ROOT.yaml",
     "assets/scaffold/.aletheia/playbooks/external_llm_wiki_handoff.md",
     "assets/scaffold/.aletheia/playbooks/guided_bootstrap.md",
+    "assets/scaffold/.aletheia/playbooks/drift_audit.md",
     "assets/scaffold/.aletheia/playbooks/wiki_handoff_promotion.md",
     "assets/scaffold/.aletheia/bin/orient.py",
     "assets/scaffold/.aletheia/bin/context_pack.py",

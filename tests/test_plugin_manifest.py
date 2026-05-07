@@ -209,13 +209,30 @@ class PluginManifestTests(unittest.TestCase):
         self.assertIsInstance(actions.get("actions"), list)
         action_ids = {action["id"] for action in actions["actions"]}
         for required_id in [
+            "capability.help",
             "truth.orient",
             "truth.validate",
             "truth.preflight",
             "truth.checkpoint.dry_run",
             "capability.audit",
             "truth.record.list",
+            "truth.record.show",
+            "truth.record.create",
+            "truth.record.update",
+            "truth.record.archive",
+            "truth.source_inventory",
+            "truth.bootstrap.guided",
+            "truth.bootstrap.finalize",
+            "truth.overview",
             "model.registry.list",
+            "model.registry.register",
+            "model.registry.show",
+            "model.registry.enable",
+            "model.registry.disable",
+            "model.registry.deprecate",
+            "model.registry.remove",
+            "model.registry.deny",
+            "model.registry.undeny",
         ]:
             self.assertIn(required_id, action_ids)
 

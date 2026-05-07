@@ -7,6 +7,16 @@
   ],
   "actions": [
     {
+      "id": "capability.help",
+      "title": "Show capability guide",
+      "intent": "Print the human-readable AletheiaOS capability guide.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/help.py"],
+      "inputs": {},
+      "outputs": {"format": "markdown"},
+      "verification": {"returncode": 0}
+    },
+    {
       "id": "truth.orient",
       "title": "Orient on project truth",
       "intent": "Read stable AletheiaOS truth files and active node records.",
@@ -111,18 +121,56 @@
       "title": "Create truth record",
       "intent": "Create a template-backed truth record.",
       "risk": "writes-state",
-      "command": ["python3", ".aletheia/bin/truth_record.py", "create"],
-      "inputs": {"entity": "Required when running manually.", "id": "Required.", "title": "Required."},
+      "command": [
+        "python3",
+        ".aletheia/bin/truth_record.py",
+        "create",
+        "{{entity}}",
+        "--id",
+        "{{id}}",
+        "--title",
+        "{{title}}"
+      ],
+      "inputs": {
+        "entity": "Truth entity, for example evidence or decisions.",
+        "id": "Record id.",
+        "title": "Record title."
+      },
       "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.record.show",
+      "title": "Show truth record",
+      "intent": "Read one truth record or fixed truth file.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/truth_record.py", "show", "{{entity}}", "{{id}}", "--json"],
+      "inputs": {
+        "entity": "Truth entity, for example evidence, decisions, or capability-map.",
+        "id": "Record id, or current for fixed truth files."
+      },
+      "outputs": {"format": "json"},
       "verification": {"returncode": 0}
     },
     {
       "id": "truth.record.update",
       "title": "Update truth record",
-      "intent": "Update title, status, or a markdown section for an existing truth record.",
+      "intent": "Update the status for an existing truth record.",
       "risk": "writes-state",
-      "command": ["python3", ".aletheia/bin/truth_record.py", "update"],
-      "inputs": {"entity": "Required when running manually.", "id": "Required."},
+      "command": [
+        "python3",
+        ".aletheia/bin/truth_record.py",
+        "update",
+        "{{entity}}",
+        "{{id}}",
+        "--status",
+        "{{status}}"
+      ],
+      "inputs": {
+        "entity": "Truth entity, for example evidence or decisions.",
+        "id": "Record id, or current for fixed truth files.",
+        "status": "New status value."
+      },
       "outputs": {"format": "text"},
       "verification": {"returncode": 0}
     },
@@ -131,8 +179,70 @@
       "title": "Archive truth record",
       "intent": "Archive a truth record or fixed truth file with a reason.",
       "risk": "admin",
-      "command": ["python3", ".aletheia/bin/truth_record.py", "archive"],
-      "inputs": {"entity": "Required when running manually.", "id": "Required.", "reason": "Required."},
+      "command": [
+        "python3",
+        ".aletheia/bin/truth_record.py",
+        "archive",
+        "{{entity}}",
+        "{{id}}",
+        "--reason",
+        "{{reason}}"
+      ],
+      "inputs": {
+        "entity": "Truth entity, for example evidence or decisions.",
+        "id": "Record id, or current for fixed truth files.",
+        "reason": "Archive reason."
+      },
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.source_inventory",
+      "title": "Inventory project sources",
+      "intent": "Classify project source material into a generated inventory.",
+      "risk": "writes-state",
+      "command": ["python3", ".aletheia/bin/source_inventory.py"],
+      "inputs": {},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.bootstrap.guided",
+      "title": "Prepare guided bootstrap report",
+      "intent": "Generate a bootstrap truth inventory report from source inventory.",
+      "risk": "writes-state",
+      "command": ["python3", ".aletheia/bin/guided_bootstrap.py", "--objective", "{{objective}}"],
+      "inputs": {"objective": "Bootstrap objective."},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.bootstrap.finalize",
+      "title": "Finalize bootstrap",
+      "intent": "Validate, install hooks, write bootstrap session state, and checkpoint unless skipped.",
+      "risk": "checkpoint",
+      "command": ["python3", ".aletheia/bin/bootstrap_finalize.py"],
+      "inputs": {},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.overview",
+      "title": "Generate overview",
+      "intent": "Write local AletheiaOS overview JSON and HTML.",
+      "risk": "writes-state",
+      "command": ["python3", ".aletheia/bin/overview.py"],
+      "inputs": {},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.overview.public_docs",
+      "title": "Export public overview",
+      "intent": "Write overview JSON and HTML under docs/overview.",
+      "risk": "writes-state",
+      "command": ["python3", ".aletheia/bin/overview.py", "--public-docs"],
+      "inputs": {},
       "outputs": {"format": "text"},
       "verification": {"returncode": 0}
     },
@@ -147,12 +257,99 @@
       "verification": {"returncode": 0}
     },
     {
+      "id": "model.registry.register",
+      "title": "Register model",
+      "intent": "Register a model for model-gate decisions.",
+      "risk": "admin",
+      "command": [
+        "python3",
+        ".aletheia/bin/model_gate.py",
+        "--registry",
+        "register",
+        "{{name}}",
+        "--provider",
+        "{{provider}}",
+        "--model-id",
+        "{{model_id}}",
+        "--tier",
+        "{{tier}}"
+      ],
+      "inputs": {
+        "name": "Registry entry name.",
+        "provider": "Model provider.",
+        "model_id": "Provider model id.",
+        "tier": "Capability tier, for example C3."
+      },
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "model.registry.show",
+      "title": "Show model registry entry",
+      "intent": "Read one registered model entry.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/model_gate.py", "--registry", "show", "{{name}}", "--json"],
+      "inputs": {"name": "Registry entry name."},
+      "outputs": {"format": "json"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "model.registry.enable",
+      "title": "Enable model registry entry",
+      "intent": "Mark a model registry entry enabled.",
+      "risk": "admin",
+      "command": ["python3", ".aletheia/bin/model_gate.py", "--registry", "enable", "{{name}}"],
+      "inputs": {"name": "Registry entry name."},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "model.registry.disable",
+      "title": "Disable model registry entry",
+      "intent": "Mark a model registry entry disabled.",
+      "risk": "admin",
+      "command": ["python3", ".aletheia/bin/model_gate.py", "--registry", "disable", "{{name}}"],
+      "inputs": {"name": "Registry entry name."},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
       "id": "model.registry.deprecate",
       "title": "Deprecate model registry entry",
       "intent": "Mark a model registry entry deprecated with an explicit reason.",
       "risk": "admin",
-      "command": ["python3", ".aletheia/bin/model_gate.py", "--registry", "deprecate"],
-      "inputs": {"name": "Required when running manually.", "reason": "Required."},
+      "command": ["python3", ".aletheia/bin/model_gate.py", "--registry", "deprecate", "{{name}}", "--reason", "{{reason}}"],
+      "inputs": {"name": "Registry entry name.", "reason": "Deprecation reason."},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "model.registry.remove",
+      "title": "Remove model registry entry",
+      "intent": "Remove a model registry entry.",
+      "risk": "admin",
+      "command": ["python3", ".aletheia/bin/model_gate.py", "--registry", "remove", "{{name}}"],
+      "inputs": {"name": "Registry entry name."},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "model.registry.deny",
+      "title": "Deny model id",
+      "intent": "Add a model id to the model-gate denylist.",
+      "risk": "admin",
+      "command": ["python3", ".aletheia/bin/model_gate.py", "--registry", "deny", "{{model_id}}", "--reason", "{{reason}}"],
+      "inputs": {"model_id": "Provider model id to deny.", "reason": "Deny reason."},
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "model.registry.undeny",
+      "title": "Remove model id from denylist",
+      "intent": "Remove a model id from the model-gate denylist.",
+      "risk": "admin",
+      "command": ["python3", ".aletheia/bin/model_gate.py", "--registry", "undeny", "{{model_id}}"],
+      "inputs": {"model_id": "Provider model id to remove from denylist."},
       "outputs": {"format": "text"},
       "verification": {"returncode": 0}
     }

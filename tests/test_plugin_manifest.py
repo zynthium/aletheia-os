@@ -94,6 +94,21 @@ class PluginManifestTests(unittest.TestCase):
             )
             self.assertTrue((release_root / "docs" / "verification" / "host-smoke.zh-CN.md").exists())
 
+    def test_host_smoke_checklist_requires_versions_commands_expected_results_and_failures(self) -> None:
+        checklist = (ROOT / "docs" / "verification" / "host-smoke.zh-CN.md").read_text(encoding="utf-8")
+
+        for required in [
+            "版本记录",
+            "claude --version",
+            "codex --version",
+            "执行命令",
+            "期望结果",
+            "实际结果",
+            "失败记录",
+            "不要把挂起结果标记为通过",
+        ]:
+            self.assertIn(required, checklist)
+
     def test_package_output_replaces_stale_release_directory(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             release_root = Path(tmp) / "aletheia-os"

@@ -489,6 +489,167 @@ class BootstrapFinalizeTests(unittest.TestCase):
             self.assertIn(".aletheia/governance/CHARTER.md", committed.stdout)
             self.assertNotIn("utility.py", committed.stdout)
 
+    def test_complex_existing_project_bootstrap_preserves_project_surface(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=False)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=target, check=False)
+            (target / ".claude").mkdir()
+            (target / ".claude" / "settings.json").write_text(
+                json.dumps(
+                    {
+                        "hooks": {
+                            "Stop": [
+                                {
+                                    "hooks": [
+                                        {
+                                            "type": "command",
+                                            "command": "python3 scripts/existing_stop.py",
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            for rel, content in {
+                "packages/api/src/app.py": "def api():\n    return 'api'\n",
+                "packages/web/src/app.ts": "export const app = 'web';\n",
+                "docs/architecture.md": "# Architecture\n\nExisting architecture notes.\n",
+                "experiments/factor-study.md": "# Factor Study\n\nExisting research note.\n",
+                "node_modules/pkg/index.js": "generated dependency\n",
+                "third_party/tool/.git/config": "[core]\n\trepositoryformatversion = 0\n",
+                "third_party/tool/README.md": "# Nested tool\n",
+            }.items():
+                path = target / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content, encoding="utf-8")
+            protected_files = {
+                rel: (target / rel).read_text(encoding="utf-8")
+                for rel in [
+                    ".claude/settings.json",
+                    "packages/api/src/app.py",
+                    "packages/web/src/app.ts",
+                    "docs/architecture.md",
+                    "experiments/factor-study.md",
+                    "node_modules/pkg/index.js",
+                    "third_party/tool/README.md",
+                ]
+            }
+            subprocess.run(
+                [
+                    "git",
+                    "add",
+                    ".claude/settings.json",
+                    "packages/api/src/app.py",
+                    "packages/web/src/app.ts",
+                    "docs/architecture.md",
+                    "experiments/factor-study.md",
+                ],
+                cwd=target,
+                check=False,
+            )
+            initial = subprocess.run(
+                ["git", "commit", "-m", "initial complex project"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(initial.returncode, 0, initial.stdout + initial.stderr)
+
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stdout + init.stderr)
+            gate = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "bootstrap_finalize",
+                    "--provider",
+                    "openai",
+                    "--model-id",
+                    "codex-complex-e2e",
+                    "--tier",
+                    "C3",
+                    "--operator-approved",
+                    "--record",
+                    "--objective",
+                    "Initialize AletheiaOS",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+            inventory = subprocess.run(
+                [sys.executable, ".aletheia/bin/source_inventory.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(inventory.returncode, 0, inventory.stdout + inventory.stderr)
+            inventory_json = json.loads(
+                (target / ".aletheia" / "source_inventory" / "inventory.json").read_text(encoding="utf-8")
+            )
+            inventory_paths = {item["path"] for item in inventory_json["items"]}
+            self.assertIn("packages/api/src/app.py", inventory_paths)
+            self.assertIn("packages/web/src/app.ts", inventory_paths)
+            self.assertIn("docs/architecture.md", inventory_paths)
+            self.assertIn("experiments/factor-study.md", inventory_paths)
+            self.assertNotIn("node_modules/pkg/index.js", inventory_paths)
+            self.assertNotIn("third_party/tool/README.md", inventory_paths)
+            customize_minimal_project_truth(target)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/bootstrap_finalize.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            for rel, content in protected_files.items():
+                if rel == ".claude/settings.json":
+                    settings = json.loads((target / rel).read_text(encoding="utf-8"))
+                    commands = [
+                        hook.get("command")
+                        for entry in settings["hooks"].get("Stop", [])
+                        for hook in entry.get("hooks", [])
+                    ]
+                    self.assertIn("python3 scripts/existing_stop.py", commands)
+                    self.assertIn("python3 .aletheia/bin/stop_hook.py", commands)
+                else:
+                    self.assertEqual((target / rel).read_text(encoding="utf-8"), content)
+            committed = subprocess.run(
+                ["git", "show", "--name-only", "--format=", "HEAD"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            committed_paths = set(committed.stdout.splitlines())
+            self.assertIn(".aletheia/governance/CHARTER.md", committed_paths)
+            self.assertIn(".claude/settings.json", committed_paths)
+            self.assertNotIn("packages/api/src/app.py", committed_paths)
+            self.assertNotIn("packages/web/src/app.ts", committed_paths)
+            self.assertNotIn("docs/architecture.md", committed_paths)
+
     def test_bootstrap_finalize_keep_bootstrap_no_checkpoint_installs_hooks_without_commit(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
@@ -556,6 +717,69 @@ class BootstrapFinalizeTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(log.stdout.strip(), "")
+
+    def test_bootstrap_finalize_reports_existing_hooks_path_takeover(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=False)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=target, check=False)
+            custom_hooks = target / ".githooks"
+            custom_hooks.mkdir()
+            (custom_hooks / "pre-commit").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            subprocess.run(["git", "config", "core.hooksPath", ".githooks"], cwd=target, check=False)
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            gate = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "bootstrap_finalize",
+                    "--provider",
+                    "openai",
+                    "--model-id",
+                    "codex-e2e",
+                    "--tier",
+                    "C3",
+                    "--operator-approved",
+                    "--record",
+                    "--objective",
+                    "Initialize AletheiaOS",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+            customize_minimal_project_truth(target)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/bootstrap_finalize.py", "--keep-bootstrap", "--no-checkpoint"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("AletheiaOS Git hooks installed at .aletheia/hooks", output)
+            self.assertIn("core.hooksPath changed from .githooks to .aletheia/hooks", output)
+            self.assertEqual((custom_hooks / "pre-commit").read_text(encoding="utf-8"), "#!/bin/sh\nexit 0\n")
+            hooks_path = subprocess.run(
+                ["git", "config", "core.hooksPath"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(hooks_path.stdout.strip(), ".aletheia/hooks")
 
     def test_installed_pre_commit_hook_blocks_invalid_truth_layer_commit(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

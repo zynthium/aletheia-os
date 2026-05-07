@@ -92,12 +92,17 @@ def post_bootstrap_ready(root: Path) -> int:
 
 
 def configure_hooks(root: Path) -> None:
+    existing = run(["git", "config", "--get", "core.hooksPath"], root, capture=True)
+    previous = existing.stdout.strip() if existing.returncode == 0 else ""
     hooks = root / ".aletheia" / "hooks"
     hooks.mkdir(parents=True, exist_ok=True)
     pre_commit = hooks / "pre-commit"
     pre_commit.write_text("#!/bin/sh\npython3 .aletheia/bin/validate.py\n", encoding="utf-8")
     pre_commit.chmod(0o755)
     run(["git", "config", "core.hooksPath", ".aletheia/hooks"], root)
+    print("AletheiaOS Git hooks installed at .aletheia/hooks")
+    if previous and previous != ".aletheia/hooks":
+        print(f"core.hooksPath changed from {previous} to .aletheia/hooks")
 
 
 def ensure_git(root: Path) -> None:

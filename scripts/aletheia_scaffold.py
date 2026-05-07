@@ -16,11 +16,16 @@ def copy_tree_without_overwrite(src: Path, dst: Path) -> list[Path]:
         rel = path.relative_to(src)
         target = dst / rel
         if path.is_dir():
+            if target.exists() and not target.is_dir():
+                raise ValueError(f"cannot create scaffold path because a file already exists: {target}")
             target.mkdir(parents=True, exist_ok=True)
             continue
         if target.exists():
             continue
-        target.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+        except FileExistsError as exc:
+            raise ValueError(f"cannot create scaffold path because a file already exists: {target.parent}") from exc
         shutil.copy2(path, target)
         written.append(target)
     return written

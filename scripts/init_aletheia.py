@@ -18,8 +18,8 @@ def main() -> int:
     if not SCAFFOLD_ROOT.exists():
         parser.error(f"missing scaffold root: {SCAFFOLD_ROOT}")
 
-    written = copy_tree_without_overwrite(SCAFFOLD_ROOT, target)
     try:
+        written = copy_tree_without_overwrite(SCAFFOLD_ROOT, target)
         claude_status = ensure_claude_settings(target)
     except ValueError as exc:
         parser.error(str(exc))

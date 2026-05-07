@@ -88,6 +88,11 @@ def main() -> int:
 
     inventory_dir = root / ".aletheia" / "source_inventory"
     inventory_path = inventory_dir / "inventory.json"
+    if args.skip_inventory and not inventory_path.exists():
+        raise SystemExit(
+            "source inventory missing. Run python3 .aletheia/bin/source_inventory.py "
+            "or omit --skip-inventory."
+        )
     inventory = json.loads(inventory_path.read_text(encoding="utf-8")) if inventory_path.exists() else {"items": []}
     items = inventory.get("items", [])
     mode = infer_mode(items)

@@ -386,5 +386,39 @@ class ModelGateTests(unittest.TestCase):
             self.assertIn("permissionDecision", output)
             self.assertIn("unknown task class: unknown_task", output)
 
+    def test_invalid_model_registry_object_falls_back_to_default_policy(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            registry_path = target / ".aletheia" / "governance" / "model_registry.json"
+            registry_path.write_text("[]\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/model_gate.py",
+                    "--task-class",
+                    "orientation",
+                    "--provider",
+                    "test",
+                    "--model-id",
+                    "test-model",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+            gate = json.loads(result.stdout)
+            self.assertEqual(gate["task_class"], "orientation")
+            self.assertEqual(gate["registry_status"], "unknown")
+            self.assertEqual(gate["gate_status"], "rejected")
+
 if __name__ == "__main__":
     unittest.main()

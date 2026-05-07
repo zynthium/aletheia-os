@@ -174,6 +174,93 @@ class BootstrapFinalizeTests(unittest.TestCase):
             self.assertIn("does not allow bootstrap writes", output)
             self.assertFalse((target / ".aletheia" / "source_inventory" / "TRUTH_INVENTORY_REPORT.md").exists())
 
+    def test_guided_bootstrap_skip_inventory_uses_existing_inventory_without_rescanning(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            inventory_dir = target / ".aletheia" / "source_inventory"
+            inventory_dir.mkdir(parents=True)
+            inventory = {
+                "items": [
+                    {
+                        "path": "docs/design.md",
+                        "kind": "document",
+                        "initial_classification": "useful_but_unverified",
+                    },
+                    {
+                        "path": "experiments/result.md",
+                        "kind": "evidence_experiment_or_simulation",
+                        "initial_classification": "useful_but_unverified",
+                    },
+                    {
+                        "path": "src/a.py",
+                        "kind": "implementation_code",
+                        "initial_classification": "useful_but_unverified",
+                    },
+                    {
+                        "path": "src/b.py",
+                        "kind": "implementation_code",
+                        "initial_classification": "useful_but_unverified",
+                    },
+                    {
+                        "path": "src/c.py",
+                        "kind": "implementation_code",
+                        "initial_classification": "useful_but_unverified",
+                    },
+                ]
+            }
+            (inventory_dir / "inventory.json").write_text(
+                json.dumps(inventory, indent=2) + "\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/guided_bootstrap.py",
+                    "--skip-gate",
+                    "--skip-inventory",
+                    "--objective",
+                    "Use existing inventory",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertNotIn("$ python3 .aletheia/bin/source_inventory.py", output)
+            report = (inventory_dir / "TRUTH_INVENTORY_REPORT.md").read_text(encoding="utf-8")
+            self.assertIn("Objective: Use existing inventory", report)
+            self.assertIn("Total items: 5", report)
+            self.assertIn("Initialization mode: existing repository", report)
+
+    def test_guided_bootstrap_skip_inventory_requires_existing_inventory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/guided_bootstrap.py", "--skip-gate", "--skip-inventory"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn("source inventory missing", output)
+            self.assertIn("source_inventory.py", output)
+
     def test_bootstrap_finalize_blocks_without_allowed_agent_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

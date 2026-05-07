@@ -90,6 +90,26 @@ class PluginManifestTests(unittest.TestCase):
             )
             self.assertTrue((release_root / "docs" / "verification" / "host-smoke.zh-CN.md").exists())
 
+    def test_package_output_replaces_stale_release_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            release_root = Path(tmp) / "aletheia-os"
+            stale = release_root / "stale.txt"
+            stale.parent.mkdir(parents=True)
+            stale.write_text("old package content\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, "scripts/package_plugin.py", "--output", tmp],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertFalse(stale.exists())
+            self.assertTrue((release_root / ".codex-plugin" / "plugin.json").exists())
+
     def test_package_checks_wiki_handoff_promotion_protocol(self) -> None:
         result = subprocess.run(
             [sys.executable, "scripts/package_plugin.py"],

@@ -152,6 +152,20 @@ class GreenfieldInitTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0, output)
             self.assertIn("Claude settings JSON invalid", output)
 
+    def test_init_fails_clearly_when_scaffold_directory_path_is_occupied_by_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            (target / ".aletheia").write_text("not a directory\n", encoding="utf-8")
+
+            result = run_script("scripts/init_aletheia.py", str(target))
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn("cannot create scaffold path", output)
+            self.assertIn(".aletheia", output)
+            self.assertNotIn("Traceback", output)
+
 
 if __name__ == "__main__":
     unittest.main()

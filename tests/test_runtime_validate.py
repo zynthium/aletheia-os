@@ -788,6 +788,35 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertNotIn("Recommended next command", output)
             self.assertNotIn("checkpoint candidate:", output)
 
+    def test_stop_hook_reports_missing_git_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(active_state.read_text(encoding="utf-8") + "\nStop hook missing git note.\n", encoding="utf-8")
+            empty_bin = Path(tmp) / "empty-bin"
+            empty_bin.mkdir()
+            env = os.environ.copy()
+            env["PATH"] = str(empty_bin)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/stop_hook.py"],
+                cwd=target,
+                env=env,
+                input=json.dumps({"hook_event_name": "Stop"}),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("AletheiaOS stop hook: required command is not available on PATH", output)
+            self.assertNotIn("Traceback", output)
+            self.assertNotIn("Recommended next command", output)
+
 
 if __name__ == "__main__":
     unittest.main()

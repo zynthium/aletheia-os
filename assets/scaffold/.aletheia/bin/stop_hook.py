@@ -13,7 +13,10 @@ def repo_root() -> Path:
 
 
 def run(cmd: list[str], root: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, cwd=root, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
+    try:
+        return subprocess.run(cmd, cwd=root, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
+    except FileNotFoundError as exc:
+        raise RuntimeError(f"{cmd[0]} is not available on PATH") from exc
 
 
 def current_run_summary(root: Path) -> str:
@@ -41,17 +44,29 @@ def main() -> int:
         pass
     root = repo_root()
     print(current_run_summary(root))
-    validate = run(["python3", ".aletheia/bin/validate.py"], root)
+    try:
+        validate = run([sys.executable, ".aletheia/bin/validate.py"], root)
+    except RuntimeError as exc:
+        print(f"AletheiaOS stop hook: required command is not available on PATH: {exc}")
+        return 0
     print(validate.stdout, end="")
     if validate.returncode != 0:
         print("AletheiaOS stop hook: validation failed. Do not finalize this task until errors are fixed.")
         return 0
-    status = run(["git", "status", "--porcelain"], root)
+    try:
+        status = run(["git", "status", "--porcelain"], root)
+    except RuntimeError as exc:
+        print(f"AletheiaOS stop hook: required command is not available on PATH: {exc}")
+        return 0
     if status.returncode != 0 or not status.stdout.strip():
         print("AletheiaOS stop hook: no checkpoint needed.")
         return 0
     if os.environ.get("AIOS_AUTOCOMMIT") == "1":
-        checkpoint = run(["python3", ".aletheia/bin/checkpoint.py", "--auto"], root)
+        try:
+            checkpoint = run([sys.executable, ".aletheia/bin/checkpoint.py", "--auto"], root)
+        except RuntimeError as exc:
+            print(f"AletheiaOS stop hook: required command is not available on PATH: {exc}")
+            return 0
         print(checkpoint.stdout, end="")
         return 0
     print("AletheiaOS stop hook: changes detected. Recommended next command:")

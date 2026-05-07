@@ -650,6 +650,14 @@ def validate_graph_and_skeleton(root: Path, errors: list[str], warnings: list[st
             for child in children:
                 if isinstance(child, str) and child not in skeleton_nodes and child not in graph_nodes:
                     errors.append(f"skeleton child target missing: {node_id} child={child}")
+                elif isinstance(child, str) and child in skeleton_nodes:
+                    child_parent = skeleton_nodes[child].get("parent")
+                    if child_parent != node_id:
+                        errors.append(f"skeleton child parent mismatch: {node_id} child={child} parent={child_parent}")
+        if isinstance(parent, str) and parent in skeleton_nodes:
+            parent_children = skeleton_nodes[parent].get("children")
+            if isinstance(parent_children, list) and node_id not in parent_children:
+                errors.append(f"skeleton parent missing child link: {node_id} parent={parent}")
     cycles = detect_cycles(skeleton_nodes)
     if cycles:
         errors.append("skeleton contains parent cycle: " + ", ".join(cycles))

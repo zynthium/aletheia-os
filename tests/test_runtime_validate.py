@@ -1648,6 +1648,129 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertNotEqual(rejected.returncode, 0, output)
             self.assertIn("active state references unknown graph or skeleton nodes: missing_branch", output)
 
+    def test_validate_rejects_skeleton_parent_child_link_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            skeleton = target / ".aletheia" / "state" / "SKELETON.yaml"
+            skeleton.write_text(
+                skeleton.read_text(encoding="utf-8")
+                + "\n"
+                "  reproducibility_checks:\n"
+                "    layer: branch\n"
+                "    parent: engineering_execution\n"
+                "    children:\n"
+                "      - deterministic_fixtures\n"
+                "    purpose: \"Keep project checks reproducible.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs: []\n"
+                "    evidence_refs: []\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.4\n"
+                "    last_reviewed: 2026-05-08\n"
+                "  deterministic_fixtures:\n"
+                "    layer: leaf\n"
+                "    parent: system_design\n"
+                "    children: []\n"
+                "    purpose: \"Keep fixture generation deterministic.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs: []\n"
+                "    evidence_refs: []\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.4\n"
+                "    last_reviewed: 2026-05-08\n",
+                encoding="utf-8",
+            )
+
+            result = validate_target(target)
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn(
+                "skeleton child parent mismatch: reproducibility_checks child=deterministic_fixtures parent=system_design",
+                output,
+            )
+
+    def test_validate_rejects_skeleton_parent_missing_child_backlink(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            skeleton = target / ".aletheia" / "state" / "SKELETON.yaml"
+            skeleton.write_text(
+                skeleton.read_text(encoding="utf-8")
+                + "\n"
+                "  reproducibility_checks:\n"
+                "    layer: branch\n"
+                "    parent: engineering_execution\n"
+                "    children: []\n"
+                "    purpose: \"Keep project checks reproducible.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs: []\n"
+                "    evidence_refs: []\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.4\n"
+                "    last_reviewed: 2026-05-08\n"
+                "  deterministic_fixtures:\n"
+                "    layer: leaf\n"
+                "    parent: reproducibility_checks\n"
+                "    children: []\n"
+                "    purpose: \"Keep fixture generation deterministic.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs: []\n"
+                "    evidence_refs: []\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.4\n"
+                "    last_reviewed: 2026-05-08\n",
+                encoding="utf-8",
+            )
+
+            result = validate_target(target)
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn(
+                "skeleton parent missing child link: deterministic_fixtures parent=reproducibility_checks",
+                output,
+            )
+
     def test_validate_rejects_missing_contract_decision_and_evidence_refs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

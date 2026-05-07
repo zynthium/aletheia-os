@@ -112,6 +112,25 @@ def runtime_gate(root: Path) -> dict[str, Any] | None:
     return {field: data.get(field) for field in fields if field in data}
 
 
+def recent_changes(root: Path, limit: int = 5) -> list[dict[str, Any]]:
+    path = root / ".aletheia" / "runtime" / "change_log.jsonl"
+    if not path.exists():
+        return []
+    lines = path.read_text(encoding="utf-8").splitlines()[-limit:]
+    changes: list[dict[str, Any]] = []
+    for line in lines:
+        try:
+            data = json.loads(line)
+        except Exception as exc:
+            changes.append({"invalid": str(exc), "raw": line})
+            continue
+        if isinstance(data, dict):
+            changes.append(data)
+        else:
+            changes.append({"invalid": "expected JSON object", "raw": line})
+    return changes
+
+
 def build_status(root: Path) -> dict[str, Any]:
     return {
         "repo": str(root),
@@ -119,6 +138,7 @@ def build_status(root: Path) -> dict[str, Any]:
         "validation": validation(root),
         "records": record_counts(root),
         "runtime_gate": runtime_gate(root),
+        "recent_changes": recent_changes(root),
     }
 
 
@@ -154,6 +174,24 @@ def print_markdown(status: dict[str, Any]) -> None:
     else:
         for key, value in gate.items():
             print(f"- {key}: {value}")
+    print()
+    print("## Recent Changes")
+    print()
+    changes = status["recent_changes"]
+    if not changes:
+        print("None")
+    else:
+        for change in changes:
+            target = change.get("file_path") or change.get("command") or "unknown target"
+            fields = [
+                f"ts={change.get('ts', 'unknown')}",
+                f"event={change.get('event', 'unknown')}",
+                f"tool={change.get('tool', 'unknown')}",
+                f"target={target}",
+            ]
+            if change.get("model_id"):
+                fields.append(f"model={change['model_id']}")
+            print(f"- {'; '.join(fields)}")
     print()
 
 

@@ -152,6 +152,53 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("- gate_status: allowed", output)
             self.assertNotIn("Traceback", output)
 
+    def test_status_refresh_surfaces_recent_runtime_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir()
+            (runtime / "change_log.jsonl").write_text(
+                json.dumps(
+                    {
+                        "ts": "2026-05-08T00:00:00+00:00",
+                        "event": "PostToolUse",
+                        "tool": "Write",
+                        "file_path": ".aletheia/evidence/EV-001.md",
+                        "model_id": "gpt-test",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/status.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn("## Recent Changes", output)
+            self.assertIn(".aletheia/evidence/EV-001.md", output)
+            self.assertIn("model=gpt-test", output)
+
+            as_json = subprocess.run(
+                [sys.executable, ".aletheia/bin/status.py", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(as_json.returncode, 0, as_json.stdout + as_json.stderr)
+            payload = json.loads(as_json.stdout)
+            self.assertEqual(payload["recent_changes"][0]["file_path"], ".aletheia/evidence/EV-001.md")
+
     def test_status_refresh_can_emit_json_for_agents(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
@@ -649,6 +696,43 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn(".aletheia/nodes/feature.yaml", status["records"]["nodes"])
             self.assertIn(".aletheia/risks/RISK-001.md", status["records"]["risks"])
             self.assertIn(".aletheia/agent_runs/RUN-test.json", status["records"]["agent_runs"])
+
+    def test_overview_surfaces_recent_runtime_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir()
+            (runtime / "change_log.jsonl").write_text(
+                json.dumps(
+                    {
+                        "ts": "2026-05-08T00:00:00+00:00",
+                        "event": "PostToolUse",
+                        "tool": "Bash",
+                        "command": "python3 .aletheia/bin/validate.py",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/overview.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            status = json.loads((target / ".aletheia" / "overview" / "status.json").read_text(encoding="utf-8"))
+            self.assertEqual(status["recent_changes"][0]["command"], "python3 .aletheia/bin/validate.py")
+            html = (target / ".aletheia" / "overview" / "index.html").read_text(encoding="utf-8")
+            self.assertIn("Recent changes", html)
+            self.assertIn("python3 .aletheia/bin/validate.py", html)
 
     def test_overview_can_watch_for_refresh_iterations(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

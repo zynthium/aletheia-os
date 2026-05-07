@@ -42,6 +42,24 @@ def file_state(root: Path, rel: str) -> dict:
     }
 
 
+def recent_changes(root: Path, limit: int = 5) -> list[dict]:
+    path = root / ".aletheia" / "runtime" / "change_log.jsonl"
+    if not path.exists():
+        return []
+    changes: list[dict] = []
+    for line in path.read_text(encoding="utf-8").splitlines()[-limit:]:
+        try:
+            data = json.loads(line)
+        except Exception as exc:
+            changes.append({"invalid": str(exc), "raw": line})
+            continue
+        if isinstance(data, dict):
+            changes.append(data)
+        else:
+            changes.append({"invalid": "expected JSON object", "raw": line})
+    return changes
+
+
 def write_index(path: Path, status: dict) -> None:
     rows = []
     for state in status["state_files"]:
@@ -72,6 +90,8 @@ def write_index(path: Path, status: dict) -> None:
   <pre>{escape(json.dumps(status['validation'], indent=2))}</pre>
   <h2>Records</h2>
   <pre>{escape(json.dumps(status['records'], indent=2))}</pre>
+  <h2>Recent changes</h2>
+  <pre>{escape(json.dumps(status['recent_changes'], indent=2))}</pre>
 </body>
 </html>
 """
@@ -136,6 +156,7 @@ def main() -> int:
                 "risks": list_records(root, ".aletheia/risks"),
                 "agent_runs": list_records(root, ".aletheia/agent_runs"),
             },
+            "recent_changes": recent_changes(root),
         }
         (output / "status.json").write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")
         write_index(output / "index.html", status)

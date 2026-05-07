@@ -261,6 +261,30 @@ class BootstrapFinalizeTests(unittest.TestCase):
             self.assertIn("source inventory missing", output)
             self.assertIn("source_inventory.py", output)
 
+    def test_guided_bootstrap_reports_invalid_existing_inventory_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            inventory_dir = target / ".aletheia" / "source_inventory"
+            inventory_dir.mkdir(parents=True)
+            (inventory_dir / "inventory.json").write_text("{bad json", encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/guided_bootstrap.py", "--skip-gate", "--skip-inventory"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn("source inventory JSON invalid", output)
+            self.assertNotIn("Traceback", output)
+
     def test_bootstrap_finalize_blocks_without_allowed_agent_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

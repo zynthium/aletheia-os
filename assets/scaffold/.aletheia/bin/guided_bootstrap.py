@@ -55,6 +55,18 @@ def load_current_run(root: Path) -> dict:
     return data
 
 
+def load_inventory(path: Path) -> dict:
+    if not path.exists():
+        return {"items": []}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise SystemExit(f"source inventory JSON invalid: {path}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise SystemExit(f"source inventory JSON invalid: {path}: expected JSON object")
+    return data
+
+
 def require_bootstrap_gate(root: Path) -> None:
     run_data = load_current_run(root)
     if run_data.get("gate_status") != "allowed":
@@ -93,7 +105,7 @@ def main() -> int:
             "source inventory missing. Run python3 .aletheia/bin/source_inventory.py "
             "or omit --skip-inventory."
         )
-    inventory = json.loads(inventory_path.read_text(encoding="utf-8")) if inventory_path.exists() else {"items": []}
+    inventory = load_inventory(inventory_path)
     items = inventory.get("items", [])
     mode = infer_mode(items)
     by_class: dict[str, int] = {}

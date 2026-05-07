@@ -75,6 +75,27 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(public.returncode, 0, public_output)
             self.assertTrue((target / "docs" / "overview" / "status.json").exists())
 
+    def test_overview_reports_output_path_conflict_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".aletheia" / "overview").write_text("occupied\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/overview.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertIn("overview output path exists and is not a directory", output)
+            self.assertNotIn("Traceback", output)
+
     def test_context_pack_includes_core_truth_files_missing_markers_and_truncation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

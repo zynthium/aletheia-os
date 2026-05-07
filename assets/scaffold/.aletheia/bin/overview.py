@@ -93,6 +93,14 @@ def validation_state(root: Path) -> dict:
     }
 
 
+def ensure_output_dir(path: Path) -> int:
+    if path.exists() and not path.is_dir():
+        print(f"overview output path exists and is not a directory: {path}", file=sys.stderr)
+        return 1
+    path.mkdir(parents=True, exist_ok=True)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate an AletheiaOS overview.")
     parser.add_argument("--public-docs", action="store_true", help="Write overview to docs/overview instead of .aletheia/overview")
@@ -100,7 +108,9 @@ def main() -> int:
 
     root = repo_root()
     output = root / "docs" / "overview" if args.public_docs else root / ".aletheia" / "overview"
-    output.mkdir(parents=True, exist_ok=True)
+    rc = ensure_output_dir(output)
+    if rc != 0:
+        return rc
     status = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "repo": str(root),

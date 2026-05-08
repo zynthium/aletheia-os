@@ -1,5 +1,7 @@
 # AletheiaOS
 
+![AletheiaOS hero](docs/assets/readme-hero.jpg)
+
 **面向 AI 辅助研究与工程的树治理仓库原生事实层。**
 
 **One repo. One project truth. Many agents.**

@@ -3,6 +3,15 @@
 Use this playbook when adding durable truth, promoting research findings, or
 changing the project skeleton.
 
+This playbook exists to prevent unstructured project growth. A durable truth
+update is not complete until it answers:
+
+- What root objective does it serve?
+- Which parent node does it inherit from?
+- What evidence supports it?
+- What would weaken or falsify it?
+- Should it attach to the main tree, remain orphaned, or trigger a tree refactor?
+
 ## Growth Rule
 
 Every durable truth update must answer one question:

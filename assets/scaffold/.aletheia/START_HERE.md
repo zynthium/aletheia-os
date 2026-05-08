@@ -37,6 +37,16 @@ For the full capability guide, run:
 python3 .aletheia/bin/help.py
 ```
 
+## Before Durable Changes
+
+Before making durable changes, orient on the truth tree:
+
+1. Identify the root objective.
+2. Identify the active node and parent constraints.
+3. Decide whether new material attaches to the main tree, stays in `ORPHANS.yaml`, or requires tree refactor.
+4. For claims or hypotheses, identify evidence and invalidation criteria.
+5. For implementation, identify the contract, node, or decision it serves.
+
 ## Read Order
 
 1. `.aletheia/governance/CHARTER.md`

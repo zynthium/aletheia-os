@@ -543,7 +543,9 @@ class PluginManifestTests(unittest.TestCase):
 
         self.assertFalse((ROOT / ("README" + ".md")).exists())
         self.assertIn("仓库原生事实层", readme)
-        self.assertIn("One repo. One project truth. Many agents.", readme)
+        self.assertIn("仓库原生可证伪真理树层", readme)
+        self.assertIn("One repo. One falsifiable truth tree. Many agents.", readme)
+        self.assertIn("当前最可信、可审查、可证伪的项目事实", readme)
         self.assertIn("不是另一个 coding workflow", readme)
         self.assertIn("Global View Checksum", readme)
         self.assertIn("OpenSpec", readme)

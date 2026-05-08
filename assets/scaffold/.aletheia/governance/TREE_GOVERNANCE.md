@@ -61,6 +61,18 @@ Lifecycle rules:
 5. Counter-evidence should stay visible as evidence or risk, not disappear into
    prose summaries.
 
+## Scientific Method Loop
+
+Tree governance controls where truth belongs. The scientific-method loop
+controls how truth earns, keeps, weakens, or loses its place.
+
+1. Observe: record source-backed observations as evidence.
+2. Hypothesize: express candidate explanations with scope and invalidation criteria.
+3. Test: attach supporting and contradicting evidence.
+4. Decide: accept, reject, weaken, operationalize, or incubate the claim.
+5. Implement: convert accepted claims into nodes, contracts, or code constraints.
+6. Review: use feedback to refactor, demote, archive, or reparent tree members.
+
 ## Tree Refactors
 
 Tree refactors include attaching orphans, inserting parents, moving subtrees,

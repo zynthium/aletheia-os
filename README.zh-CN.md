@@ -2,27 +2,41 @@
 
 ![AletheiaOS hero](docs/assets/readme-hero.jpg)
 
-**面向 AI 辅助研究与工程的树治理仓库原生事实层。**
+**面向 AI 辅助研究与工程的仓库原生可证伪真理树层。**
 
-**One repo. One project truth. Many agents.**
+**One repo. One falsifiable truth tree. Many agents.**
 
-AletheiaOS 用 `.aletheia/` 为复杂项目维护唯一可信事实源：使命、当前状态、系统图、项目骨架、树治理规则、架构约束、研究证据、决策记录、接口契约、风险和 agent 归因。
+AletheiaOS = Root-based Truth Tree + Scientific Method Loop + Repo-native Memory + Agent Governance。
+
+AletheiaOS 用 `.aletheia/` 为复杂项目维护唯一可信事实源：根目标、当前状态、系统图、项目骨架、树治理规则、架构约束、研究证据、决策记录、接口契约、风险和 agent 归因。它不只是 repo-native truth layer，也不是普通项目文档系统；它把项目事实组织成一棵可审查、可证伪、可演化的真理树。
+
+AletheiaOS 将复杂项目维护为一棵 root-based truth tree：
+
+- 根定义项目的核心目标或研究问题；
+- 主干定义核心对象、主要理论或系统骨架；
+- 分支承载子理论、子系统、架构方向或研究路径；
+- 叶子承载具体证据、假设、决策、契约、实现和任务；
+- 无法归属的内容进入 orphan/incubator，等待审查、挂载、拆分、合并或归档。
+
+这棵树通过科学方法循环演化：观察 -> 假设 -> 证据 -> 证伪标准 -> 决策 -> 工程化 -> 反馈 -> 树重构。
+
+AletheiaOS 中的 truth 指“当前最可信、可审查、可证伪的项目事实”，不是绝对真理。
 
 它适用于长周期研究与工程项目。在这类项目中，理论、实现、证据、风险和优化会共同演化，局部实现发现也可能推翻顶层假设。AletheiaOS 的目标不是替代 Codex、Claude Code、OpenSpec、Superpowers、gstack、Compound 或其他 AI 编码工作流，而是为它们提供同一份 repo-native project truth。
 
 ## 为什么需要 AletheiaOS
 
-AI agent 擅长局部执行，但在长周期一致性上很脆弱。复杂项目通常会出现：
+AI agent 擅长局部执行，但在长周期一致性上很脆弱。AletheiaOS 不是为了解决“项目缺少文件夹”问题，而是为了解决复杂 AI 辅助开发中的无结构增生：
 
-- 局部优化覆盖上层约束；
-- 研究结论、架构决策和代码实现彼此脱节；
-- 聊天记录、设计文档、README 和当前代码互相矛盾；
-- 重要 claim 没有证据、推翻标准或后续决策；
+- agent 不断增加代码、功能、文档和结论，却无法说明它们服务哪个根目标；
+- 新想法不知道应该挂到哪条主干、哪个分支或哪个父节点；
+- 局部实现、研究结论和架构决策彼此脱节，甚至覆盖父级约束；
+- 重要 claim 没有证据强度、证伪标准、降权条件或后续决策；
 - 已削弱或被证伪的 hypothesis 继续支撑 active decision；
-- agent 不清楚当前 active node、父级约束和边界契约；
-- 多个 agent 或工具基于不同版本的项目事实工作。
+- 多个 agent 或工具基于不同版本的项目事实工作；
+- 开发者和科研人员在低权重枝叶上持续优化，却偏离主干目标。
 
-AletheiaOS 通过把项目事实显式化、结构化、可验证并纳入版本控制来减少这种漂移。它让 agent 在当前事实下工作，并在完成后更新事实。
+AletheiaOS 通过把项目事实显式化、树状化、可验证并纳入版本控制来减少这种漂移。它让 agent 先定位根目标、active node、父级约束和证据状态，再决定新材料进入主树、orphan/incubator，还是触发树重构。
 
 ## 适合谁使用
 
@@ -310,13 +324,30 @@ truth_record.py 支持 `--json` 输出，便于 agent 稳定组合 list、create
 
 ## 核心模型
 
-AletheiaOS 将项目表示为一个受约束治理的系统图和根基树：
+AletheiaOS 的核心模型是：
+
+```text
+root objective / research question
+-> truth tree skeleton
+-> hypotheses / evidence / decisions
+-> contracts / nodes / implementation
+-> validation / feedback / tree refactor
+```
+
+旧有工程链路仍然成立，但它是 truth tree 的一个工程投影：
 
 ```text
 mission -> system graph -> skeleton -> contracts -> evidence -> decisions -> code
 ```
 
 其中：
+
+- `skeleton` 负责结构：根、主干、分支、叶子、父子关系和继承约束；
+- `hypotheses`、`evidence` 和 `decisions` 负责科学方法循环：观察、假设、证据、证伪标准、接受、削弱或归档；
+- `contracts`、`nodes` 和代码负责工程化：把 accepted truth 变成边界契约、系统节点和实现约束；
+- `validate`、`preflight`、`overview` 和 `checkpoint` 负责让树的演化可审查、可追踪、可回滚。
+
+目录分工：
 
 - `governance/` 保存 charter、attention policy、tree governance、model governance、model registry、runtime policy、git policy 和 source policy；
 - `state/` 保存 active state、system graph、project skeleton、orphan incubator、frontier board、glossary、domain profile 和 risk register；
@@ -334,6 +365,7 @@ mission -> system graph -> skeleton -> contracts -> evidence -> decisions -> cod
 AletheiaOS 是：
 
 - repo-native truth layer；
+- 面向 AI 辅助研究与工程的可证伪真理树层；
 - 面向 AI 辅助研究与工程的真实项目记忆；
 - 受约束治理的系统图；
 - 架构约束、研究证据、决策、契约、风险和 agent 归因的事实账本；
@@ -442,6 +474,7 @@ Source index:
 
 ## 设计原则
 
+0. 项目事实必须从根目标出发，沿主干、分支和叶子有序生长；无法归属的内容不得强行进入主树。
 1. 仓库是长期事实源，聊天不是长期事实源。
 2. 每个重要 claim 都应可证伪或明确标记为解释性判断。
 3. 实现必须能追溯到目标、系统节点、契约或证据。
@@ -449,3 +482,11 @@ Source index:
 5. `.aletheia/` 是 truth layer，不是源码、测试或公开文档的替代品。
 6. plugin 负责操作协议，目标仓库负责保存真实项目事实。
 7. 人类总览应从真实项目事实生成，而不是手写状态页。
+
+重要 truth member 必须能说明：
+
+- 服务哪个上层目标；
+- 继承哪些父级约束；
+- 当前证据状态是什么；
+- 什么条件会削弱或推翻它；
+- 是否已经被工程化为 contract、node 或 implementation constraint。

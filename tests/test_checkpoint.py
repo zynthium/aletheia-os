@@ -761,6 +761,245 @@ class CheckpointTests(unittest.TestCase):
             self.assertIn(".aletheia/state/ACTIVE_STATE.md", committed_paths)
             self.assertIn("src/included.py", committed_paths)
 
+    def test_checkpoint_stable_node_commit_includes_aios_traceability_trailers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=False)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=target, check=False)
+
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-stable",
+                        "provider": "test",
+                        "model_id": "test-model",
+                        "capability_tier": "C3",
+                        "task_class": "research_design",
+                        "gate_status": "allowed",
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            evidence = target / ".aletheia" / "evidence" / "EV-001-factor-baseline.md"
+            evidence.write_text(
+                "# Evidence: factor baseline\n\n"
+                "Date: 2026-05-08\n"
+                "Evidence type: proof\n"
+                "Claim lifecycle impact: accepted\n"
+                "Claim tested: theory_model is stable enough to attach.\n"
+                "Linked node: theory_model\n\n"
+                "## Source refs\n\n- `README.md`\n\n"
+                "## Method\n\nReviewed scaffold invariants.\n\n"
+                "## Result\n\nThe theory node has supporting records.\n\n"
+                "## Limitations\n\nSingle repository fixture.\n\n"
+                "## Interpretation\n\nSupports a stable-node checkpoint fixture.\n\n"
+                "## Invalidation criteria\n\nContradicting validation or review result.\n\n"
+                "## Graph impact\n\nAffects `theory_model`.\n\n"
+                "## Confidence impact\n\nRaises confidence for this fixture.\n",
+                encoding="utf-8",
+            )
+            decision = target / ".aletheia" / "decisions" / "DEC-001-modeling-lens-policy.md"
+            decision.write_text(
+                "# Decision: modeling lens policy\n\n"
+                "Status: accepted\n"
+                "Decision type: tree_refactor\n"
+                "Date: 2026-05-08\n\n"
+                "## Context\n\nThe node needs a reviewable stable marker.\n\n"
+                "## Decision\n\nStabilize `theory_model` for this checkpoint.\n\n"
+                "## Alternatives considered\n\nKeep the node candidate until more evidence arrives.\n\n"
+                "## Consequences\n\nFuture changes must supersede this marker.\n\n"
+                "## Affected nodes\n\n- `theory_model`\n\n"
+                "## Affected contracts\n\nNone.\n\n"
+                "## Evidence links\n\n- .aletheia/evidence/EV-001-factor-baseline.md\n\n"
+                "## Hypothesis links\n\nNone.\n\n"
+                "## Invalidation criteria\n\nContradicting evidence.\n\n"
+                "## Review trigger\n\nNew root-level theory evidence.\n",
+                encoding="utf-8",
+            )
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(active_state.read_text(encoding="utf-8") + "\nStable node checkpoint note.\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/checkpoint.py",
+                    "--auto",
+                    "--message",
+                    "truth: stabilize theory node",
+                    "--tree-op",
+                    "attach_orphan",
+                    "--node",
+                    "theory_model",
+                    "--parent",
+                    "root",
+                    "--node-state",
+                    "stable",
+                    "--evidence",
+                    ".aletheia/evidence/EV-001-factor-baseline.md",
+                    "--decision",
+                    ".aletheia/decisions/DEC-001-modeling-lens-policy.md",
+                    "--review",
+                    "human-confirmed",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            message = subprocess.run(
+                ["git", "show", "--format=%B", "--no-patch", "HEAD"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(message.returncode, 0, message.stdout + message.stderr)
+            self.assertIn("AIOS-Action: truth.node.stabilize", message.stdout)
+            self.assertIn("AIOS-Tree-Op: attach_orphan", message.stdout)
+            self.assertIn("AIOS-Node: theory_model", message.stdout)
+            self.assertIn("AIOS-Parent: root", message.stdout)
+            self.assertIn("AIOS-Node-State: stable", message.stdout)
+            self.assertIn("AIOS-Evidence: .aletheia/evidence/EV-001-factor-baseline.md", message.stdout)
+            self.assertIn("AIOS-Decision: .aletheia/decisions/DEC-001-modeling-lens-policy.md", message.stdout)
+            self.assertIn("AIOS-Validation: pass", message.stdout)
+            self.assertIn("AIOS-Review: human-confirmed", message.stdout)
+
+    def test_checkpoint_stable_node_dry_run_requires_decision(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-stable",
+                        "provider": "test",
+                        "model_id": "test-model",
+                        "capability_tier": "C3",
+                        "task_class": "research_design",
+                        "gate_status": "allowed",
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(active_state.read_text(encoding="utf-8") + "\nStable dry-run checkpoint note.\n", encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/checkpoint.py",
+                    "--auto",
+                    "--dry-run",
+                    "--node",
+                    "theory_model",
+                    "--node-state",
+                    "stable",
+                    "--evidence",
+                    ".aletheia/evidence/EV-001-factor-baseline.md",
+                    "--review",
+                    "human-confirmed",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            self.assertEqual("checkpoint blocked: stable node checkpoint requires --decision\n", output)
+
+    def test_checkpoint_implements_infers_engineering_action_only_without_node_state(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            subprocess.run(["git", "init"], cwd=target, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            runtime = target / ".aletheia" / "runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "current_agent_run.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "RUN-implements",
+                        "provider": "test",
+                        "model_id": "test-model",
+                        "capability_tier": "C3",
+                        "task_class": "mechanical_implementation",
+                        "gate_status": "allowed",
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(active_state.read_text(encoding="utf-8") + "\nImplementation link checkpoint note.\n", encoding="utf-8")
+
+            implementation_link = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/checkpoint.py",
+                    "--auto",
+                    "--dry-run",
+                    "--implements",
+                    ".aletheia/decisions/DEC-001-modeling-lens-policy.md",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            implementation_output = implementation_link.stdout + implementation_link.stderr
+            self.assertEqual(implementation_link.returncode, 0, implementation_output)
+            self.assertIn("AIOS-Action: engineering.implements_truth", implementation_output)
+            self.assertIn("AIOS-Implements: .aletheia/decisions/DEC-001-modeling-lens-policy.md", implementation_output)
+
+            node_state_link = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/checkpoint.py",
+                    "--auto",
+                    "--dry-run",
+                    "--node-state",
+                    "candidate",
+                    "--implements",
+                    ".aletheia/decisions/DEC-001-modeling-lens-policy.md",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            node_state_output = node_state_link.stdout + node_state_link.stderr
+            self.assertEqual(node_state_link.returncode, 0, node_state_output)
+            self.assertNotIn("AIOS-Action: engineering.implements_truth", node_state_output)
+            self.assertIn("AIOS-Node-State: candidate", node_state_output)
+            self.assertIn("AIOS-Implements: .aletheia/decisions/DEC-001-modeling-lens-policy.md", node_state_output)
+
     def test_checkpoint_commit_excludes_forced_generated_and_runtime_paths_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

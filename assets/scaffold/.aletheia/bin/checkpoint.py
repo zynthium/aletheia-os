@@ -10,6 +10,14 @@ import subprocess
 import sys
 from pathlib import Path
 
+from git_trailers import (
+    ALLOWED_NODE_STATES,
+    ALLOWED_REVIEW,
+    build_aios_trailers,
+    parse_trailers,
+    validate_trailer_values,
+)
+
 
 PROTECTED_PATTERNS = [
     re.compile(r"(^|/)\.env(\.|$)"),
@@ -226,6 +234,60 @@ def attribution_trailers(run_data: dict) -> str:
     return "\n\n" + "\n".join(f"{key}: {value}" for key, value in fields)
 
 
+def inferred_traceability_action(args: argparse.Namespace) -> str | None:
+    if args.node_state == "stable":
+        return "truth.node.stabilize"
+    if args.implements and not args.node_state:
+        return "engineering.implements_truth"
+    if args.tree_op:
+        return "truth.tree.transition"
+    return None
+
+
+def traceability_validation(args: argparse.Namespace) -> str | None:
+    if args.node_state == "stable":
+        return "pass"
+    return None
+
+
+def checkpoint_traceability_trailers(args: argparse.Namespace) -> str:
+    trailers = build_aios_trailers(
+        action=inferred_traceability_action(args),
+        tree_op=args.tree_op,
+        node=args.node,
+        parent=args.parent,
+        node_state=args.node_state,
+        evidence=args.evidence,
+        decision=args.decision,
+        implements=args.implements,
+        supersedes=args.supersedes,
+        validation=traceability_validation(args),
+        review=args.review,
+    )
+    errors = validate_trailer_values(parse_trailers(trailers))
+    if errors:
+        raise ValueError("; ".join(errors))
+    return trailers
+
+
+def stable_checkpoint_blocker(args: argparse.Namespace) -> str | None:
+    if args.node_state != "stable":
+        return None
+    if not args.evidence:
+        return "stable node checkpoint requires --evidence"
+    if not args.decision:
+        return "stable node checkpoint requires --decision"
+    if args.review != "human-confirmed":
+        return "stable node checkpoint requires --review human-confirmed"
+    return None
+
+
+def combine_commit_message(message: str, traceability: str, run_data: dict) -> str:
+    if traceability:
+        message = message + "\n\n" + traceability
+    return message + attribution_trailers(run_data)
+
+
 def infer_message(files: list[str]) -> str:
     if "BOOTSTRAP.md" in files:
         return "bootstrap: initialize AletheiaOS"
@@ -271,6 +333,15 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--no-model-gate", action="store_true")
     parser.add_argument("--include-worktree", action="store_true", help="Stage the full worktree instead of only AletheiaOS state paths.")
+    parser.add_argument("--tree-op")
+    parser.add_argument("--node")
+    parser.add_argument("--parent")
+    parser.add_argument("--node-state", choices=sorted(ALLOWED_NODE_STATES))
+    parser.add_argument("--evidence", action="append", default=[])
+    parser.add_argument("--decision", action="append", default=[])
+    parser.add_argument("--implements", action="append", default=[])
+    parser.add_argument("--supersedes", action="append", default=[])
+    parser.add_argument("--review", choices=sorted(ALLOWED_REVIEW))
     args = parser.parse_args()
 
     root = repo_root()
@@ -299,6 +370,17 @@ def main() -> int:
         for file in protected:
             print(f"  - {file}")
         return 2
+
+    stable_blocker = stable_checkpoint_blocker(args)
+    if stable_blocker:
+        print(f"checkpoint blocked: {stable_blocker}")
+        return 7
+
+    try:
+        traceability_trailers = checkpoint_traceability_trailers(args)
+    except ValueError as exc:
+        print(f"checkpoint blocked: {exc}")
+        return 7
 
     if not args.no_validate:
         rc = validate(root)
@@ -351,6 +433,10 @@ def main() -> int:
             f"{run_data.get('provider', 'unknown')}/{run_data.get('model_id', 'unknown')} "
             f"tier={run_data.get('capability_tier', 'unknown')} task={run_data.get('task_class', 'unknown')}"
         )
+    if traceability_trailers:
+        print("traceability:")
+        for line in traceability_trailers.splitlines():
+            print(f"  {line}")
 
     if args.dry_run:
         return 0
@@ -370,7 +456,7 @@ def main() -> int:
         if rc != 0:
             return rc
 
-    commit_cmd = ["git", "commit", "-m", message + attribution_trailers(run_data)]
+    commit_cmd = ["git", "commit", "-m", combine_commit_message(message, traceability_trailers, run_data)]
     if not args.include_worktree:
         commit_cmd.extend(["--", *candidate_files])
     commit = run(commit_cmd, root, capture=True)

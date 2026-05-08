@@ -22,6 +22,22 @@ STATE_FILES = [
 ]
 
 TREE_SIGNAL_TERMS = ("skeleton", "orphan", "tree")
+DURABILITY_NOTE = (
+    "Generated/runtime outputs under .aletheia/runtime/, .aletheia/overview/, "
+    "and .aletheia/source_inventory/ are local status artifacts, not durable truth by default."
+)
+NEXT_ACTIONS = [
+    "python3 .aletheia/bin/preflight.py --json",
+    "python3 .aletheia/bin/status.py --json",
+    "python3 .aletheia/bin/validate.py",
+    "python3 .aletheia/bin/checkpoint.py --dry-run",
+]
+RECOMMENDED_ACTIONS = [
+    "truth.preflight",
+    "truth.status",
+    "truth.validate",
+    "truth.checkpoint.dry_run",
+]
 
 
 def repo_root() -> Path:
@@ -60,6 +76,37 @@ def recent_changes(root: Path, limit: int = 5) -> list[dict]:
         else:
             changes.append({"invalid": "expected JSON object", "raw": line})
     return changes
+
+
+def generated_outputs(public_docs: bool) -> list[dict]:
+    return [
+        {
+            "path": ".aletheia/runtime/",
+            "durable_truth": False,
+            "checkpoint_default": "excluded",
+            "purpose": "Current run attribution, hook logs, and recent change log.",
+        },
+        {
+            "path": ".aletheia/overview/",
+            "durable_truth": False,
+            "checkpoint_default": "excluded",
+            "purpose": "Generated local status JSON and HTML.",
+            "current_output": not public_docs,
+        },
+        {
+            "path": ".aletheia/source_inventory/",
+            "durable_truth": False,
+            "checkpoint_default": "excluded",
+            "purpose": "Generated source inventory and bootstrap report inputs.",
+        },
+        {
+            "path": "docs/overview/",
+            "durable_truth": False,
+            "checkpoint_default": "not included in default state patterns",
+            "purpose": "Optional generated public overview export.",
+            "current_output": public_docs,
+        },
+    ]
 
 
 def count_skeleton_nodes(root: Path) -> int:
@@ -159,6 +206,10 @@ def write_index(path: Path, status: dict) -> None:
   <pre>{escape(json.dumps(status['records'], indent=2))}</pre>
   <h2>Recent changes</h2>
   <pre>{escape(json.dumps(status['recent_changes'], indent=2))}</pre>
+  <h2>Generated outputs</h2>
+  <pre>{escape(json.dumps(status['generated_outputs'], indent=2))}</pre>
+  <h2>Next actions</h2>
+  <pre>{escape(json.dumps(status['next_actions'], indent=2))}</pre>
 </body>
 </html>
 """
@@ -209,6 +260,7 @@ def main() -> int:
         status = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "repo": str(root),
+            "durability_note": DURABILITY_NOTE,
             "refresh": {
                 "mode": "watch" if args.watch else "single",
                 "iteration": iteration,
@@ -226,6 +278,9 @@ def main() -> int:
                 "agent_runs": list_records(root, ".aletheia/agent_runs"),
             },
             "recent_changes": recent_changes(root),
+            "generated_outputs": generated_outputs(args.public_docs),
+            "next_actions": NEXT_ACTIONS,
+            "recommended_actions": RECOMMENDED_ACTIONS,
         }
         (output / "status.json").write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")
         write_index(output / "index.html", status)

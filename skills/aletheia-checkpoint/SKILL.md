@@ -9,8 +9,8 @@ description: Validate and checkpoint AletheiaOS project truth. Use when the user
 
 Use these primitives. Do not add orchestration to runtime scripts for completion judgment:
 
-- `status.py` to inspect active state, validation, record counts, runtime gate, and recent changes.
-- `preflight.py` to inspect hook-free context, validation, git state, and checkpoint candidates.
+- `status.py --json` to inspect active state, validation, record counts, runtime gate, recent changes, generated-output boundaries, and next actions.
+- `preflight.py --json` to inspect hook-free context, validation, git state, checkpoint candidates, generated-output boundaries, and recommended action ids.
 - `truth_record.py list/show/update/create` to ensure affected truth records exist and are current.
 - `validate.py` to verify scaffold and truth semantics.
 - `checkpoint.py --dry-run` to preview candidates.

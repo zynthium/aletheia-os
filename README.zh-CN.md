@@ -241,7 +241,7 @@ orient -> work -> update truth -> validate -> checkpoint
 
 `CAPABILITY_MAP.md` 是 action parity 清单：记录安装、初始化、orient、context pack、tree governance review、truth record create/list/show/update/archive、model gate、source inventory、bootstrap finalize、validate、overview、checkpoint、truth promotion 和只读审阅 agent 等用户动作与 agent 能力的对应关系。
 
-`bin/` 提供 help、capability audit、orient、context pack、system context、preflight、status refresh、truth record、model gate、source inventory、guided bootstrap、overview、validate、bootstrap finalize、checkpoint 和 Claude hook runtime。`orient.py` 默认输出 cache 友好的稳定事实和精简 record inventory；`context_pack.py` 默认输出核心 truth files、能力地图、精简 source inventory summary 和完整 truth record inventory。`system_context.py` 输出可直接放入 agent prompt 的动态上下文块，组合稳定项目事实、用户偏好、能力地图和可选 runtime context。当前 agent run 与最近 session notes 需要显式使用 `--with-runtime`，并追加在稳定上下文之后。`status.py` 是显式动态刷新入口，用于按需查看 active state、validation、record counts 和 runtime gate。`capability_audit.py` 用于检查 `.aletheia/CAPABILITY_MAP.md` 是否覆盖 runtime scripts、skills、review agents 和 CRUD 命令。`preflight.py` 是 Codex 等无自动 hook enforcement 宿主的显式检查入口，会读取 model gate、validation、git status 和 checkpoint candidate。`playbooks/prompt_native_boundaries.md` 记录哪些运行时脚本应保持 primitive，哪些 workflow judgment 应移到 skills 或 playbooks。
+`bin/` 提供 help、capability audit、orient、context pack、system context、preflight、status refresh、truth record、model gate、source inventory、guided bootstrap、overview、validate、bootstrap finalize、checkpoint 和 Claude hook runtime。`orient.py` 默认输出 cache 友好的稳定事实和精简 record inventory；`context_pack.py` 默认输出核心 truth files、能力地图、精简 source inventory summary 和完整 truth record inventory。`system_context.py` 输出可直接放入 agent prompt 的动态上下文块，组合稳定项目事实、用户偏好、能力地图和可选 runtime context。当前 agent run 与最近 session notes 需要显式使用 `--with-runtime`，并追加在稳定上下文之后。`status.py` 是显式动态刷新入口，用于按需查看 active state、validation、record counts、runtime gate、recent changes、generated-output boundaries 和 next actions。`capability_audit.py` 用于检查 `.aletheia/CAPABILITY_MAP.md` 是否覆盖 runtime scripts、skills、review agents 和 CRUD 命令。`preflight.py` 是 Codex 等无自动 hook enforcement 宿主的显式检查入口，会读取 model gate、validation、git status、checkpoint candidate、generated-output boundaries 和 recommended action ids。`playbooks/prompt_native_boundaries.md` 记录哪些运行时脚本应保持 primitive，哪些 workflow judgment 应移到 skills 或 playbooks。
 
 ## 运行时参考
 
@@ -274,7 +274,9 @@ python3 .aletheia/bin/model_gate.py --registry deprecate <name> --reason "<reaso
 python3 .aletheia/bin/model_gate.py --registry remove <name>
 python3 .aletheia/bin/model_gate.py --registry deny <model_id> --reason "<reason>"
 python3 .aletheia/bin/source_inventory.py
+python3 .aletheia/bin/guided_bootstrap.py --inspect --json
 python3 .aletheia/bin/guided_bootstrap.py --objective "<objective>"
+python3 .aletheia/bin/bootstrap_finalize.py --inspect --json
 python3 .aletheia/bin/overview.py
 python3 .aletheia/bin/overview.py --watch
 python3 .aletheia/bin/overview.py --public-docs
@@ -287,15 +289,15 @@ python3 .aletheia/bin/checkpoint.py
 
 `model_gate.py` 是治理、归因和审计边界，不是安全沙箱，也不是不可绕过的权限系统。它用于让 agent 在写入前显式声明 task class、model、tier 和 objective，并留下可审查记录。
 
-Claude Code 通过 hooks 自动执行门禁和审计；Codex 当前以 skills、显式命令和可选 subagents 执行同一协议，不宣称拥有等同的自动 hook enforcement。
+Claude Code 通过 hooks 自动执行门禁和审计；Codex 当前以 skills、显式命令和可选 subagents 执行同一协议，不宣称拥有等同的自动 hook enforcement。Codex 上的显式闭环是：`orient.py --with-runtime`、`status.py --json` 或 `preflight.py --json`、写入 truth、`validate.py`、`checkpoint.py --dry-run`。
 
 truth_record.py 支持 `--json` 输出，便于 agent 稳定组合 list、create、show、update 和 archive 结果。固定 truth files 可用 `current` 作为记录 id，例如 `truth_record.py show capability-map current`、`truth_record.py update active-state current --section "Active frontier" --content "..."` 和 `truth_record.py archive runtime-policy current --reason "..."`。truth record 删除默认采用 archive-only 策略；永久移除属于人工/admin 操作，应先确认没有悬空引用。
 
 `checkpoint.py` 默认只提交 AletheiaOS state/control-plane 路径；只有显式传入 `--include-worktree` 时才 stage 整个工作树。
 
-`guided_bootstrap.py` 会验证已经记录的 bootstrap gate，不会自行创建新的模型授权。`source_inventory.py` 默认跳过 `.aletheia/`、`.claude/` 和初始化根部控制文件，只扫描项目自身资料。`context_pack.py` 只引用 source inventory 的聚合摘要，不默认展开高频变化的运行时记录；需要刷新当前状态时运行 `status.py`，不要把动态状态前移到默认 orient/context pack。`preflight.py` 会在 Codex 等无自动 hook enforcement 宿主中输出 context、runtime gate、validation、checkpoint candidate 和建议下一步。`runtime_policy.json` 保存只读命令、source inventory 规则、checkpoint state paths、checkpoint excluded generated/runtime paths 和 protected path patterns，让 hook/checkpoint 规则可审查。新增或改变用户可执行动作时，应同步更新 `.aletheia/CAPABILITY_MAP.md`。
+`guided_bootstrap.py` 会验证已经记录的 bootstrap gate，不会自行创建新的模型授权；`guided_bootstrap.py --inspect --json` 可先只读检查 gate、source inventory 和计划写入。`bootstrap_finalize.py --inspect --json` 可只读检查 model gate、validation、critical truth markers、Git readiness 和计划写入。`source_inventory.py` 默认跳过 `.aletheia/`、`.claude/` 和初始化根部控制文件，只扫描项目自身资料。`context_pack.py` 只引用 source inventory 的聚合摘要，不默认展开高频变化的运行时记录；需要刷新当前状态时运行 `status.py --json`，不要把动态状态前移到默认 orient/context pack。`preflight.py` 会在 Codex 等无自动 hook enforcement 宿主中输出 context、runtime gate、validation、checkpoint candidate、generated-output boundaries 和建议下一步。`runtime_policy.json` 保存只读命令、source inventory 规则、checkpoint state paths、checkpoint excluded generated/runtime paths 和 protected path patterns，让 hook/checkpoint 规则可审查。新增或改变用户可执行动作时，应同步更新 `.aletheia/CAPABILITY_MAP.md`。
 
-`overview.py` 和 `source_inventory.py` 默认写入 `.aletheia/` 下的 generated/intermediate 目录，不属于 durable project truth；`overview.py --watch` 可重复刷新本地 status JSON/HTML，只有显式使用 `--public-docs` 时才生成 `docs/overview/`。
+`overview.py` 和 `source_inventory.py` 默认写入 `.aletheia/` 下的 generated/intermediate 目录，不属于 durable project truth；`status.py --json`、`preflight.py --json` 和 overview `status.json` 都会显式标注这些 generated/runtime outputs。`overview.py --watch` 可重复刷新本地 status JSON/HTML，只有显式使用 `--public-docs` 时才生成 `docs/overview/`。
 
 ## 核心模型
 

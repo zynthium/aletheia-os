@@ -22,6 +22,22 @@ RECORD_DIRS = {
 }
 
 TREE_SIGNAL_TERMS = ("skeleton", "orphan", "tree")
+DURABILITY_NOTE = (
+    "Generated/runtime outputs under .aletheia/runtime/, .aletheia/overview/, "
+    "and .aletheia/source_inventory/ are local status artifacts, not durable truth by default."
+)
+NEXT_ACTIONS = [
+    "python3 .aletheia/bin/preflight.py --json",
+    "python3 .aletheia/bin/validate.py",
+    "python3 .aletheia/bin/checkpoint.py --dry-run",
+    "python3 .aletheia/bin/overview.py",
+]
+RECOMMENDED_ACTIONS = [
+    "truth.preflight",
+    "truth.validate",
+    "truth.checkpoint.dry_run",
+    "truth.overview",
+]
 
 
 def repo_root() -> Path:
@@ -133,6 +149,35 @@ def recent_changes(root: Path, limit: int = 5) -> list[dict[str, Any]]:
     return changes
 
 
+def generated_outputs() -> list[dict[str, Any]]:
+    return [
+        {
+            "path": ".aletheia/runtime/",
+            "durable_truth": False,
+            "checkpoint_default": "excluded",
+            "purpose": "Current run attribution, hook logs, and recent change log.",
+        },
+        {
+            "path": ".aletheia/overview/",
+            "durable_truth": False,
+            "checkpoint_default": "excluded",
+            "purpose": "Generated local status JSON and HTML.",
+        },
+        {
+            "path": ".aletheia/source_inventory/",
+            "durable_truth": False,
+            "checkpoint_default": "excluded",
+            "purpose": "Generated source inventory and bootstrap report inputs.",
+        },
+        {
+            "path": "docs/overview/",
+            "durable_truth": False,
+            "checkpoint_default": "not included in default state patterns",
+            "purpose": "Optional generated public overview export.",
+        },
+    ]
+
+
 def count_skeleton_nodes(root: Path) -> int:
     path = root / ".aletheia" / "state" / "SKELETON.yaml"
     if not path.exists():
@@ -200,12 +245,16 @@ def build_status(root: Path) -> dict[str, Any]:
     validation_state = validation(root)
     return {
         "repo": str(root),
+        "durability_note": DURABILITY_NOTE,
         "active_state": active_state(root),
         "validation": validation_state,
         "records": record_counts(root),
         "tree_health": tree_health(root, validation_state),
         "runtime_gate": runtime_gate(root),
         "recent_changes": recent_changes(root),
+        "generated_outputs": generated_outputs(),
+        "next_actions": NEXT_ACTIONS,
+        "recommended_actions": RECOMMENDED_ACTIONS,
     }
 
 
@@ -213,6 +262,10 @@ def print_markdown(status: dict[str, Any]) -> None:
     active = status["active_state"]
     validation_state = status["validation"]
     print("# AletheiaOS Status Refresh")
+    print()
+    print("## Durability")
+    print()
+    print(status["durability_note"])
     print()
     print("## Active State")
     print()
@@ -288,6 +341,21 @@ def print_markdown(status: dict[str, Any]) -> None:
             if change.get("model_id"):
                 fields.append(f"model={change['model_id']}")
             print(f"- {'; '.join(fields)}")
+    print()
+    print("## Generated Outputs")
+    print()
+    for generated in status["generated_outputs"]:
+        print(
+            f"- {generated['path']} durable_truth={generated['durable_truth']} "
+            f"checkpoint_default={generated['checkpoint_default']}"
+        )
+    print()
+    print("## Next Actions")
+    print()
+    for action_id in status["recommended_actions"]:
+        print(f"- action: `{action_id}`")
+    for command in status["next_actions"]:
+        print(f"- `{command}`")
     print()
 
 

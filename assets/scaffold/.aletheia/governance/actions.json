@@ -217,6 +217,90 @@
       "verification": {"returncode": 0}
     },
     {
+      "id": "truth.orphan.list",
+      "title": "List incubating orphan entries",
+      "intent": "List unmounted truth candidates in the orphan incubator.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/truth_record.py", "list", "orphan", "--json"],
+      "inputs": {},
+      "outputs": {"format": "json"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.orphan.create",
+      "title": "Create orphan entry",
+      "intent": "Create an incubating orphan entry for material that is not ready to attach to the skeleton tree.",
+      "risk": "writes-state",
+      "command": [
+        "python3",
+        ".aletheia/bin/truth_record.py",
+        "create",
+        "orphan",
+        "--id",
+        "{{id}}",
+        "--title",
+        "{{title}}"
+      ],
+      "inputs": {
+        "id": "Orphan id.",
+        "title": "Short orphan summary."
+      },
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.orphan.show",
+      "title": "Show orphan entry",
+      "intent": "Read one incubating orphan entry.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/truth_record.py", "show", "orphan", "{{id}}", "--json"],
+      "inputs": {"id": "Orphan id."},
+      "outputs": {"format": "json"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.orphan.update",
+      "title": "Update orphan entry",
+      "intent": "Update the status for one incubating orphan entry.",
+      "risk": "writes-state",
+      "command": [
+        "python3",
+        ".aletheia/bin/truth_record.py",
+        "update",
+        "orphan",
+        "{{id}}",
+        "--status",
+        "{{status}}"
+      ],
+      "inputs": {
+        "id": "Orphan id.",
+        "status": "New orphan lifecycle status."
+      },
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.orphan.archive",
+      "title": "Archive orphan entry",
+      "intent": "Archive one orphan entry after disposition or rejection.",
+      "risk": "admin",
+      "command": [
+        "python3",
+        ".aletheia/bin/truth_record.py",
+        "archive",
+        "orphan",
+        "{{id}}",
+        "--reason",
+        "{{reason}}"
+      ],
+      "inputs": {
+        "id": "Orphan id.",
+        "reason": "Archive reason."
+      },
+      "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
       "id": "truth.source_inventory",
       "title": "Inventory project sources",
       "intent": "Classify project source material into a generated inventory.",

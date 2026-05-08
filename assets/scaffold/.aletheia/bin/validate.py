@@ -276,6 +276,29 @@ def extract_stale_orphan_ids(orphan_text: str) -> list[str]:
     return stale
 
 
+def extract_orphan_entries(orphan_text: str) -> list[dict[str, str]]:
+    entries: list[dict[str, str]] = []
+    current: dict[str, str] | None = None
+    in_orphans = False
+    for line in orphan_text.splitlines():
+        if line.strip() == "orphans: []":
+            return []
+        if line.startswith("orphans:"):
+            in_orphans = True
+            continue
+        if not in_orphans:
+            continue
+        item = re.match(r"^\s{2}-\s+id:\s*(.+?)\s*$", line)
+        if item:
+            current = {"id": item.group(1).strip().strip("\"'")}
+            entries.append(current)
+            continue
+        field = re.match(r"^\s{4}([A-Za-z_][A-Za-z0-9_]*):\s*(.*?)\s*$", line)
+        if field and current is not None:
+            current[field.group(1)] = field.group(2).strip().strip("\"'")
+    return entries
+
+
 def extract_skeleton_refs(skeleton_text: str) -> list[str]:
     refs: list[str] = []
     in_ref_list = False
@@ -695,6 +718,25 @@ def validate_orphans(root: Path, errors: list[str], warnings: list[str]) -> None
             errors.append(f"orphans state missing section: {section}")
     if ".." in text:
         errors.append("orphans state contains unsafe parent traversal marker")
+    graph_path = root / ".aletheia" / "state" / "SYSTEM_GRAPH.yaml"
+    skeleton_path = root / ".aletheia" / "state" / "SKELETON.yaml"
+    graph_nodes = extract_graph_node_ids(graph_path.read_text(encoding="utf-8")) if graph_path.exists() else {"root"}
+    skeleton_nodes = extract_skeleton_nodes(skeleton_path.read_text(encoding="utf-8")) if skeleton_path.exists() else {}
+    valid_parents = set(graph_nodes) | set(skeleton_nodes)
+    seen: set[str] = set()
+    for entry in extract_orphan_entries(text):
+        orphan_id = entry.get("id", "")
+        if not orphan_id:
+            errors.append("orphan entry missing id")
+        elif orphan_id in seen:
+            errors.append(f"orphan entry duplicate id: {orphan_id}")
+        seen.add(orphan_id)
+        for field in ["status", "summary", "candidate_parent"]:
+            if not entry.get(field):
+                errors.append(f"orphan entry missing field: {orphan_id or 'unknown'} {field}")
+        candidate_parent = entry.get("candidate_parent")
+        if candidate_parent and candidate_parent != "unknown" and candidate_parent not in valid_parents:
+            errors.append(f"orphan entry candidate parent missing: {orphan_id} candidate_parent={candidate_parent}")
     count = extract_orphan_count(text)
     if count:
         warnings.append(f"orphan incubator contains {count} entries requiring review")

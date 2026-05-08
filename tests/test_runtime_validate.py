@@ -469,6 +469,7 @@ class RuntimeValidateTests(unittest.TestCase):
             action_ids = {action["id"] for action in list_payload["actions"]}
             self.assertIn("truth.validate", action_ids)
             self.assertIn("truth.preflight", action_ids)
+            self.assertIn("truth.history_audit", action_ids)
             self.assertIn("truth.checkpoint.dry_run", action_ids)
             self.assertIn("truth.bootstrap.guided.inspect", action_ids)
             self.assertIn("truth.bootstrap.finalize.inspect", action_ids)
@@ -568,6 +569,7 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("truth.status", next_payload["recommended_actions"])
             self.assertIn("truth.preflight", next_payload["recommended_actions"])
             self.assertIn("truth.validate", next_payload["recommended_actions"])
+            self.assertIn("truth.history_audit", next_payload["recommended_actions"])
             self.assertIn("truth.checkpoint.dry_run", next_payload["recommended_actions"])
 
     def test_preflight_markdown_names_codex_no_hooks_use_case(self) -> None:
@@ -649,11 +651,13 @@ class RuntimeValidateTests(unittest.TestCase):
                 "Refresh context",
                 "Create truth records",
                 "Validate and checkpoint",
+                "Audit Git truth history",
                 "Review truth alignment",
             ]:
                 self.assertIn(phrase, output)
             self.assertIn("## Runtime commands", output)
             self.assertIn("python3 .aletheia/bin/orient.py", output)
+            self.assertIn("python3 .aletheia/bin/history_audit.py --json", output)
             self.assertIn("python3 .aletheia/bin/truth_record.py update evidence EV-0001", output)
             self.assertIn("python3 .aletheia/bin/truth_record.py update orphan ORPH-0001 --candidate-parent", output)
             self.assertIn("archive-only", output)

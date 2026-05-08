@@ -164,6 +164,7 @@ class PluginManifestTests(unittest.TestCase):
             "action.py",
             "actions.json",
             "truth.validate",
+            "truth.history_audit",
             "truth.tree.review",
             "truth.tree.health",
             "truth.preflight",
@@ -181,6 +182,7 @@ class PluginManifestTests(unittest.TestCase):
             "system_context.py",
             "preflight.py",
             "status.py",
+            "history_audit.py",
             "truth_record.py",
             "truth_record.py list/show/create/update/archive",
             "truth_record.py update",
@@ -190,6 +192,7 @@ class PluginManifestTests(unittest.TestCase):
             "source_inventory.py",
             "guided_bootstrap.py",
             "bootstrap_finalize.py",
+            "history_audit.py --json",
             "validate.py",
             "overview.py",
             "checkpoint.py",
@@ -211,6 +214,8 @@ class PluginManifestTests(unittest.TestCase):
             "host limitation",
             "ORPHANS.yaml",
             "tree refactor",
+            "Audit Git truth history",
+            "AIOS-Node-State: stable",
         ]
         for term in expected_terms:
             self.assertIn(term, capability_map)
@@ -343,6 +348,7 @@ class PluginManifestTests(unittest.TestCase):
             "capability.help",
             "truth.orient",
             "truth.validate",
+            "truth.history_audit",
             "truth.preflight",
             "truth.checkpoint.dry_run",
             "capability.audit",

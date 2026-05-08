@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import subprocess
 import sys
 import tempfile
@@ -60,6 +61,28 @@ def run_commit_msg_hook(target: Path, message: str) -> subprocess.CompletedProce
     message_file.write_text(message, encoding="utf-8")
     return subprocess.run(
         [sys.executable, ".aletheia/bin/commit_msg_hook.py", str(message_file)],
+        cwd=target,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+
+def git_commit(target: Path, message: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", "commit", "--no-verify", "-m", message],
+        cwd=target,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+
+def run_history_audit(target: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, ".aletheia/bin/history_audit.py", *args],
         cwd=target,
         text=True,
         stdout=subprocess.PIPE,
@@ -227,6 +250,155 @@ class GitTraceabilityTests(unittest.TestCase):
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
             self.assertNotIn("AletheiaOS commit message blocked:", output)
+
+    def test_history_audit_json_passes_without_aios_trailers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            scaffold_git_repo(target)
+
+            result = run_history_audit(target, "--json")
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            payload = json.loads(result.stdout)
+            self.assertTrue(payload["ok"])
+            self.assertEqual(payload["returncode"], 0)
+            self.assertEqual(payload["errors"], [])
+            self.assertEqual(payload["nodes"], {})
+
+    def test_history_audit_reports_missing_stable_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            scaffold_git_repo(target)
+            decision = target / ".aletheia" / "decisions" / "DEC-001-modeling-lens-policy.md"
+            decision.write_text("# Decision: modeling lens policy\n\nStatus: accepted\n", encoding="utf-8")
+            subprocess.run(["git", "add", ".aletheia/decisions/DEC-001-modeling-lens-policy.md"], cwd=target, check=False)
+            committed = git_commit(
+                target,
+                "truth: stabilize theory\n\n"
+                "AIOS-Action: truth.node.stabilize\n"
+                "AIOS-Node: theory_model\n"
+                "AIOS-Node-State: stable\n"
+                "AIOS-Evidence: .aletheia/evidence/EV-999-missing.md\n"
+                "AIOS-Decision: .aletheia/decisions/DEC-001-modeling-lens-policy.md\n"
+                "AIOS-Validation: pass\n"
+                "AIOS-Review: human-confirmed\n",
+            )
+            self.assertEqual(committed.returncode, 0, committed.stdout + committed.stderr)
+
+            result = run_history_audit(target, "--json")
+
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0, output)
+            payload = json.loads(result.stdout)
+            self.assertFalse(payload["ok"])
+            self.assertEqual(payload["returncode"], 1)
+            self.assertTrue(any(".aletheia/evidence/EV-999-missing.md" in error for error in payload["errors"]))
+
+    def test_history_audit_reports_valid_stable_node(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            scaffold_git_repo(target)
+            evidence = target / ".aletheia" / "evidence" / "EV-001-factor-baseline.md"
+            evidence.write_text("# Evidence: factor baseline\n", encoding="utf-8")
+            decision = target / ".aletheia" / "decisions" / "DEC-001-modeling-lens-policy.md"
+            decision.write_text("# Decision: modeling lens policy\n\nStatus: accepted\n", encoding="utf-8")
+            subprocess.run(
+                [
+                    "git",
+                    "add",
+                    ".aletheia/evidence/EV-001-factor-baseline.md",
+                    ".aletheia/decisions/DEC-001-modeling-lens-policy.md",
+                ],
+                cwd=target,
+                check=False,
+            )
+            committed = git_commit(
+                target,
+                "truth: stabilize theory\n\n"
+                "AIOS-Action: truth.node.stabilize\n"
+                "AIOS-Node: theory_model\n"
+                "AIOS-Node-State: stable\n"
+                "AIOS-Evidence: .aletheia/evidence/EV-001-factor-baseline.md\n"
+                "AIOS-Decision: .aletheia/decisions/DEC-001-modeling-lens-policy.md\n"
+                "AIOS-Validation: pass\n"
+                "AIOS-Review: human-confirmed\n",
+            )
+            self.assertEqual(committed.returncode, 0, committed.stdout + committed.stderr)
+            head = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(head.returncode, 0, head.stdout + head.stderr)
+
+            result = run_history_audit(target, "--json")
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            payload = json.loads(result.stdout)
+            self.assertTrue(payload["ok"])
+            node = payload["nodes"]["theory_model"]
+            self.assertEqual(node["latest_state"], "stable")
+            self.assertEqual(node["stable_commit"], head.stdout.strip())
+            self.assertIn(".aletheia/evidence/EV-001-factor-baseline.md", node["evidence"])
+            self.assertIn(".aletheia/decisions/DEC-001-modeling-lens-policy.md", node["decision"])
+
+    def test_history_audit_node_filter_limits_reported_nodes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            scaffold_git_repo(target)
+            evidence = target / ".aletheia" / "evidence" / "EV-001-factor-baseline.md"
+            evidence.write_text("# Evidence: factor baseline\n", encoding="utf-8")
+            decision = target / ".aletheia" / "decisions" / "DEC-001-modeling-lens-policy.md"
+            decision.write_text("# Decision: modeling lens policy\n\nStatus: accepted\n", encoding="utf-8")
+            subprocess.run(
+                [
+                    "git",
+                    "add",
+                    ".aletheia/evidence/EV-001-factor-baseline.md",
+                    ".aletheia/decisions/DEC-001-modeling-lens-policy.md",
+                ],
+                cwd=target,
+                check=False,
+            )
+            first = git_commit(
+                target,
+                "truth: stabilize theory\n\n"
+                "AIOS-Action: truth.node.stabilize\n"
+                "AIOS-Node: theory_model\n"
+                "AIOS-Node-State: stable\n"
+                "AIOS-Evidence: .aletheia/evidence/EV-001-factor-baseline.md\n"
+                "AIOS-Decision: .aletheia/decisions/DEC-001-modeling-lens-policy.md\n"
+                "AIOS-Validation: pass\n"
+                "AIOS-Review: human-confirmed\n",
+            )
+            self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
+            active_state = target / ".aletheia" / "state" / "ACTIVE_STATE.md"
+            active_state.write_text(active_state.read_text(encoding="utf-8") + "\nOther node transition.\n", encoding="utf-8")
+            subprocess.run(["git", "add", ".aletheia/state/ACTIVE_STATE.md"], cwd=target, check=False)
+            second = git_commit(
+                target,
+                "truth: weaken risk node\n\n"
+                "AIOS-Action: truth.node.weaken\n"
+                "AIOS-Node: risk_safety\n"
+                "AIOS-Node-State: weakened\n",
+            )
+            self.assertEqual(second.returncode, 0, second.stdout + second.stderr)
+
+            result = run_history_audit(target, "--node", "theory_model", "--json")
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            payload = json.loads(result.stdout)
+            self.assertEqual(set(payload["nodes"]), {"theory_model"})
 
 
 if __name__ == "__main__":

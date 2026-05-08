@@ -5,6 +5,7 @@
     "truth.status",
     "truth.preflight",
     "truth.validate",
+    "truth.history_audit",
     "truth.checkpoint.dry_run"
   ],
   "actions": [
@@ -96,6 +97,16 @@
       "command": ["python3", ".aletheia/bin/validate.py"],
       "inputs": {},
       "outputs": {"format": "text"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.history_audit",
+      "title": "Audit Git truth history",
+      "intent": "Parse Git history for AletheiaOS traceability trailers, stable-node claims, implementation links, and transition errors.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/history_audit.py", "--json"],
+      "inputs": {},
+      "outputs": {"format": "json"},
       "verification": {"returncode": 0}
     },
     {

@@ -94,6 +94,14 @@ CAPABILITIES = [
         ],
     ),
     (
+        "Audit Git truth history",
+        "Parse Git history for traceability trailers, stable-node claims, implementation links, and transition errors.",
+        [
+            "python3 .aletheia/bin/history_audit.py --json",
+            "python3 .aletheia/bin/history_audit.py --node theory_model --json",
+        ],
+    ),
+    (
         "Monitor overview",
         "Generate a local HTML/JSON overview once or refresh it repeatedly while reviewing state.",
         [
@@ -136,7 +144,7 @@ def main() -> int:
     print("- Codex marketplace registration is scripted; enabling the plugin happens in `/plugins`.")
     print("- Truth record removal is archive-only by default; no permanent delete command is provided.")
     print("- JSON fixed truth files can be shown or archived through `truth_record.py`; structured edits stay with dedicated commands or direct reviewed edits.")
-    print("- On hosts without automatic hooks, run `preflight.py --json`, `status.py --json`, `validate.py`, and `checkpoint.py --dry-run` explicitly.")
+    print("- On hosts without automatic hooks, run `preflight.py --json`, `status.py --json`, `validate.py`, `checkpoint.py --dry-run`, and `history_audit.py --json` explicitly.")
     print("- `.aletheia/runtime/`, `.aletheia/overview/`, and `.aletheia/source_inventory/` are generated/runtime outputs, not durable truth by default.")
     return 0
 

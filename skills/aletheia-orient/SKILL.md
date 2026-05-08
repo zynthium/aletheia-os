@@ -14,7 +14,7 @@ Use these primitives. Do not add orchestration to runtime scripts for orientatio
 - `system_context.py` for prompt-ready stable truth, preferences, capabilities, and optional runtime context.
 - `orient.py` for compact project truth orientation.
 - `context_pack.py` for fuller stable truth, capability map, source summary, and record inventory.
-- `status.py` when dynamic validation, runtime gate, record counts, or recent changes are needed.
+- `status.py --json` when dynamic validation, runtime gate, record counts, recent changes, generated-output boundaries, or next actions are needed.
 - `truth_record.py list/show` for focused follow-up reads after the active node is known.
 
 ## Prompt Recipe

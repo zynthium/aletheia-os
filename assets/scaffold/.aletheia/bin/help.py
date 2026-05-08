@@ -36,7 +36,7 @@ CAPABILITIES = [
     ),
     (
         "Refresh status",
-        "Read active state, validation, record counts, runtime gate status, and hook-free preflight state on demand.",
+        "Read active state, validation, record counts, runtime gate status, generated-output boundaries, and hook-free next actions on demand.",
         [
             "python3 .aletheia/bin/action.py list --json",
             "python3 .aletheia/bin/action.py next --json",
@@ -135,6 +135,8 @@ def main() -> int:
     print("- Codex marketplace registration is scripted; enabling the plugin happens in `/plugins`.")
     print("- Truth record removal is archive-only by default; no permanent delete command is provided.")
     print("- JSON fixed truth files can be shown or archived through `truth_record.py`; structured edits stay with dedicated commands or direct reviewed edits.")
+    print("- On hosts without automatic hooks, run `preflight.py --json`, `status.py --json`, `validate.py`, and `checkpoint.py --dry-run` explicitly.")
+    print("- `.aletheia/runtime/`, `.aletheia/overview/`, and `.aletheia/source_inventory/` are generated/runtime outputs, not durable truth by default.")
     return 0
 
 

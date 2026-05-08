@@ -25,6 +25,24 @@ CHECKPOINT_EXCLUDED_PATTERNS = [
     "**/*.pyc",
 ]
 RUNTIME_POLICY = ".aletheia/governance/runtime_policy.json"
+DURABILITY_NOTE = (
+    "Generated/runtime outputs under .aletheia/runtime/, .aletheia/overview/, "
+    "and .aletheia/source_inventory/ are local status artifacts, not durable truth by default."
+)
+NEXT_ACTIONS = [
+    "python3 .aletheia/bin/orient.py --with-runtime",
+    "python3 .aletheia/bin/status.py --json",
+    "python3 .aletheia/bin/validate.py",
+    "python3 .aletheia/bin/checkpoint.py --dry-run",
+    "python3 .aletheia/bin/overview.py",
+]
+RECOMMENDED_ACTIONS = [
+    "truth.orient.runtime",
+    "truth.status",
+    "truth.validate",
+    "truth.checkpoint.dry_run",
+    "truth.overview",
+]
 
 
 def repo_root() -> Path:
@@ -159,6 +177,35 @@ def runtime_gate(root: Path) -> dict | None:
     return load_json(path)
 
 
+def generated_outputs() -> list[dict[str, object]]:
+    return [
+        {
+            "path": ".aletheia/runtime/",
+            "durable_truth": False,
+            "checkpoint_default": "excluded",
+            "purpose": "Current run attribution, hook logs, and recent change log.",
+        },
+        {
+            "path": ".aletheia/overview/",
+            "durable_truth": False,
+            "checkpoint_default": "excluded",
+            "purpose": "Generated local status JSON and HTML.",
+        },
+        {
+            "path": ".aletheia/source_inventory/",
+            "durable_truth": False,
+            "checkpoint_default": "excluded",
+            "purpose": "Generated source inventory and bootstrap report inputs.",
+        },
+        {
+            "path": "docs/overview/",
+            "durable_truth": False,
+            "checkpoint_default": "not included in default state patterns",
+            "purpose": "Optional generated public overview export.",
+        },
+    ]
+
+
 def build_preflight(root: Path) -> dict:
     status = git_status(root)
     policy = runtime_policy(root)
@@ -170,6 +217,7 @@ def build_preflight(root: Path) -> dict:
     return {
         "repo": str(root),
         "host_note": "Use this on hosts without automatic hook enforcement, including Codex.",
+        "durability_note": DURABILITY_NOTE,
         "context": context_state(root),
         "runtime_gate": runtime_gate(root),
         "validation": validation(root),
@@ -179,16 +227,9 @@ def build_preflight(root: Path) -> dict:
             "candidate_files": candidate_files,
             "excluded_patterns": policy["checkpoint_excluded_patterns"],
         },
-        "next_actions": [
-            "python3 .aletheia/bin/orient.py --with-runtime",
-            "python3 .aletheia/bin/validate.py",
-            "python3 .aletheia/bin/checkpoint.py --dry-run",
-        ],
-        "recommended_actions": [
-            "truth.orient.runtime",
-            "truth.validate",
-            "truth.checkpoint.dry_run",
-        ],
+        "generated_outputs": generated_outputs(),
+        "next_actions": NEXT_ACTIONS,
+        "recommended_actions": RECOMMENDED_ACTIONS,
     }
 
 
@@ -196,6 +237,10 @@ def print_markdown(payload: dict) -> None:
     print("# AletheiaOS Preflight")
     print()
     print("Use this on hosts without automatic hook enforcement, including Codex.")
+    print()
+    print("## Durability")
+    print()
+    print(payload["durability_note"])
     print()
     print("## Context")
     print()
@@ -228,6 +273,14 @@ def print_markdown(payload: dict) -> None:
     print(f"- has_candidate: {checkpoint['has_candidate']}")
     for path in checkpoint["candidate_files"]:
         print(f"- {path}")
+    print()
+    print("## Generated Outputs")
+    print()
+    for generated in payload["generated_outputs"]:
+        print(
+            f"- {generated['path']} durable_truth={generated['durable_truth']} "
+            f"checkpoint_default={generated['checkpoint_default']}"
+        )
     print()
     print("## Next Actions")
     print()

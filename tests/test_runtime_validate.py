@@ -61,6 +61,11 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertTrue((target / ".aletheia" / "overview" / "status.json").exists())
             self.assertTrue((target / ".aletheia" / "overview" / "index.html").exists())
             self.assertFalse((target / "docs" / "overview" / "status.json").exists())
+            status = json.loads((target / ".aletheia" / "overview" / "status.json").read_text(encoding="utf-8"))
+            self.assertIn("Generated/runtime outputs", status["durability_note"])
+            self.assertIn("truth.preflight", status["recommended_actions"])
+            self.assertIn("python3 .aletheia/bin/status.py --json", status["next_actions"])
+            self.assertTrue(any(item["path"] == ".aletheia/overview/" for item in status["generated_outputs"]))
 
             public = subprocess.run(
                 [sys.executable, ".aletheia/bin/overview.py", "--public-docs"],
@@ -140,6 +145,7 @@ class RuntimeValidateTests(unittest.TestCase):
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
             self.assertIn("# AletheiaOS Status Refresh", output)
+            self.assertIn("## Durability", output)
             self.assertIn("## Active State", output)
             self.assertIn("- active nodes: root", output)
             self.assertIn("- current phase: bootstrap", output)
@@ -157,6 +163,10 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("## Runtime Gate", output)
             self.assertIn("- run_id: RUN-status", output)
             self.assertIn("- gate_status: allowed", output)
+            self.assertIn("## Generated Outputs", output)
+            self.assertIn(".aletheia/overview/", output)
+            self.assertIn("## Next Actions", output)
+            self.assertIn("truth.checkpoint.dry_run", output)
             self.assertNotIn("Traceback", output)
 
     def test_status_refresh_surfaces_recent_runtime_changes(self) -> None:
@@ -228,6 +238,10 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(payload["active_state"]["current_phase"], "bootstrap")
             self.assertEqual(payload["validation"]["returncode"], 0)
             self.assertIn("decisions", payload["records"])
+            self.assertIn("Generated/runtime outputs", payload["durability_note"])
+            self.assertIn("truth.preflight", payload["recommended_actions"])
+            self.assertIn("python3 .aletheia/bin/checkpoint.py --dry-run", payload["next_actions"])
+            self.assertTrue(any(item["path"] == ".aletheia/runtime/" for item in payload["generated_outputs"]))
             self.assertEqual(payload["tree_health"]["stale_orphan_count"], 0)
             self.assertEqual(payload["tree_health"]["warning_count"], 0)
             self.assertEqual(payload["tree_health"]["error_count"], 0)
@@ -277,9 +291,13 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("context", payload)
             self.assertEqual(payload["context"]["active_nodes"], ["root"])
             self.assertIn("python3 .aletheia/bin/orient.py --with-runtime", payload["next_actions"])
+            self.assertIn("python3 .aletheia/bin/status.py --json", payload["next_actions"])
             self.assertIn("python3 .aletheia/bin/checkpoint.py --dry-run", payload["next_actions"])
             self.assertIn("truth.orient.runtime", payload["recommended_actions"])
+            self.assertIn("truth.status", payload["recommended_actions"])
             self.assertIn("truth.checkpoint.dry_run", payload["recommended_actions"])
+            self.assertIn("Generated/runtime outputs", payload["durability_note"])
+            self.assertTrue(any(item["path"] == ".aletheia/source_inventory/" for item in payload["generated_outputs"]))
 
     def test_action_layer_lists_explains_runs_and_recommends_agent_actions(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -420,8 +438,11 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, output)
             self.assertIn("# AletheiaOS Preflight", output)
             self.assertIn("Use this on hosts without automatic hook enforcement", output)
+            self.assertIn("## Durability", output)
             self.assertIn("## Validation", output)
             self.assertIn("## Checkpoint Candidate", output)
+            self.assertIn("## Generated Outputs", output)
+            self.assertIn("## Next Actions", output)
 
     def test_context_pack_includes_core_truth_files_missing_markers_and_truncation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -769,6 +790,8 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("Recent changes", html)
             self.assertIn("python3 .aletheia/bin/validate.py", html)
             self.assertIn("Tree health", html)
+            self.assertIn("Generated outputs", html)
+            self.assertIn("Next actions", html)
 
     def test_tree_governance_context_surfaces_orphans_and_health(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

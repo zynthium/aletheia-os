@@ -14,7 +14,10 @@ Use this command set for normal work:
 python3 .aletheia/bin/help.py
 python3 .aletheia/bin/system_context.py
 python3 .aletheia/bin/orient.py
+python3 .aletheia/bin/status.py --json
+python3 .aletheia/bin/preflight.py --json
 python3 .aletheia/bin/validate.py
+python3 .aletheia/bin/checkpoint.py --dry-run
 python3 .aletheia/bin/checkpoint.py
 ```
 
@@ -94,5 +97,11 @@ python3 .aletheia/bin/system_context.py --with-runtime
 python3 .aletheia/bin/context_pack.py
 python3 .aletheia/bin/context_pack.py --with-runtime
 python3 .aletheia/bin/status.py
+python3 .aletheia/bin/status.py --json
+python3 .aletheia/bin/preflight.py --json
 python3 .aletheia/bin/overview.py
 ```
+
+`status.py --json`, `preflight.py --json`, and overview `status.json` mark
+generated/runtime outputs as local status artifacts, not durable truth by
+default.

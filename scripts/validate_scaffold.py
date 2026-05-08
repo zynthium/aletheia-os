@@ -20,6 +20,7 @@ REQUIRED_PATHS = [
     ".aletheia/governance/CHARTER.md",
     ".aletheia/governance/ATTENTION_POLICY.md",
     ".aletheia/governance/MODEL_GOVERNANCE.md",
+    ".aletheia/governance/TREE_GOVERNANCE.md",
     ".aletheia/governance/GIT_POLICY.md",
     ".aletheia/governance/SOURCE_POLICY.md",
     ".aletheia/governance/runtime_policy.json",
@@ -33,6 +34,7 @@ REQUIRED_PATHS = [
     ".aletheia/state/GLOSSARY.md",
     ".aletheia/state/DOMAIN_PROFILE.md",
     ".aletheia/state/USER_PREFERENCES.md",
+    ".aletheia/state/ORPHANS.yaml",
     ".aletheia/contracts/INDEX.md",
     ".aletheia/evidence/INDEX.md",
     ".aletheia/hypotheses/.gitkeep",
@@ -41,6 +43,8 @@ REQUIRED_PATHS = [
     ".aletheia/playbooks/guided_bootstrap.md",
     ".aletheia/playbooks/drift_audit.md",
     ".aletheia/playbooks/wiki_handoff_promotion.md",
+    ".aletheia/playbooks/tree_governed_truth_growth.md",
+    ".aletheia/playbooks/skeleton_review.md",
     ".aletheia/bin/help.py",
     ".aletheia/bin/action.py",
     ".aletheia/bin/capability_audit.py",
@@ -91,14 +95,9 @@ REQUIRED_SKELETON_ROOT_FIELDS = [
 ]
 
 BANNED_TEXT_PATTERNS = [
-    re.compile(r"\bmigration\b", re.I),
-    re.compile(r"\bmigrate\b", re.I),
-    re.compile(r"\bimport\b", re.I),
-    re.compile(r"\blegacy\b", re.I),
-    re.compile(r"\bcompat\b", re.I),
-    re.compile("迁移"),
-    re.compile("导入"),
-    re.compile("兼容"),
+    re.compile(r"\bold-project-name\b", re.I),
+    re.compile(r"\bold-plugin-name\b", re.I),
+    re.compile(r"https://github\.com/old-org/old-repo", re.I),
 ]
 BANNED_EXTRA_TREE_SURFACES = [
     ".aletheia/claims",

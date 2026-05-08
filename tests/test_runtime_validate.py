@@ -809,10 +809,10 @@ class RuntimeValidateTests(unittest.TestCase):
                 "  max_orphan_age_days: 90\n\n"
                 "orphans:\n"
                 "  - id: OR-001\n"
-                "    title: Candidate unmounted claim\n"
-                "    disposition: incubating\n"
-                "    candidate_parents:\n"
-                "      - root\n"
+                "    status: incubating\n"
+                "    summary: Candidate unmounted claim\n"
+                "    candidate_parent: root\n"
+                "    source_refs: []\n"
                 "    next_review: 2026-01-01\n",
                 encoding="utf-8",
             )

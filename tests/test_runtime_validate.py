@@ -249,6 +249,114 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertFalse(payload["tree_health"]["review_needed"])
             self.assertIsNone(payload["runtime_gate"])
 
+    def test_validate_json_reports_structured_errors_and_warnings(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            yesterday = (date.today() - timedelta(days=1)).isoformat()
+            (target / ".aletheia" / "state" / "ORPHANS.yaml").write_text(
+                "version: 0.1\n"
+                "schema: AIOS_ORPHANS\n"
+                "updated: 2026-05-08\n\n"
+                "review_policy:\n"
+                "  default_review_days: 30\n"
+                "  max_orphan_age_days: 90\n\n"
+                "orphans:\n"
+                "  - id: OR-json\n"
+                "    status: incubating\n"
+                "    summary: JSON validation warning\n"
+                "    candidate_parent: root\n"
+                f"    next_review: {yesterday}\n",
+                encoding="utf-8",
+            )
+            skeleton = target / ".aletheia" / "state" / "SKELETON.yaml"
+            skeleton.write_text(
+                skeleton.read_text(encoding="utf-8")
+                + "\n"
+                "  detached_json_leaf:\n"
+                "    layer: leaf\n"
+                "    parent: root\n"
+                "    children: []\n"
+                "    purpose: \"Detached leaf for JSON validation.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs: []\n"
+                "    evidence_refs: []\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.1\n"
+                "    last_reviewed: 2026-05-08\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/validate.py", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertEqual(result.stderr, "")
+            payload = json.loads(result.stdout)
+            self.assertFalse(payload["ok"])
+            self.assertEqual(payload["returncode"], 1)
+            self.assertTrue(any("orphan review is stale: OR-json" == warning for warning in payload["warnings"]))
+            self.assertTrue(
+                any("skeleton parent missing child link: detached_json_leaf parent=root" == error for error in payload["errors"])
+            )
+
+    def test_status_tree_health_uses_structured_validation_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            yesterday = (date.today() - timedelta(days=1)).isoformat()
+            (target / ".aletheia" / "state" / "ORPHANS.yaml").write_text(
+                "version: 0.1\n"
+                "schema: AIOS_ORPHANS\n"
+                "updated: 2026-05-08\n\n"
+                "review_policy:\n"
+                "  default_review_days: 30\n"
+                "  max_orphan_age_days: 90\n\n"
+                "orphans:\n"
+                "  - id: OR-json-health\n"
+                "    status: incubating\n"
+                "    summary: Structured status warning\n"
+                "    candidate_parent: root\n"
+                f"    next_review: {yesterday}\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/status.py", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["validation"]["returncode"], 0)
+            self.assertIn("warnings", payload["validation"])
+            self.assertIn("errors", payload["validation"])
+            self.assertEqual(payload["validation"]["stderr"], "")
+            self.assertEqual(payload["tree_health"]["stale_orphan_count"], 1)
+            self.assertIn("orphan review is stale: OR-json-health", payload["tree_health"]["semantic_review_signals"])
+            self.assertEqual(payload["tree_health"]["structural_error_signals"], [])
+
     def test_preflight_reports_validation_gate_and_checkpoint_candidate_for_no_hooks_hosts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
@@ -507,6 +615,7 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("## Runtime commands", output)
             self.assertIn("python3 .aletheia/bin/orient.py", output)
             self.assertIn("python3 .aletheia/bin/truth_record.py update evidence EV-0001", output)
+            self.assertIn("python3 .aletheia/bin/truth_record.py update orphan ORPH-0001 --candidate-parent", output)
             self.assertIn("archive-only", output)
 
     def test_context_pack_defaults_to_stable_capabilities_source_summary_and_record_inventory(self) -> None:
@@ -1564,8 +1673,46 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(update.returncode, 0, update.stdout + update.stderr)
             self.assertEqual(json.loads(update.stdout)["updated"], ["summary", "status"])
 
+            field_update = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "update",
+                    "orphan",
+                    "ORPH-0001",
+                    "--candidate-parent",
+                    "root",
+                    "--source-ref",
+                    ".aletheia/evidence/EV-0001.md",
+                    "--next-review",
+                    "2099-01-01",
+                    "--evidence-needed",
+                    "Confirm with source inventory.",
+                    "--disposition",
+                    "attach",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(field_update.returncode, 0, field_update.stdout + field_update.stderr)
+            self.assertEqual(
+                json.loads(field_update.stdout)["updated"],
+                ["candidate_parent", "source_refs", "next_review", "evidence_needed", "disposition"],
+            )
+            updated_orphans = (target / ".aletheia" / "state" / "ORPHANS.yaml").read_text(encoding="utf-8")
+            self.assertIn("    candidate_parent: root", updated_orphans)
+            self.assertIn("    source_refs:", updated_orphans)
+            self.assertIn("      - .aletheia/evidence/EV-0001.md", updated_orphans)
+            self.assertIn("    next_review: 2099-01-01", updated_orphans)
+            self.assertIn("    evidence_needed: \"Confirm with source inventory.\"", updated_orphans)
+            self.assertIn("    disposition: attach", updated_orphans)
+
             action_explain = subprocess.run(
-                [sys.executable, ".aletheia/bin/action.py", "explain", "truth.orphan.show", "--json"],
+                [sys.executable, ".aletheia/bin/action.py", "explain", "truth.orphan.update", "--json"],
                 cwd=target,
                 text=True,
                 stdout=subprocess.PIPE,
@@ -1573,7 +1720,12 @@ class RuntimeValidateTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(action_explain.returncode, 0, action_explain.stdout + action_explain.stderr)
-            self.assertEqual(json.loads(action_explain.stdout)["action"]["id"], "truth.orphan.show")
+            action_payload = json.loads(action_explain.stdout)["action"]
+            self.assertEqual(action_payload["id"], "truth.orphan.update")
+            self.assertIn("lifecycle status", action_payload["intent"])
+            self.assertIn("selected review fields", action_payload["notes"])
+            self.assertIn("candidate_parent", action_payload["notes"])
+            self.assertIn("next_review", action_payload["notes"])
 
             archive = subprocess.run(
                 [

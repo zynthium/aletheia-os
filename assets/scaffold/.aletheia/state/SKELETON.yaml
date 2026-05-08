@@ -1,6 +1,9 @@
 version: 0.1
 schema: AIOS_PROJECT_SKELETON
 updated: 2026-05-05
+role: authoritative_truth_tree
+related_maps:
+  system_graph: coarse_system_map
 
 nodes:
   root:

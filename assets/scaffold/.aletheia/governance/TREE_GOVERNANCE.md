@@ -14,6 +14,11 @@ attach to the main tree or stay in the incubator until review.
 
 ## Main Tree
 
+SKELETON.yaml is the authoritative truth tree. SYSTEM_GRAPH.yaml is a coarse system map.
+Use the system map for orientation and compatibility with earlier project views;
+durable truth growth should attach to the skeleton or remain incubated until a
+defensible parent exists.
+
 The canonical tree is `.aletheia/state/SKELETON.yaml`. Use it to track:
 
 - root, trunk, branch, and leaf layers;

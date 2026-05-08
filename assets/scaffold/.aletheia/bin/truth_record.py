@@ -322,6 +322,20 @@ def replace_orphan_field(block: list[str], field: str, value: str) -> bool:
     return False
 
 
+def replace_orphan_list_field(block: list[str], field: str, values: list[str]) -> bool:
+    replacement = [f"    {field}:", *[f"      - {value}" for value in values]]
+    for index, line in enumerate(block):
+        if not re.match(rf"^\s{{4}}{re.escape(field)}:\s*", line):
+            continue
+        end = index + 1
+        while end < len(block) and re.match(r"^\s{6}-\s+", block[end]):
+            end += 1
+        block[index:end] = replacement
+        return True
+    block.extend(replacement)
+    return False
+
+
 def update_orphan(
     root: Path,
     record_id: str,
@@ -329,14 +343,19 @@ def update_orphan(
     status: str | None,
     section_name: str | None,
     content: str | None,
+    candidate_parent: str | None,
+    source_refs: list[str],
+    next_review: str | None,
+    evidence_needed: str | None,
+    disposition: str | None,
     as_json: bool = False,
 ) -> int:
     normalized = validate_record_id(record_id)
     if section_name or content:
-        print("orphan updates support --title and --status only", file=sys.stderr)
+        print("orphan updates support explicit orphan fields, not markdown sections", file=sys.stderr)
         return 1
-    if not any([title, status]):
-        print("update requires at least one of --title or --status for orphan entries", file=sys.stderr)
+    if not any([title, status, candidate_parent, source_refs, next_review, evidence_needed, disposition]):
+        print("update requires at least one supported orphan field", file=sys.stderr)
         return 1
     path = orphan_path(root)
     ensure_orphans_file(path)
@@ -354,6 +373,21 @@ def update_orphan(
     if status:
         replace_orphan_field(block, "status", status)
         updated.append("status")
+    if candidate_parent:
+        replace_orphan_field(block, "candidate_parent", candidate_parent)
+        updated.append("candidate_parent")
+    if source_refs:
+        replace_orphan_list_field(block, "source_refs", source_refs)
+        updated.append("source_refs")
+    if next_review:
+        replace_orphan_field(block, "next_review", next_review)
+        updated.append("next_review")
+    if evidence_needed:
+        replace_orphan_field(block, "evidence_needed", yaml_quote(evidence_needed))
+        updated.append("evidence_needed")
+    if disposition:
+        replace_orphan_field(block, "disposition", disposition)
+        updated.append("disposition")
     lines[start:end] = block
     update_orphans_timestamp(lines)
     path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
@@ -586,10 +620,28 @@ def update_record(
     status: str | None,
     section_name: str | None,
     content: str | None,
+    candidate_parent: str | None,
+    source_refs: list[str],
+    next_review: str | None,
+    evidence_needed: str | None,
+    disposition: str | None,
     as_json: bool = False,
 ) -> int:
     if entity in ORPHAN_ENTITIES and record_id != "current":
-        return update_orphan(root, record_id, title, status, section_name, content, as_json)
+        return update_orphan(
+            root,
+            record_id,
+            title,
+            status,
+            section_name,
+            content,
+            candidate_parent,
+            source_refs,
+            next_review,
+            evidence_needed,
+            disposition,
+            as_json,
+        )
     config = entity_config(entity)
     if not config.writable:
         print(f"truth record entity is read-only: {entity}", file=sys.stderr)
@@ -661,6 +713,11 @@ def main() -> int:
     update_parser.add_argument("--status")
     update_parser.add_argument("--section", dest="section_name")
     update_parser.add_argument("--content")
+    update_parser.add_argument("--candidate-parent")
+    update_parser.add_argument("--source-ref", action="append", default=[])
+    update_parser.add_argument("--next-review")
+    update_parser.add_argument("--evidence-needed")
+    update_parser.add_argument("--disposition")
     update_parser.add_argument("--json", action="store_true")
 
     archive_parser = subparsers.add_parser("archive", help="Mark a truth record archived")
@@ -687,6 +744,11 @@ def main() -> int:
                 args.status,
                 args.section_name,
                 args.content,
+                args.candidate_parent,
+                args.source_ref,
+                args.next_review,
+                args.evidence_needed,
+                args.disposition,
                 args.json,
             )
         if args.command == "archive":

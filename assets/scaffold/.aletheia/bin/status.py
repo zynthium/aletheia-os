@@ -75,17 +75,28 @@ def active_state(root: Path) -> dict[str, Any]:
 
 def validation(root: Path) -> dict[str, Any]:
     result = subprocess.run(
-        [sys.executable, ".aletheia/bin/validate.py"],
+        [sys.executable, ".aletheia/bin/validate.py", "--json"],
         cwd=root,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
     )
+    warnings: list[str] = []
+    errors: list[str] = []
+    try:
+        payload = json.loads(result.stdout)
+        if isinstance(payload, dict):
+            warnings = [item for item in payload.get("warnings", []) if isinstance(item, str)]
+            errors = [item for item in payload.get("errors", []) if isinstance(item, str)]
+    except Exception:
+        pass
     return {
         "returncode": result.returncode,
         "stdout": result.stdout.strip(),
         "stderr": result.stderr.strip(),
+        "warnings": warnings,
+        "errors": errors,
     }
 
 
@@ -209,26 +220,25 @@ def stale_orphan_count(stdout: str) -> int:
 
 
 def tree_health(root: Path, validation_state: dict[str, Any]) -> dict[str, Any]:
-    stdout = validation_state.get("stdout", "")
-    stderr = validation_state.get("stderr", "")
-    stdout_tree_lines = tree_signal_lines(stdout)
-    stderr_tree_lines = tree_signal_lines(stderr)
-    semantic_review_signals = [line.strip(" -") for line in stdout_tree_lines]
-    structural_error_signals = [line.strip(" -") for line in stderr_tree_lines]
-    tree_lines = [
-        line.strip(" -")
-        for line in [*stdout_tree_lines, *stderr_tree_lines]
-    ]
+    warnings = validation_state.get("warnings", [])
+    errors = validation_state.get("errors", [])
+    if not isinstance(warnings, list):
+        warnings = []
+    if not isinstance(errors, list):
+        errors = []
+    semantic_review_signals = [line for line in warnings if any(term in line.lower() for term in TREE_SIGNAL_TERMS)]
+    structural_error_signals = [line for line in errors if any(term in line.lower() for term in TREE_SIGNAL_TERMS)]
+    tree_lines = [*semantic_review_signals, *structural_error_signals]
     orphan_count = count_orphans(root)
-    stale_count = stale_orphan_count(stdout)
+    stale_count = stale_orphan_count("\n".join(warnings))
     human_review_needed = bool(semantic_review_signals) or stale_count > 0 or orphan_count > 0
     structural_fix_needed = bool(structural_error_signals)
     return {
         "skeleton_nodes": count_skeleton_nodes(root),
         "orphan_count": orphan_count,
         "stale_orphan_count": stale_count,
-        "warning_count": len(stdout_tree_lines),
-        "error_count": len(stderr_tree_lines),
+        "warning_count": len(semantic_review_signals),
+        "error_count": len(structural_error_signals),
         "semantic_review_count": len(semantic_review_signals),
         "structural_error_count": len(structural_error_signals),
         "human_review_needed": human_review_needed,

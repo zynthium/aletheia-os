@@ -263,7 +263,7 @@
     {
       "id": "truth.orphan.update",
       "title": "Update orphan entry",
-      "intent": "Update the status for one incubating orphan entry.",
+      "intent": "Update the lifecycle status for one incubating orphan entry.",
       "risk": "writes-state",
       "command": [
         "python3",
@@ -278,6 +278,7 @@
         "id": "Orphan id.",
         "status": "New orphan lifecycle status."
       },
+      "notes": "For selected review fields (candidate_parent, source_refs, next_review, evidence_needed, disposition), call truth_record.py update orphan <id> directly with --candidate-parent, --source-ref, --next-review, --evidence-needed, or --disposition. Broad review changes stay in ORPHANS.yaml followed by validate.py.",
       "outputs": {"format": "text"},
       "verification": {"returncode": 0}
     },

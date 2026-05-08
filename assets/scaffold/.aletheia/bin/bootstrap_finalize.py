@@ -49,7 +49,7 @@ def validate(root: Path) -> int:
 
 def validation_result(root: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, ".aletheia/bin/validate.py"],
+        [sys.executable, ".aletheia/bin/validate.py", "--json"],
         cwd=root,
         text=True,
         stdout=subprocess.PIPE,
@@ -115,6 +115,15 @@ def inspect_model_gate(root: Path) -> dict:
 
 def inspect_validation(root: Path) -> dict:
     result = validation_result(root)
+    warnings: list[str] = []
+    errors: list[str] = []
+    try:
+        validation_payload = json.loads(result.stdout)
+        if isinstance(validation_payload, dict):
+            warnings = [item for item in validation_payload.get("warnings", []) if isinstance(item, str)]
+            errors = [item for item in validation_payload.get("errors", []) if isinstance(item, str)]
+    except Exception:
+        pass
     payload = {
         "id": "validation",
         "ok": result.returncode == 0,
@@ -123,6 +132,8 @@ def inspect_validation(root: Path) -> dict:
         "returncode": result.returncode,
         "stdout": result.stdout.strip(),
         "stderr": result.stderr.strip(),
+        "warnings": warnings,
+        "errors": errors,
     }
     if result.returncode != 0:
         payload["next_action"] = "python3 .aletheia/bin/validate.py"

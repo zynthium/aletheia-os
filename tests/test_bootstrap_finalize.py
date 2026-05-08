@@ -362,6 +362,14 @@ class BootstrapFinalizeTests(unittest.TestCase):
             check_statuses = {check["id"]: check["status"] for check in payload["checks"]}
             self.assertEqual(check_statuses["model_gate"], "missing")
             self.assertIn("critical_truth", check_statuses)
+            validation = next(check for check in payload["checks"] if check["id"] == "validation")
+            self.assertIn("warnings", validation)
+            self.assertIn("errors", validation)
+            self.assertTrue(
+                any("system graph still contains TBD markers" == warning for warning in validation["warnings"])
+            )
+            self.assertEqual(validation["errors"], [])
+            self.assertEqual(validation["stderr"], "")
             self.assertIn(".aletheia/hooks/pre-commit", payload["would_write"])
             self.assertTrue((target / "BOOTSTRAP.md").exists())
             self.assertFalse((target / ".aletheia" / "hooks" / "pre-commit").exists())

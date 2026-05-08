@@ -30,12 +30,14 @@ NEXT_ACTIONS = [
     "python3 .aletheia/bin/preflight.py --json",
     "python3 .aletheia/bin/status.py --json",
     "python3 .aletheia/bin/validate.py",
+    "python3 .aletheia/bin/history_audit.py --json",
     "python3 .aletheia/bin/checkpoint.py --dry-run",
 ]
 RECOMMENDED_ACTIONS = [
     "truth.preflight",
     "truth.status",
     "truth.validate",
+    "truth.history_audit",
     "truth.checkpoint.dry_run",
 ]
 
@@ -201,6 +203,8 @@ def write_index(path: Path, status: dict) -> None:
   <pre>{escape(json.dumps(status['validation'], indent=2))}</pre>
   <h2>Tree health</h2>
   <pre>{escape(json.dumps(status['tree_health'], indent=2))}</pre>
+  <h2>Git Truth History</h2>
+  <pre>{escape(json.dumps(status['history_audit'], indent=2))}</pre>
   <h2>Records</h2>
   <pre>{escape(json.dumps(status['records'], indent=2))}</pre>
   <h2>Recent changes</h2>
@@ -242,6 +246,41 @@ def validation_state(root: Path) -> dict:
     }
 
 
+def history_audit(root: Path) -> dict:
+    result = subprocess.run(
+        [sys.executable, ".aletheia/bin/history_audit.py", "--json"],
+        cwd=root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    try:
+        payload = json.loads(result.stdout)
+        if not isinstance(payload, dict):
+            payload = {"ok": False, "errors": ["history audit emitted non-object JSON"], "warnings": [], "nodes": {}}
+    except Exception:
+        payload = {"ok": False, "errors": ["history audit emitted invalid JSON"], "warnings": [], "nodes": {}}
+    nodes = payload.get("nodes", {})
+    if not isinstance(nodes, dict):
+        nodes = {}
+    errors = payload.get("errors", [])
+    warnings = payload.get("warnings", [])
+    if not isinstance(errors, list):
+        errors = []
+    if not isinstance(warnings, list):
+        warnings = []
+    return {
+        "returncode": result.returncode,
+        "ok": bool(payload.get("ok")) and result.returncode == 0,
+        "error_count": len(errors),
+        "warning_count": len(warnings),
+        "stable_node_count": sum(1 for node in nodes.values() if isinstance(node, dict) and node.get("latest_state") == "stable"),
+        "errors": errors,
+        "warnings": warnings,
+    }
+
+
 def ensure_output_dir(path: Path) -> int:
     if path.exists() and not path.is_dir():
         print(f"overview output path exists and is not a directory: {path}", file=sys.stderr)
@@ -278,6 +317,7 @@ def main() -> int:
             "state_files": [file_state(root, rel) for rel in STATE_FILES],
             "validation": validation,
             "tree_health": tree_health(root, validation),
+            "history_audit": history_audit(root),
             "records": {
                 "decisions": list_records(root, ".aletheia/decisions"),
                 "evidence": list_records(root, ".aletheia/evidence"),

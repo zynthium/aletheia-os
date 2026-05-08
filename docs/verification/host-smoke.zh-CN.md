@@ -143,6 +143,28 @@ python3 /tmp/aletheia-os-dist/aletheia-os/scripts/init_aletheia.py .
 - PASS/FAIL:
 - stdout/stderr:
 
+## Traceability Smoke
+
+```bash
+python3 .aletheia/bin/history_audit.py --json
+python3 .aletheia/bin/checkpoint.py --dry-run --node theory_model --node-state stable --evidence .aletheia/evidence/EV-001-factor-baseline.md --review human-confirmed
+```
+
+执行命令：见上方代码块。
+
+期望结果：
+
+验收：
+
+- `python3 .aletheia/bin/history_audit.py --json` 返回 returncode 0，JSON 中 `ok: true`。
+- 缺少 `--decision` 的 stable dry-run checkpoint 在提交前阻止。
+- 输出包含 `stable node checkpoint requires --decision`。
+
+实际结果：
+
+- PASS/FAIL:
+- stdout/stderr:
+
 ## 失败记录
 
 每次 smoke 失败都记录：

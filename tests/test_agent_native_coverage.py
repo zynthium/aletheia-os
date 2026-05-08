@@ -161,10 +161,16 @@ class AgentNativeCoverageTests(unittest.TestCase):
                     self.assertIn("Generated/runtime outputs", payload["durability_note"])
                     self.assertTrue(any(item["path"] == ".aletheia/overview/" for item in payload["generated_outputs"]))
                     self.assertTrue(any("checkpoint.py --dry-run" in action for action in payload["next_actions"]))
+                    self.assertTrue(any("history_audit.py --json" in action for action in payload["next_actions"]))
+                    self.assertIn("history_audit", payload)
+                    self.assertIn("returncode", payload["history_audit"])
 
             self.assertIn("truth.checkpoint.dry_run", status_payload["recommended_actions"])
             self.assertIn("truth.checkpoint.dry_run", preflight_payload["recommended_actions"])
             self.assertIn("truth.checkpoint.dry_run", overview_payload["recommended_actions"])
+            self.assertIn("truth.history_audit", status_payload["recommended_actions"])
+            self.assertIn("truth.history_audit", preflight_payload["recommended_actions"])
+            self.assertIn("truth.history_audit", overview_payload["recommended_actions"])
 
     def test_scaffold_validation_catches_agent_native_capability_map_drift(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

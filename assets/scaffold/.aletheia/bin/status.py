@@ -29,12 +29,14 @@ DURABILITY_NOTE = (
 NEXT_ACTIONS = [
     "python3 .aletheia/bin/preflight.py --json",
     "python3 .aletheia/bin/validate.py",
+    "python3 .aletheia/bin/history_audit.py --json",
     "python3 .aletheia/bin/checkpoint.py --dry-run",
     "python3 .aletheia/bin/overview.py",
 ]
 RECOMMENDED_ACTIONS = [
     "truth.preflight",
     "truth.validate",
+    "truth.history_audit",
     "truth.checkpoint.dry_run",
 ]
 
@@ -97,6 +99,41 @@ def validation(root: Path) -> dict[str, Any]:
         "stderr": result.stderr.strip(),
         "warnings": warnings,
         "errors": errors,
+    }
+
+
+def history_audit(root: Path) -> dict[str, Any]:
+    result = subprocess.run(
+        [sys.executable, ".aletheia/bin/history_audit.py", "--json"],
+        cwd=root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    try:
+        payload = json.loads(result.stdout)
+        if not isinstance(payload, dict):
+            payload = {"ok": False, "errors": ["history audit emitted non-object JSON"], "warnings": [], "nodes": {}}
+    except Exception:
+        payload = {"ok": False, "errors": ["history audit emitted invalid JSON"], "warnings": [], "nodes": {}}
+    nodes = payload.get("nodes", {})
+    if not isinstance(nodes, dict):
+        nodes = {}
+    errors = payload.get("errors", [])
+    warnings = payload.get("warnings", [])
+    if not isinstance(errors, list):
+        errors = []
+    if not isinstance(warnings, list):
+        warnings = []
+    return {
+        "returncode": result.returncode,
+        "ok": bool(payload.get("ok")) and result.returncode == 0,
+        "error_count": len(errors),
+        "warning_count": len(warnings),
+        "stable_node_count": sum(1 for node in nodes.values() if isinstance(node, dict) and node.get("latest_state") == "stable"),
+        "errors": errors,
+        "warnings": warnings,
     }
 
 
@@ -257,6 +294,7 @@ def build_status(root: Path) -> dict[str, Any]:
         "durability_note": DURABILITY_NOTE,
         "active_state": active_state(root),
         "validation": validation_state,
+        "history_audit": history_audit(root),
         "records": record_counts(root),
         "tree_health": tree_health(root, validation_state),
         "runtime_gate": runtime_gate(root),
@@ -289,6 +327,14 @@ def print_markdown(status: dict[str, Any]) -> None:
         print(f"- stdout: {validation_state['stdout']}")
     if validation_state["stderr"]:
         print(f"- stderr: {validation_state['stderr']}")
+    print()
+    print("## Git Truth History")
+    print()
+    audit = status["history_audit"]
+    print(f"- returncode: {audit['returncode']}")
+    print(f"- error count: {audit['error_count']}")
+    print(f"- warning count: {audit['warning_count']}")
+    print(f"- stable node count: {audit['stable_node_count']}")
     print()
     print("## Records")
     print()

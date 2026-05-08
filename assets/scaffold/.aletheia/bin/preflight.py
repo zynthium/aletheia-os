@@ -33,6 +33,7 @@ NEXT_ACTIONS = [
     "python3 .aletheia/bin/orient.py --with-runtime",
     "python3 .aletheia/bin/status.py --json",
     "python3 .aletheia/bin/validate.py",
+    "python3 .aletheia/bin/history_audit.py --json",
     "python3 .aletheia/bin/checkpoint.py --dry-run",
     "python3 .aletheia/bin/overview.py",
 ]
@@ -40,6 +41,7 @@ RECOMMENDED_ACTIONS = [
     "truth.orient.runtime",
     "truth.status",
     "truth.validate",
+    "truth.history_audit",
     "truth.checkpoint.dry_run",
 ]
 
@@ -151,6 +153,21 @@ def validation(root: Path) -> dict:
     }
 
 
+def history_audit(root: Path) -> dict:
+    result = run([sys.executable, ".aletheia/bin/history_audit.py", "--json"], root)
+    try:
+        payload = json.loads(result.stdout)
+        if not isinstance(payload, dict):
+            payload = {"ok": False, "errors": ["history audit emitted non-object JSON"]}
+    except Exception:
+        payload = {"ok": False, "errors": ["history audit emitted invalid JSON"]}
+    payload["returncode"] = result.returncode
+    payload.setdefault("errors", [])
+    payload.setdefault("warnings", [])
+    payload.setdefault("nodes", {})
+    return payload
+
+
 def section(text: str, name: str) -> str:
     match = re.search(rf"(?ms)^## {re.escape(name)}\n(.*?)(?=^## |\Z)", text)
     return match.group(1).strip() if match else ""
@@ -231,6 +248,7 @@ def build_preflight(root: Path) -> dict:
         "context": context_state(root),
         "runtime_gate": runtime_gate(root),
         "validation": validation(root),
+        "history_audit": history_audit(root),
         "git": status,
         "checkpoint": {
             "has_candidate": bool(candidate_files),
@@ -276,6 +294,14 @@ def print_markdown(payload: dict) -> None:
         print(f"- stdout: {validation_state['stdout']}")
     if validation_state["stderr"]:
         print(f"- stderr: {validation_state['stderr']}")
+    print()
+    print("## Git Truth History")
+    print()
+    audit = payload["history_audit"]
+    print(f"- returncode: {audit['returncode']}")
+    print(f"- error count: {len(audit.get('errors', []))}")
+    print(f"- warning count: {len(audit.get('warnings', []))}")
+    print(f"- stable node count: {sum(1 for node in audit.get('nodes', {}).values() if node.get('latest_state') == 'stable')}")
     print()
     print("## Checkpoint Candidate")
     print()

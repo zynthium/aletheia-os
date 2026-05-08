@@ -17,9 +17,15 @@ python3 .aletheia/bin/orient.py
 python3 .aletheia/bin/status.py --json
 python3 .aletheia/bin/preflight.py --json
 python3 .aletheia/bin/validate.py
+python3 .aletheia/bin/history_audit.py --json
 python3 .aletheia/bin/checkpoint.py --dry-run
 python3 .aletheia/bin/checkpoint.py
 ```
+
+Stable-node claims require validation plus Git history audit. A node is not
+traceably stable until the checkpoint commit links evidence, a decision,
+`AIOS-Node-State: stable`, `AIOS-Validation: pass`, human confirmation, and
+`python3 .aletheia/bin/history_audit.py --json` can reconstruct the transition.
 
 ## What You Can Ask AletheiaOS To Do
 
@@ -109,6 +115,7 @@ python3 .aletheia/bin/context_pack.py --with-runtime
 python3 .aletheia/bin/status.py
 python3 .aletheia/bin/status.py --json
 python3 .aletheia/bin/preflight.py --json
+python3 .aletheia/bin/history_audit.py --json
 python3 .aletheia/bin/overview.py
 ```
 

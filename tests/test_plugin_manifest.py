@@ -150,6 +150,8 @@ class PluginManifestTests(unittest.TestCase):
             "期望结果",
             "实际结果",
             "失败记录",
+            "history_audit.py --json",
+            "stable node checkpoint requires --decision",
             "不要把挂起结果标记为通过",
         ]:
             self.assertIn(required, checklist)

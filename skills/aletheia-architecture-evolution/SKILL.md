@@ -14,8 +14,10 @@ Use these primitives. Do not add orchestration to runtime scripts for architectu
 - `system_context.py` or `orient.py` to load mission, active node, parent constraints, skeleton, and contracts.
 - `truth_record.py list/show` to inspect decisions, contracts, evidence, risks, hypotheses, and nodes.
 - `truth_record.py create/update/archive` to record the durable architecture facts that changed.
+- `truth_record.py create/list/show/update/archive orphan` to incubate candidate skeleton or theory changes before promotion.
+- `status.py --json` to inspect tree health, orphan count, generated-output boundaries, and next actions.
 - `validate.py` to verify graph, refs, contracts, and record semantics.
-- `checkpoint.py` only when the user wants the coherent truth update committed.
+- `checkpoint.py --dry-run` and `checkpoint.py` only when the user wants the coherent truth update committed.
 
 ## Prompt Recipe
 

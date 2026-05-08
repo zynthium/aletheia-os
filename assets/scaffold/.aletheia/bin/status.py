@@ -36,7 +36,6 @@ RECOMMENDED_ACTIONS = [
     "truth.preflight",
     "truth.validate",
     "truth.checkpoint.dry_run",
-    "truth.overview",
 ]
 
 

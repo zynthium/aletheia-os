@@ -31,8 +31,8 @@
     "websiteURL": "https://github.com/zynthium/aletheia-os",
     "defaultPrompt": [
       "Initialize this repository with AletheiaOS.",
-      "Orient on the current project truth.",
-      "Checkpoint project truth after meaningful work."
+      "Orient on truth and show hook-free next actions.",
+      "Validate and dry-run checkpoint project truth."
     ]
   }
 }

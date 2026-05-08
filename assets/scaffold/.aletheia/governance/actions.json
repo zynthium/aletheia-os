@@ -2,6 +2,8 @@
   "schema_version": 1,
   "recommended_actions": [
     "truth.orient.runtime",
+    "truth.status",
+    "truth.preflight",
     "truth.validate",
     "truth.checkpoint.dry_run"
   ],

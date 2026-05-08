@@ -15,6 +15,7 @@ Use these primitives. Do not add orchestration to runtime scripts for promotion 
 - `system_context.py` or `context_pack.py` to load stable truth, capabilities, and record inventory.
 - `truth_record.py list/show` to deduplicate candidate claims against existing truth.
 - `truth_record.py create/update/archive` to write evidence, hypotheses, decisions, contracts, risks, nodes, state, or session notes.
+- `truth_record.py create/list/show/update/archive orphan` to incubate weak or unmounted findings without hand-editing YAML.
 - `validate.py` to verify refs and truth record semantics.
 - `checkpoint.py --dry-run` and `checkpoint.py` when the user wants promoted truth committed.
 
@@ -33,7 +34,7 @@ Promotion rules:
 7. Avoid duplicate promotion: update the existing truth record when the claim already exists.
 8. For conflicting claims, do not promote both sides as accepted truth; keep them as evidence, hypotheses, or risks until a decision has explicit evidence links.
 9. Attach promoted material to the skeleton tree only when the parent is defensible.
-10. Put unclear theory candidates, weak claims, and unmounted findings in `.aletheia/state/ORPHANS.yaml` with candidate parents and review criteria.
+10. Put unclear theory candidates, weak claims, and unmounted findings in the orphan incubator with `truth_record.py create orphan`, candidate parents, and review criteria.
 11. Set hypothesis lifecycle explicitly and keep counter-evidence visible.
 12. Link accepted decisions to evidence and the hypotheses they accept or operationalize.
 13. Leave unsupported or unclear claims in the wiki layer when they are not worth incubating.

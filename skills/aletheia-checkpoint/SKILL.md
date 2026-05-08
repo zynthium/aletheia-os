@@ -25,7 +25,23 @@ Before claiming completion for non-trivial work:
 1. Confirm model gate attribution exists for durable writes.
 2. Confirm affected `.aletheia/` facts, decisions, evidence, risks, or contracts were updated.
 3. Run repository validation when the user asks for verification or checkpointing.
-4. Create a checkpoint only when validation state is known and the user has not deferred commits.
-5. Preserve agent attribution trailers in checkpoint commits.
+4. For tree, skeleton, or durable architecture changes, choose the required
+   traceability trailer from `.aletheia/governance/GIT_POLICY.md` and
+   `.aletheia/governance/TREE_GOVERNANCE.md`.
+5. Before claiming a node is stable, run the current stable-node prerequisite:
+
+   ```bash
+   python3 .aletheia/bin/checkpoint.py --dry-run
+   ```
+
+   Once the Git history audit runtime is installed, this post-checkpoint audit
+   is also required before claiming stable:
+
+   ```bash
+   python3 .aletheia/bin/history_audit.py --json
+   ```
+
+6. Create a checkpoint only when validation state is known and the user has not deferred commits.
+7. Preserve agent attribution and AletheiaOS traceability trailers in checkpoint commits.
 
 Never hide unresolved risks.

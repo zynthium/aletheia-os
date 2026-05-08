@@ -254,6 +254,53 @@ class PluginManifestTests(unittest.TestCase):
                 for primitive in primitives:
                     self.assertIn(primitive, text)
 
+    def test_scaffold_docs_define_git_transition_protocol(self) -> None:
+        protocol_paths = [
+            "assets/scaffold/.aletheia/governance/GIT_POLICY.md",
+            "assets/scaffold/.aletheia/governance/TREE_GOVERNANCE.md",
+            "assets/scaffold/.aletheia/playbooks/tree_governed_truth_growth.md",
+            "skills/aletheia-checkpoint/SKILL.md",
+            "skills/aletheia-architecture-evolution/SKILL.md",
+        ]
+        protocol_text = "\n".join((ROOT / path).read_text(encoding="utf-8") for path in protocol_paths)
+
+        for required in [
+            "AIOS-Action",
+            "AIOS-Tree-Op",
+            "AIOS-Node-State: stable",
+            "AIOS-Validation: pass",
+            "AIOS-Review: human-confirmed",
+            "Git commits are AletheiaOS truth-transition records",
+        ]:
+            self.assertIn(required, protocol_text)
+
+        checkpoint = ROOT / "assets" / "scaffold" / ".aletheia" / "bin" / "checkpoint.py"
+        self.assertTrue(checkpoint.exists())
+
+        stable_node_docs = [
+            "assets/scaffold/.aletheia/playbooks/tree_governed_truth_growth.md",
+            "skills/aletheia-checkpoint/SKILL.md",
+            "skills/aletheia-architecture-evolution/SKILL.md",
+        ]
+        for path in stable_node_docs:
+            with self.subTest(stable_node_doc=path):
+                text = (ROOT / path).read_text(encoding="utf-8")
+                self.assertIn("python3 .aletheia/bin/checkpoint.py --dry-run", text)
+                self.assertIn("python3 .aletheia/bin/history_audit.py --json", text)
+                self.assertRegex(text, r"(?i)once .*history audit runtime is installed")
+
+        tree_governance = (
+            ROOT / "assets" / "scaffold" / ".aletheia" / "governance" / "TREE_GOVERNANCE.md"
+        ).read_text(encoding="utf-8")
+        tree_growth = (
+            ROOT / "assets" / "scaffold" / ".aletheia" / "playbooks" / "tree_governed_truth_growth.md"
+        ).read_text(encoding="utf-8")
+        tree_actions = re.findall(r"^- `([^`]+)`:", tree_growth, flags=re.MULTILINE)
+        self.assertGreater(len(tree_actions), 0)
+        for action in tree_actions:
+            with self.subTest(tree_action=action):
+                self.assertIn(f"`AIOS-Tree-Op: {action}`", tree_governance)
+
     def test_capability_audit_passes_for_scaffold_and_fails_when_map_drifts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             scaffold = Path(tmp) / "scaffold"

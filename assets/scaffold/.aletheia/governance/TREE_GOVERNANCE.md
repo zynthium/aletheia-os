@@ -87,6 +87,27 @@ branches, and archiving failed branches.
 Record meaningful tree refactors as decisions with affected nodes, evidence
 links, rollback conditions, and review triggers.
 
+## Git Transition Protocol
+
+Tree lifecycle changes must be visible in commit trailers so Git history shows
+how the truth tree changed.
+
+| Tree lifecycle | Required Git marker |
+|---|---|
+| incubating unmounted material | `AIOS-Tree-Op: incubate` |
+| attaching an orphan | `AIOS-Tree-Op: attach_orphan` |
+| inserting a parent | `AIOS-Tree-Op: insert_parent` |
+| promoting a leaf to a branch | `AIOS-Tree-Op: promote_node` |
+| demoting a weak branch | `AIOS-Tree-Op: demote_node` |
+| splitting a node | `AIOS-Tree-Op: split_node` |
+| merging duplicate nodes | `AIOS-Tree-Op: merge_nodes` |
+| moving a subtree | `AIOS-Tree-Op: move_subtree` |
+| archiving a branch operation | `AIOS-Tree-Op: archive_branch` |
+| stabilizing a node | `AIOS-Node-State: stable` |
+| weakening a claim | `AIOS-Node-State: weakened` |
+| falsifying a claim | `AIOS-Node-State: falsified` |
+| archiving a branch | `AIOS-Node-State: archived` |
+
 ## Validation Severity
 
 Hard validation errors should protect structure:

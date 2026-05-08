@@ -40,8 +40,25 @@ If the answer is unclear, do not force it into the main tree. Put it in
 4. If attaching, update affected node/skeleton refs and supporting records.
 5. If incubating, update `.aletheia/state/ORPHANS.yaml`.
 6. If restructuring, record a decision with evidence links and rollback criteria.
-7. Run validation.
-8. Checkpoint only when the user wants the truth update committed.
+7. Choose the required traceability trailers from
+   `.aletheia/governance/TREE_GOVERNANCE.md` before committing tree or skeleton
+   changes.
+8. Run validation.
+9. Before claiming a node is stable, run the current stable-node prerequisite:
+
+   ```bash
+   python3 .aletheia/bin/checkpoint.py --dry-run
+   ```
+
+   Once the Git history audit runtime is installed, this post-checkpoint audit
+   is also required before claiming stable:
+
+   ```bash
+   python3 .aletheia/bin/history_audit.py --json
+   ```
+
+10. Checkpoint only when the user wants the truth update committed, and include
+    the matching `AIOS-Tree-Op` or `AIOS-Node-State` trailers.
 
 ## Minimal Tree Refactor Recipes
 
@@ -54,7 +71,8 @@ review records below.
 2. Add or update the target node in `SKELETON.yaml`.
 3. Move the orphan disposition out of incubating or remove the cleared entry.
 4. Link the supporting `evidence` and `decisions`.
-5. Run `validate.py`, then inspect `status.py`, `orient.py`, and `overview.py`.
+5. Prepare the `AIOS-Tree-Op: attach_orphan` trailer for the checkpoint commit.
+6. Run `validate.py`, then inspect `status.py`, `orient.py`, and `overview.py`.
 
 ### Insert parent
 
@@ -62,7 +80,8 @@ review records below.
 2. Add the parent branch to `SKELETON.yaml`.
 3. Reparent the existing children under that branch.
 4. Record the refactor in `decisions` with evidence links and rollback criteria.
-5. Run `validate.py`, then inspect `status.py`, `orient.py`, and `overview.py`.
+5. Prepare the `AIOS-Tree-Op: insert_parent` trailer for the checkpoint commit.
+6. Run `validate.py`, then inspect `status.py`, `orient.py`, and `overview.py`.
 
 ### Split node
 
@@ -71,7 +90,8 @@ review records below.
    longer has a clean purpose.
 3. Add the new child nodes in `SKELETON.yaml`.
 4. Move supporting refs to the child that now owns them.
-5. Run `validate.py`, then inspect `status.py`, `orient.py`, and `overview.py`.
+5. Prepare the `AIOS-Tree-Op: split_node` trailer for the checkpoint commit.
+6. Run `validate.py`, then inspect `status.py`, `orient.py`, and `overview.py`.
 
 ### Merge nodes
 
@@ -79,7 +99,9 @@ review records below.
 2. Keep one canonical node in `SKELETON.yaml`.
 3. Mark the duplicate node `status: archived` when history should stay visible.
 4. Keep supporting `evidence` and `decisions` linked to the retained branch.
-5. Run `validate.py`, then inspect `status.py`, `orient.py`, and `overview.py`.
+5. Prepare the relevant `AIOS-Node-State` trailer for any weakened, falsified,
+   or archived node.
+6. Run `validate.py`, then inspect `status.py`, `orient.py`, and `overview.py`.
 
 ## Human Confirmation Required
 

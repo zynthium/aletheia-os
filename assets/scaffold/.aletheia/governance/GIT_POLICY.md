@@ -2,6 +2,27 @@
 
 Git is the memory boundary. If durable state is not committed, it is not final project memory.
 
+## Truth Transition Commits
+
+Git commits are AletheiaOS truth-transition records. `.aletheia/` stores the current truth state; Git history stores how that state changed.
+
+Use AletheiaOS trailers when a commit changes the truth tree, stabilizes a node, weakens or falsifies a claim, archives a branch, or implements an accepted decision.
+
+## Stable Node Marker
+
+`AIOS-Node-State: stable` is a strong traceability claim. It requires:
+
+1. `AIOS-Action: truth.node.stabilize`
+2. `AIOS-Node: <known node id>`
+3. `AIOS-Evidence: <existing evidence record>`
+4. `AIOS-Decision: <existing accepted decision record>`
+5. `AIOS-Validation: pass`
+6. `AIOS-Review: human-confirmed`
+
+Do not use `stable` for unreviewed hypotheses, unsupported children, stale orphans, or root-level theory changes that have not received explicit human confirmation.
+
+## Checkpoints
+
 Create a checkpoint when one of these occurs:
 
 1. active state changed;

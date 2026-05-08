@@ -37,3 +37,17 @@ Before changing architecture:
 After changing architecture, update decisions, contracts, skeleton paths, evidence, and active state.
 Use `.aletheia/playbooks/tree_governed_truth_growth.md` before moving subtrees,
 inserting parents, splitting nodes, or promoting leaves.
+For tree, skeleton, or durable architecture changes, prepare the matching
+AletheiaOS traceability trailers before checkpointing the commit.
+Before claiming a node is stable, run the current stable-node prerequisite:
+
+```bash
+python3 .aletheia/bin/checkpoint.py --dry-run
+```
+
+Once the Git history audit runtime is installed, this post-checkpoint audit is
+also required before claiming stable:
+
+```bash
+python3 .aletheia/bin/history_audit.py --json
+```

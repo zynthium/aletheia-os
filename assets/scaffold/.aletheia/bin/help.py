@@ -79,6 +79,7 @@ CAPABILITIES = [
             "python3 .aletheia/bin/truth_record.py list orphan --json",
             "python3 .aletheia/bin/truth_record.py show orphan ORPH-0001 --json",
             "python3 .aletheia/bin/truth_record.py update orphan ORPH-0001 --status reviewed",
+            "python3 .aletheia/bin/truth_record.py update orphan ORPH-0001 --candidate-parent root --source-ref .aletheia/evidence/EV-0001.md --next-review 2099-01-01 --evidence-needed \"Confirm with source inventory\" --disposition attach",
             "python3 .aletheia/bin/truth_record.py archive orphan ORPH-0001 --reason \"Disposition resolved\"",
             "python3 .aletheia/bin/truth_record.py archive runtime-policy current --reason \"Superseded policy\"",
         ],

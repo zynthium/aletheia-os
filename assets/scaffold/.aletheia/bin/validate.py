@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import argparse
 from datetime import date
 from pathlib import Path
 
@@ -760,7 +761,20 @@ def validate_orphans(root: Path, errors: list[str], warnings: list[str]) -> None
         warnings.append("orphan review is stale: " + ", ".join(stale))
 
 
+def emit_json_result(errors: list[str], warnings: list[str]) -> None:
+    emit = {
+        "ok": not errors,
+        "returncode": 1 if errors else 0,
+        "warnings": warnings,
+        "errors": errors,
+    }
+    print(json.dumps(emit, indent=2, sort_keys=True))
+
+
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Validate AletheiaOS truth state.")
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args()
     root = repo_root()
     errors: list[str] = []
     warnings: list[str] = []
@@ -801,6 +815,10 @@ def main() -> int:
             path = root / rel
             if path.exists() and "TBD" in path.read_text(encoding="utf-8"):
                 errors.append(f"post-bootstrap critical file still contains TBD markers: {rel}")
+
+    if args.json:
+        emit_json_result(errors, warnings)
+        return 1 if errors else 0
 
     if warnings:
         print("AletheiaOS validation warnings:")

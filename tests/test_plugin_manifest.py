@@ -168,6 +168,11 @@ class PluginManifestTests(unittest.TestCase):
             "truth.checkpoint.dry_run",
             "truth.bootstrap.guided.inspect",
             "truth.bootstrap.finalize.inspect",
+            "--candidate-parent",
+            "--source-ref",
+            "--next-review",
+            "--evidence-needed",
+            "--disposition",
             "capability_audit.py",
             "orient.py",
             "context_pack.py",
@@ -338,6 +343,7 @@ class PluginManifestTests(unittest.TestCase):
             "truth_record.py show",
             "truth_record.py update",
             "truth_record.py archive",
+            "truth_record.py update orphan ORPH-0001 --candidate-parent",
         ]:
             self.assertIn(command, capability_map)
             self.assertIn(command, help_text)
@@ -595,6 +601,24 @@ class PluginManifestTests(unittest.TestCase):
         ]:
             self.assertIn(required, playbook)
 
+    def test_tree_governance_docs_define_skeleton_as_authoritative_truth_tree(self) -> None:
+        governance = (
+            ROOT
+            / "assets"
+            / "scaffold"
+            / ".aletheia"
+            / "governance"
+            / "TREE_GOVERNANCE.md"
+        ).read_text(encoding="utf-8")
+        skeleton = (ROOT / "assets" / "scaffold" / ".aletheia" / "state" / "SKELETON.yaml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("SKELETON.yaml is the authoritative truth tree", governance)
+        self.assertIn("SYSTEM_GRAPH.yaml is a coarse system map", governance)
+        self.assertIn("authoritative_truth_tree", skeleton)
+        self.assertIn("coarse_system_map", skeleton)
+
     def test_readme_documents_simple_installation(self) -> None:
         readme = (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
 
@@ -630,6 +654,7 @@ class PluginManifestTests(unittest.TestCase):
         self.assertIn("python3 .aletheia/bin/truth_record.py update evidence EV-0001 --status active", readme)
         self.assertIn("python3 .aletheia/bin/action.py next --json", readme)
         self.assertIn("python3 .aletheia/bin/truth_record.py create orphan --id ORPH-0001", readme)
+        self.assertIn("python3 .aletheia/bin/truth_record.py update orphan ORPH-0001 --candidate-parent root", readme)
         self.assertIn("python3 .aletheia/bin/guided_bootstrap.py --inspect --json", readme)
         self.assertIn("python3 .aletheia/bin/bootstrap_finalize.py --inspect --json", readme)
         self.assertIn("truth_record.py 支持 `--json`", readme)

@@ -287,6 +287,7 @@ python3 .aletheia/bin/truth_record.py create orphan --id ORPH-0001 --title "Unmo
 python3 .aletheia/bin/truth_record.py list orphan --json
 python3 .aletheia/bin/truth_record.py show orphan ORPH-0001 --json
 python3 .aletheia/bin/truth_record.py update orphan ORPH-0001 --status reviewed
+python3 .aletheia/bin/truth_record.py update orphan ORPH-0001 --candidate-parent root --source-ref .aletheia/evidence/EV-0001.md --next-review 2099-01-01 --evidence-needed "Confirm with source inventory" --disposition attach
 python3 .aletheia/bin/truth_record.py archive orphan ORPH-0001 --reason "Disposition resolved"
 python3 .aletheia/bin/model_gate.py --task-class <task_class> --provider <provider> --model-id <model_id> --record --objective "<objective>"
 python3 .aletheia/bin/model_gate.py --task-class bootstrap_finalize --provider <provider> --model-id <model_id> --tier C3 --operator-approved --record --objective "Initialize AletheiaOS"
@@ -314,7 +315,7 @@ python3 .aletheia/bin/checkpoint.py
 
 Claude Code 通过 hooks 自动执行门禁和审计；Codex 当前以 skills、显式命令和可选 subagents 执行同一协议，不宣称拥有等同的自动 hook enforcement。Codex 上的显式闭环是：`orient.py --with-runtime`、`status.py --json` 或 `preflight.py --json`、写入 truth、`validate.py`、`checkpoint.py --dry-run`。
 
-truth_record.py 支持 `--json` 输出，便于 agent 稳定组合 list、create、show、update 和 archive 结果。固定 truth files 可用 `current` 作为记录 id，例如 `truth_record.py show capability-map current`、`truth_record.py show charter current`、`truth_record.py update active-state current --section "Active frontier" --content "..."` 和 `truth_record.py archive runtime-policy current --reason "..."`。orphan incubator 的常用生命周期可通过 `truth_record.py create/list/show/update/archive orphan` 完成，复杂 review 仍可直接编辑 `.aletheia/state/ORPHANS.yaml` 后验证。truth record 删除默认采用 archive-only 策略；永久移除属于人工/admin 操作，应先确认没有悬空引用。
+truth_record.py 支持 `--json` 输出，便于 agent 稳定组合 list、create、show、update 和 archive 结果。固定 truth files 可用 `current` 作为记录 id，例如 `truth_record.py show capability-map current`、`truth_record.py show charter current`、`truth_record.py update active-state current --section "Active frontier" --content "..."` 和 `truth_record.py archive runtime-policy current --reason "..."`。orphan incubator 的常用生命周期可通过 `truth_record.py create/list/show/update/archive orphan` 完成；少量 review 字段可用 `--candidate-parent`、`--source-ref`、`--next-review`、`--evidence-needed` 和 `--disposition` 更新，复杂 review 仍可直接编辑 `.aletheia/state/ORPHANS.yaml` 后验证。truth record 删除默认采用 archive-only 策略；永久移除属于人工/admin 操作，应先确认没有悬空引用。
 
 `checkpoint.py` 默认只提交 AletheiaOS state/control-plane 路径；只有显式传入 `--include-worktree` 时才 stage 整个工作树。
 

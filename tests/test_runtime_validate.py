@@ -395,6 +395,8 @@ class RuntimeValidateTests(unittest.TestCase):
             payload = json.loads(result.stdout)
             self.assertEqual(payload["runtime_gate"]["run_id"], "RUN-preflight")
             self.assertEqual(payload["validation"]["returncode"], 0)
+            self.assertIn("warnings", payload["validation"])
+            self.assertIn("errors", payload["validation"])
             self.assertTrue(payload["checkpoint"]["has_candidate"])
             self.assertIn(".aletheia/state/ACTIVE_STATE.md", payload["checkpoint"]["candidate_files"])
             self.assertIn("context", payload)
@@ -407,6 +409,44 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("truth.checkpoint.dry_run", payload["recommended_actions"])
             self.assertIn("Generated/runtime outputs", payload["durability_note"])
             self.assertTrue(any(item["path"] == ".aletheia/source_inventory/" for item in payload["generated_outputs"]))
+
+    def test_preflight_validation_uses_structured_json_warnings_and_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            yesterday = (date.today() - timedelta(days=1)).isoformat()
+            (target / ".aletheia" / "state" / "ORPHANS.yaml").write_text(
+                "version: 0.1\n"
+                "schema: AIOS_ORPHANS\n"
+                "updated: 2026-05-08\n\n"
+                "review_policy:\n"
+                "  default_review_days: 30\n"
+                "  max_orphan_age_days: 90\n\n"
+                "orphans:\n"
+                "  - id: OR-preflight-json\n"
+                "    status: incubating\n"
+                "    summary: Structured preflight warning\n"
+                "    candidate_parent: root\n"
+                f"    next_review: {yesterday}\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/preflight.py", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["validation"]["returncode"], 0)
+            self.assertIn("orphan review is stale: OR-preflight-json", payload["validation"]["warnings"])
+            self.assertEqual(payload["validation"]["errors"], [])
+            self.assertEqual(payload["validation"]["stderr"], "")
 
     def test_action_layer_lists_explains_runs_and_recommends_agent_actions(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -849,7 +889,7 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, output)
             status = json.loads((target / ".aletheia" / "overview" / "status.json").read_text(encoding="utf-8"))
             self.assertNotEqual(status["validation"]["returncode"], 0)
-            self.assertIn("missing required path: .claude/settings.json", status["validation"]["stderr"])
+            self.assertIn("missing required path: .claude/settings.json", status["validation"]["errors"])
             self.assertIn(".aletheia/evidence/EV-001.md", status["records"]["evidence"])
             self.assertIn(".aletheia/decisions/DEC-001.md", status["records"]["decisions"])
             self.assertIn(".aletheia/contracts/CON-001.md", status["records"]["contracts"])
@@ -986,6 +1026,9 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertGreaterEqual(overview_status["tree_health"]["warning_count"], 1)
             self.assertEqual(overview_status["tree_health"]["error_count"], 0)
             self.assertTrue(overview_status["tree_health"]["review_needed"])
+            self.assertIn("warnings", overview_status["validation"])
+            self.assertIn("errors", overview_status["validation"])
+            self.assertIn("orphan review is stale: OR-001", overview_status["validation"]["warnings"])
 
             validate = validate_target(target)
             self.assertEqual(validate.returncode, 0, validate.stdout + validate.stderr)
@@ -1092,6 +1135,63 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertTrue(payload["tree_health"]["structural_fix_needed"])
             self.assertTrue(
                 any("skeleton parent missing child link" in signal for signal in payload["tree_health"]["structural_error_signals"])
+            )
+
+    def test_overview_tree_health_uses_structured_validation_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            skeleton = target / ".aletheia" / "state" / "SKELETON.yaml"
+            skeleton.write_text(
+                skeleton.read_text(encoding="utf-8")
+                + "\n"
+                "  detached_overview_leaf:\n"
+                "    layer: leaf\n"
+                "    parent: root\n"
+                "    children: []\n"
+                "    purpose: \"Detached leaf for structured overview health.\"\n"
+                "    invariants: []\n"
+                "    inherited_constraints: []\n"
+                "    adds: []\n"
+                "    does_not_explain: []\n"
+                "    interfaces: []\n"
+                "    owned_paths: []\n"
+                "    test_paths: []\n"
+                "    contract_refs: []\n"
+                "    decision_refs: []\n"
+                "    evidence_refs: []\n"
+                "    expand_when: []\n"
+                "    stop_when: []\n"
+                "    review_triggers: []\n"
+                "    confidence: 0.1\n"
+                "    last_reviewed: 2026-05-08\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/overview.py"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            payload = json.loads((target / ".aletheia" / "overview" / "status.json").read_text(encoding="utf-8"))
+            self.assertEqual(payload["validation"]["returncode"], 1)
+            self.assertIn("warnings", payload["validation"])
+            self.assertIn("errors", payload["validation"])
+            self.assertEqual(payload["tree_health"]["semantic_review_count"], 0)
+            self.assertGreaterEqual(payload["tree_health"]["structural_error_count"], 1)
+            self.assertFalse(payload["tree_health"]["human_review_needed"])
+            self.assertTrue(payload["tree_health"]["structural_fix_needed"])
+            self.assertTrue(
+                any(
+                    "skeleton parent missing child link" in signal
+                    for signal in payload["tree_health"]["structural_error_signals"]
+                )
             )
 
     def test_overview_can_watch_for_refresh_iterations(self) -> None:

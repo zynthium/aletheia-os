@@ -132,11 +132,22 @@ def git_status(root: Path) -> dict:
 
 
 def validation(root: Path) -> dict:
-    result = run([sys.executable, ".aletheia/bin/validate.py"], root)
+    result = run([sys.executable, ".aletheia/bin/validate.py", "--json"], root)
+    warnings: list[str] = []
+    errors: list[str] = []
+    try:
+        payload = json.loads(result.stdout)
+        if isinstance(payload, dict):
+            warnings = [item for item in payload.get("warnings", []) if isinstance(item, str)]
+            errors = [item for item in payload.get("errors", []) if isinstance(item, str)]
+    except Exception:
+        pass
     return {
         "returncode": result.returncode,
         "stdout": result.stdout.strip(),
         "stderr": result.stderr.strip(),
+        "warnings": warnings,
+        "errors": errors,
     }
 
 

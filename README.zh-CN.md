@@ -1,5 +1,7 @@
 # AletheiaOS
 
+[English](README.md)
+
 ![AletheiaOS hero](docs/assets/readme-hero.jpg)
 
 **面向 AI 辅助研究与工程的仓库原生可证伪真理树层。**
@@ -127,7 +129,7 @@ python3 scripts/package_plugin.py --output /tmp/aletheia-os-dist
 /tmp/aletheia-os-dist/aletheia-os/
 ```
 
-该目录包含 `.codex-plugin/`、`.claude-plugin/`、`.agents/`、`agents/`、`codex-agents/`、`skills/`、`assets/`、`scripts/` 和 `README.zh-CN.md`。
+该目录包含 `.codex-plugin/`、`.claude-plugin/`、`.agents/`、`agents/`、`codex-agents/`、`skills/`、`assets/`、`scripts/`、`README.md` 和 `README.zh-CN.md`。
 
 本地 Claude Code 测试：
 

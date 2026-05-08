@@ -16,6 +16,7 @@ REQUIRED = [
     ".claude-plugin/plugin.json",
     ".claude-plugin/marketplace.json",
     ".agents/plugins/marketplace.json",
+    "README.md",
     "README.zh-CN.md",
     "agents/truth-auditor.md",
     "agents/evidence-curator.md",
@@ -99,6 +100,7 @@ PACKAGE_DIRS = [
     "docs",
     "assets",
     "scripts",
+    "README.md",
     "README.zh-CN.md",
 ]
 

@@ -136,6 +136,8 @@ class PluginManifestTests(unittest.TestCase):
                 ).exists()
             )
             self.assertTrue((release_root / "docs" / "verification" / "host-smoke.zh-CN.md").exists())
+            self.assertTrue((release_root / "README.md").exists())
+            self.assertTrue((release_root / "README.zh-CN.md").exists())
 
     def test_host_smoke_checklist_requires_versions_commands_expected_results_and_failures(self) -> None:
         checklist = (ROOT / "docs" / "verification" / "host-smoke.zh-CN.md").read_text(encoding="utf-8")
@@ -621,8 +623,9 @@ class PluginManifestTests(unittest.TestCase):
 
     def test_readme_documents_simple_installation(self) -> None:
         readme = (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
+        english_readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
-        self.assertFalse((ROOT / ("README" + ".md")).exists())
+        self.assertIn("[English](README.md)", readme)
         self.assertIn("仓库原生事实层", readme)
         self.assertIn("仓库原生可证伪真理树层", readme)
         self.assertIn("One repo. One falsifiable truth tree. Many agents.", readme)
@@ -663,6 +666,45 @@ class PluginManifestTests(unittest.TestCase):
         self.assertIn("`preflight.py` 是 Codex 等无自动 hook enforcement 宿主的显式检查入口", readme)
         self.assertIn("prompt_native_boundaries.md", readme)
 
+        self.assertIn("[Simplified Chinese](README.zh-CN.md)", english_readme)
+        self.assertIn("repo-native falsifiable truth tree layer", english_readme)
+        self.assertIn("repo-native truth layer", english_readme)
+        self.assertIn("current most trusted, reviewable, falsifiable project facts", english_readme)
+        self.assertIn("not another coding workflow", english_readme)
+        self.assertIn("Global View Checksum", english_readme)
+        self.assertIn("OpenSpec", english_readme)
+        self.assertIn("Superpowers", english_readme)
+        self.assertIn(".claude-plugin/plugin.json", english_readme)
+        self.assertIn("python3 scripts/install_aletheia.py --host both --scope user", english_readme)
+        self.assertIn("zynthium/aletheia-os", english_readme)
+        self.assertIn("claude plugin marketplace add zynthium/aletheia-os --scope user", english_readme)
+        self.assertIn("codex plugin marketplace add zynthium/aletheia-os", english_readme)
+        self.assertIn("/plugins", english_readme)
+        self.assertIn("Daily Loop", english_readme)
+        self.assertIn("orient -> work -> update truth -> validate -> checkpoint", english_readme)
+        self.assertIn("Runtime Reference", english_readme)
+        self.assertIn("bootstrap finalize installs AletheiaOS Git hooks", english_readme)
+        self.assertIn("governance, attribution, and audit boundary", english_readme)
+        self.assertIn("not a security sandbox", english_readme)
+        self.assertIn("Claude Code enforces gates and audits through hooks", english_readme)
+        self.assertIn("Codex currently uses skills, explicit commands, and optional subagents", english_readme)
+        self.assertIn("### New Projects", english_readme)
+        self.assertIn("### Existing Projects", english_readme)
+        self.assertIn("python3 /path/to/aletheia-os/scripts/init_aletheia.py .", english_readme)
+        self.assertIn("git status --short", english_readme)
+        self.assertIn("docs/verification/host-smoke.zh-CN.md", english_readme)
+        self.assertIn("python3 .aletheia/bin/truth_record.py update evidence EV-0001 --status active", english_readme)
+        self.assertIn("python3 .aletheia/bin/action.py next --json", english_readme)
+        self.assertIn("python3 .aletheia/bin/truth_record.py create orphan --id ORPH-0001", english_readme)
+        self.assertIn("python3 .aletheia/bin/truth_record.py update orphan ORPH-0001 --candidate-parent root", english_readme)
+        self.assertIn("python3 .aletheia/bin/guided_bootstrap.py --inspect --json", english_readme)
+        self.assertIn("python3 .aletheia/bin/bootstrap_finalize.py --inspect --json", english_readme)
+        self.assertIn("truth_record.py supports `--json`", english_readme)
+        self.assertIn("truth_record.py create/list/show/update/archive orphan", english_readme)
+        self.assertIn("Codex plugin enablement is a host UI limitation", english_readme)
+        self.assertIn("without automatic hook enforcement", english_readme)
+        self.assertIn("prompt_native_boundaries.md", english_readme)
+
         start_here = (ROOT / "assets" / "scaffold" / ".aletheia" / "START_HERE.md").read_text(
             encoding="utf-8"
         )
@@ -675,6 +717,7 @@ class PluginManifestTests(unittest.TestCase):
             r"https://github\.com/old-org/old-repo",
         ]
         checked_roots = [
+            ROOT / "README.md",
             ROOT / "README.zh-CN.md",
             ROOT / "skills",
             ROOT / "agents",
@@ -702,6 +745,7 @@ class PluginManifestTests(unittest.TestCase):
 
     def test_plugin_content_uses_zynthium_repository_identity(self) -> None:
         checked_roots = [
+            ROOT / "README.md",
             ROOT / "README.zh-CN.md",
             ROOT / ".codex-plugin" / "plugin.json",
             ROOT / ".claude-plugin" / "plugin.json",

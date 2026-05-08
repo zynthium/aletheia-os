@@ -666,7 +666,7 @@ class PluginManifestTests(unittest.TestCase):
         self.assertIn("`preflight.py` 是 Codex 等无自动 hook enforcement 宿主的显式检查入口", readme)
         self.assertIn("prompt_native_boundaries.md", readme)
 
-        self.assertIn("[Simplified Chinese](README.zh-CN.md)", english_readme)
+        self.assertIn("[简体中文](README.zh-CN.md)", english_readme)
         self.assertIn("repo-native falsifiable truth tree layer", english_readme)
         self.assertIn("repo-native truth layer", english_readme)
         self.assertIn("current most trusted, reviewable, falsifiable project facts", english_readme)

@@ -6,7 +6,7 @@ import json
 import re
 import sys
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 
@@ -230,6 +230,14 @@ def update_orphans_timestamp(lines: list[str]) -> None:
     lines.insert(0, updated)
 
 
+def orphan_default_review_days(lines: list[str]) -> int:
+    for line in lines:
+        match = re.match(r"^\s{2}default_review_days:\s*(\d+)\s*$", line)
+        if match:
+            return int(match.group(1))
+    return 30
+
+
 def orphan_fragment(record_id: str) -> str:
     return f".aletheia/state/ORPHANS.yaml#{record_id}"
 
@@ -284,6 +292,7 @@ def create_orphan(root: Path, record_id: str, title: str, as_json: bool = False)
         lines.append("orphans:")
     if lines and lines[-1].strip():
         lines.append("")
+    next_review = date.today() + timedelta(days=orphan_default_review_days(lines))
     lines.extend(
         [
             f"  - id: {normalized}",
@@ -291,7 +300,7 @@ def create_orphan(root: Path, record_id: str, title: str, as_json: bool = False)
             f"    summary: {yaml_quote(title)}",
             "    candidate_parent: unknown",
             "    source_refs: []",
-            f"    next_review: {date.today().isoformat()}",
+            f"    next_review: {next_review.isoformat()}",
         ]
     )
     update_orphans_timestamp(lines)

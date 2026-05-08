@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import date, timedelta
 from pathlib import Path
 
 
@@ -800,6 +801,7 @@ class RuntimeValidateTests(unittest.TestCase):
             target = Path(tmp) / "target"
             target.mkdir()
             init_target(target)
+            yesterday = (date.today() - timedelta(days=1)).isoformat()
             (target / ".aletheia" / "state" / "ORPHANS.yaml").write_text(
                 "version: 0.1\n"
                 "schema: AIOS_ORPHANS\n"
@@ -813,7 +815,7 @@ class RuntimeValidateTests(unittest.TestCase):
                 "    summary: Candidate unmounted claim\n"
                 "    candidate_parent: root\n"
                 "    source_refs: []\n"
-                "    next_review: 2026-01-01\n",
+                f"    next_review: {yesterday}\n",
                 encoding="utf-8",
             )
 
@@ -879,6 +881,57 @@ class RuntimeValidateTests(unittest.TestCase):
             validate = validate_target(target)
             self.assertEqual(validate.returncode, 0, validate.stdout + validate.stderr)
             self.assertIn("orphan review is stale: OR-001", validate.stdout)
+
+    def test_orphan_stale_review_uses_current_date_boundaries(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            yesterday = (date.today() - timedelta(days=1)).isoformat()
+            today = date.today().isoformat()
+            tomorrow = (date.today() + timedelta(days=1)).isoformat()
+            (target / ".aletheia" / "state" / "ORPHANS.yaml").write_text(
+                "version: 0.1\n"
+                "schema: AIOS_ORPHANS\n"
+                "updated: 2026-05-08\n\n"
+                "review_policy:\n"
+                "  default_review_days: 30\n"
+                "  max_orphan_age_days: 90\n\n"
+                "orphans:\n"
+                "  - id: OR-stale\n"
+                "    status: incubating\n"
+                "    summary: Stale review\n"
+                "    candidate_parent: root\n"
+                f"    next_review: {yesterday}\n"
+                "  - id: OR-today\n"
+                "    status: incubating\n"
+                "    summary: Review today\n"
+                "    candidate_parent: root\n"
+                f"    next_review: {today}\n"
+                "  - id: OR-future\n"
+                "    status: incubating\n"
+                "    summary: Future review\n"
+                "    candidate_parent: root\n"
+                f"    next_review: {tomorrow}\n",
+                encoding="utf-8",
+            )
+
+            status = subprocess.run(
+                [sys.executable, ".aletheia/bin/status.py", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(status.returncode, 0, status.stdout + status.stderr)
+            payload = json.loads(status.stdout)
+            signals = "\n".join(payload["tree_health"]["signals"])
+            self.assertEqual(payload["tree_health"]["stale_orphan_count"], 1)
+            self.assertIn("OR-stale", signals)
+            self.assertNotIn("OR-today", signals)
+            self.assertNotIn("OR-future", signals)
 
     def test_status_separates_tree_semantic_review_from_structural_errors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1441,6 +1494,11 @@ class RuntimeValidateTests(unittest.TestCase):
             )
             self.assertEqual(create.returncode, 0, create.stdout + create.stderr)
             self.assertEqual(json.loads(create.stdout)["path"], ".aletheia/state/ORPHANS.yaml#ORPH-0001")
+            expected_review = (date.today() + timedelta(days=30)).isoformat()
+            self.assertIn(
+                f"    next_review: {expected_review}",
+                (target / ".aletheia" / "state" / "ORPHANS.yaml").read_text(encoding="utf-8"),
+            )
 
             duplicate = subprocess.run(
                 [
@@ -1541,6 +1599,77 @@ class RuntimeValidateTests(unittest.TestCase):
 
             validation = validate_target(target)
             self.assertEqual(validation.returncode, 0, validation.stdout + validation.stderr)
+
+    def test_truth_record_orphan_create_uses_review_policy_days_with_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            orphans_path = target / ".aletheia" / "state" / "ORPHANS.yaml"
+            orphans_path.write_text(
+                "version: 0.1\n"
+                "schema: AIOS_ORPHANS\n"
+                "updated: 2026-05-08\n\n"
+                "review_policy:\n"
+                "  default_review_days: 7\n"
+                "  max_orphan_age_days: 90\n\n"
+                "orphans: []\n",
+                encoding="utf-8",
+            )
+
+            create_custom = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "create",
+                    "orphan",
+                    "--id",
+                    "ORPH-custom",
+                    "--title",
+                    "Custom policy",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(create_custom.returncode, 0, create_custom.stdout + create_custom.stderr)
+            self.assertIn(
+                f"    next_review: {(date.today() + timedelta(days=7)).isoformat()}",
+                orphans_path.read_text(encoding="utf-8"),
+            )
+
+            orphans_path.write_text(
+                "version: 0.1\n"
+                "schema: AIOS_ORPHANS\n"
+                "updated: 2026-05-08\n\n"
+                "orphans: []\n",
+                encoding="utf-8",
+            )
+
+            create_fallback = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "create",
+                    "orphan",
+                    "--id",
+                    "ORPH-fallback",
+                    "--title",
+                    "Fallback policy",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(create_fallback.returncode, 0, create_fallback.stdout + create_fallback.stderr)
+            self.assertIn(
+                f"    next_review: {(date.today() + timedelta(days=30)).isoformat()}",
+                orphans_path.read_text(encoding="utf-8"),
+            )
 
     def test_orphan_validation_rejects_duplicates_and_missing_candidate_parent(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

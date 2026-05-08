@@ -1,7 +1,7 @@
 {
   "name": "aletheia-os",
   "version": "0.1.0",
-  "description": "Repo-native truth layer for AI-assisted research and engineering. Maintains project truth, architecture constraints, research evidence, decisions, risks, and agent attribution in .aletheia/.",
+  "description": "Repo-native falsifiable truth tree for AI-assisted research and engineering. Maintains root objectives, skeleton, hypotheses, evidence, decisions, contracts, risks, orphan incubator, and agent attribution in .aletheia/.",
   "author": {
     "name": "zynthium",
     "url": "https://github.com/zynthium"
@@ -14,6 +14,11 @@
     "claude-code",
     "plugin",
     "truth-layer",
+    "truth-tree",
+    "falsifiable-truth",
+    "scientific-method",
+    "tree-governance",
+    "agent-governance",
     "project-truth",
     "architecture",
     "evidence"

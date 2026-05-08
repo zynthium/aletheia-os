@@ -24,11 +24,18 @@ class PluginManifestTests(unittest.TestCase):
         self.assertEqual(manifest["homepage"], "https://github.com/zynthium/aletheia-os")
         self.assertEqual(manifest["interface"]["developerName"], "zynthium")
         self.assertEqual(manifest["interface"]["websiteURL"], "https://github.com/zynthium/aletheia-os")
-        self.assertIn("truth layer", manifest["description"])
-        self.assertIn("project truth", manifest["interface"]["shortDescription"])
-        self.assertIn("architecture", manifest["interface"]["longDescription"])
+        self.assertIn("falsifiable truth tree", manifest["description"])
+        self.assertIn("orphan incubator", manifest["description"])
+        self.assertIn("falsifiable truth tree", manifest["interface"]["shortDescription"])
+        self.assertIn("hierarchical, falsifiable, and evolvable", manifest["interface"]["longDescription"])
+        self.assertIn("orphan incubator", manifest["interface"]["longDescription"])
         self.assertIn("evidence", manifest["interface"]["longDescription"])
         self.assertIn("truth-layer", manifest["keywords"])
+        self.assertIn("truth-tree", manifest["keywords"])
+        self.assertIn("falsifiable-truth", manifest["keywords"])
+        self.assertIn("scientific-method", manifest["keywords"])
+        self.assertIn("tree-governance", manifest["keywords"])
+        self.assertIn("agent-governance", manifest["keywords"])
         self.assertIsInstance(manifest["interface"]["defaultPrompt"], list)
         self.assertLessEqual(len(manifest["interface"]["defaultPrompt"]), 3)
         for prompt in manifest["interface"]["defaultPrompt"]:
@@ -103,6 +110,7 @@ class PluginManifestTests(unittest.TestCase):
                 ).exists()
             )
             self.assertFalse((release_root / "docs" / "superpowers").exists())
+            self.assertFalse((release_root / "docs" / "plans").exists())
             self.assertFalse(any(release_root.rglob("__pycache__")))
             self.assertFalse(any(release_root.rglob("*.pyc")))
 
@@ -435,6 +443,55 @@ class PluginManifestTests(unittest.TestCase):
             self.assertIn("extra tree-governance surface is not allowed: .aletheia/bin/tree_record.py", output)
             self.assertNotIn("Traceback", output)
 
+    def test_validate_scaffold_requires_tree_governance_core_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            scaffold = Path(tmp) / "scaffold"
+            shutil.copytree(ROOT / "assets" / "scaffold", scaffold)
+            missing_paths = [
+                ".aletheia/governance/TREE_GOVERNANCE.md",
+                ".aletheia/state/ORPHANS.yaml",
+                ".aletheia/playbooks/tree_governed_truth_growth.md",
+                ".aletheia/playbooks/skeleton_review.md",
+            ]
+            for rel in missing_paths:
+                (scaffold / rel).unlink()
+
+            validate = subprocess.run(
+                [sys.executable, "scripts/validate_scaffold.py", str(scaffold)],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = validate.stdout + validate.stderr
+            self.assertNotEqual(validate.returncode, 0, output)
+            for rel in missing_paths:
+                self.assertIn(f"missing required path: {rel}", output)
+
+    def test_validate_scaffold_allows_common_technical_terms(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            scaffold = Path(tmp) / "scaffold"
+            shutil.copytree(ROOT / "assets" / "scaffold", scaffold)
+            note = scaffold / ".aletheia" / "playbooks" / "technical_terms.md"
+            note.write_text(
+                "Use import for source material, migration for old project notes, "
+                "legacy support where needed, and compatibility notes for host APIs.\n",
+                encoding="utf-8",
+            )
+
+            validate = subprocess.run(
+                [sys.executable, "scripts/validate_scaffold.py", str(scaffold)],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(validate.returncode, 0, validate.stdout + validate.stderr)
+
     def test_package_checks_wiki_handoff_promotion_protocol(self) -> None:
         result = subprocess.run(
             [sys.executable, "scripts/package_plugin.py"],
@@ -586,17 +643,11 @@ class PluginManifestTests(unittest.TestCase):
         )
         self.assertIn("Create, read, update, and archive truth records", start_here)
 
-    def test_plugin_content_avoids_migration_and_compatibility_language(self) -> None:
+    def test_plugin_content_avoids_retired_identity_markers(self) -> None:
         banned_patterns = [
-            r"\bmigration\b",
-            r"\bmigrate\b",
-            r"\bimport\b",
-            r"\blegacy\b",
-            r"\bcompat\b",
-            r"\bCompatibility\b",
-            "迁移",
-            "导入",
-            "兼容",
+            r"\bold-project-name\b",
+            r"\bold-plugin-name\b",
+            r"https://github\.com/old-org/old-repo",
         ]
         checked_roots = [
             ROOT / "README.zh-CN.md",

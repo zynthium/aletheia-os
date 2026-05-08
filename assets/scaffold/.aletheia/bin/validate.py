@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+from datetime import date
 from pathlib import Path
 
 
@@ -258,6 +259,7 @@ def extract_stale_orphan_ids(orphan_text: str) -> list[str]:
     stale: list[str] = []
     current_id: str | None = None
     in_orphans = False
+    today = date.today().isoformat()
     for line in orphan_text.splitlines():
         if line.startswith("orphans:"):
             in_orphans = True
@@ -271,7 +273,7 @@ def extract_stale_orphan_ids(orphan_text: str) -> list[str]:
         review = re.match(r"^\s{4}next_review:\s*(.+?)\s*$", line)
         if review and current_id:
             value = review.group(1).strip().strip("\"'")
-            if value and value < "2026-05-08":
+            if value and value < today:
                 stale.append(current_id)
     return stale
 

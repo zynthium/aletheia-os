@@ -103,6 +103,7 @@ PACKAGE_DIRS = [
 ]
 
 PACKAGE_EXCLUDES = {
+    Path("docs") / "plans",
     Path("docs") / "superpowers",
 }
 PACKAGE_IGNORE_PATTERNS = ["__pycache__", "*.pyc"]

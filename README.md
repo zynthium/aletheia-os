@@ -319,6 +319,23 @@ During first bootstrap, use `--operator-approved` to explicitly authorize the cu
 
 Claude Code enforces gates and audits through hooks. Codex currently uses skills, explicit commands, and optional subagents to follow the same protocol; AletheiaOS does not claim equivalent automatic hook enforcement in Codex. The explicit Codex loop is: `orient.py --with-runtime`, `status.py --json` or `preflight.py --json`, write truth, `validate.py`, `checkpoint.py --dry-run`.
 
+### Git Traceability
+
+AletheiaOS treats `.aletheia/` as the current truth state and Git history as the truth-transition log. Stable node growth is not complete until validation passes, supporting evidence and decision records are linked, a human-confirmed stable marker is committed, and `history_audit.py --json` can reconstruct the transition.
+
+`AIOS-Node-State: stable` is the durable marker for a stable node claim. It must be paired with evidence, a decision, `AIOS-Validation: pass`, and `AIOS-Review: human-confirmed`.
+
+The explicit Codex loop for stable truth changes is:
+
+```bash
+python3 .aletheia/bin/orient.py --with-runtime
+python3 .aletheia/bin/preflight.py --json
+python3 .aletheia/bin/validate.py
+python3 .aletheia/bin/checkpoint.py --dry-run
+python3 .aletheia/bin/checkpoint.py --node theory_model --node-state stable --evidence .aletheia/evidence/EV-001-factor-baseline.md --decision .aletheia/decisions/DEC-001-modeling-lens-policy.md --review human-confirmed
+python3 .aletheia/bin/history_audit.py --json
+```
+
 truth_record.py supports `--json` output so agents can compose list, create, show, update, and archive results predictably. Fixed truth files can use `current` as the record id, for example `truth_record.py show capability-map current`, `truth_record.py show charter current`, `truth_record.py update active-state current --section "Active frontier" --content "..."`, and `truth_record.py archive runtime-policy current --reason "..."`. The common orphan incubator lifecycle is covered by `truth_record.py create/list/show/update/archive orphan`; review fields can be updated with `--candidate-parent`, `--source-ref`, `--next-review`, `--evidence-needed`, and `--disposition`. Complex review can still edit `.aletheia/state/ORPHANS.yaml` directly and then validate. Truth record deletion defaults to archive-only; permanent removal is a human/admin action and should first confirm there are no dangling references.
 
 `checkpoint.py` stages only AletheiaOS state/control-plane paths by default. It stages the whole worktree only when `--include-worktree` is passed explicitly.

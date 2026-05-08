@@ -57,6 +57,9 @@ REQUIRED_PATHS = [
     ".aletheia/bin/model_gate.py",
     ".aletheia/bin/validate.py",
     ".aletheia/bin/checkpoint.py",
+    ".aletheia/bin/git_trailers.py",
+    ".aletheia/bin/commit_msg_hook.py",
+    ".aletheia/bin/history_audit.py",
     ".aletheia/bin/overview.py",
     ".aletheia/bin/bootstrap_finalize.py",
     ".aletheia/bin/source_inventory.py",
@@ -103,6 +106,7 @@ BANNED_EXTRA_TREE_SURFACES = [
     ".aletheia/claims",
     ".aletheia/theories",
     ".aletheia/tree",
+    ".aletheia/ledger",
     ".aletheia/bin/tree_record.py",
 ]
 

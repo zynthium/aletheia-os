@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import re
 import shutil
@@ -98,6 +99,9 @@ class PluginManifestTests(unittest.TestCase):
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "action.py").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "capability_audit.py").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "preflight.py").exists())
+            self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "git_trailers.py").exists())
+            self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "commit_msg_hook.py").exists())
+            self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "history_audit.py").exists())
             self.assertTrue((release_root / "assets" / "scaffold" / ".aletheia" / "bin" / "truth_record.py").exists())
             self.assertTrue(
                 (
@@ -113,6 +117,20 @@ class PluginManifestTests(unittest.TestCase):
             self.assertFalse((release_root / "docs" / "plans").exists())
             self.assertFalse(any(release_root.rglob("__pycache__")))
             self.assertFalse(any(release_root.rglob("*.pyc")))
+
+    def test_package_required_files_include_traceability_runtime_scripts(self) -> None:
+        spec = importlib.util.spec_from_file_location("package_plugin", ROOT / "scripts" / "package_plugin.py")
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        package_plugin = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(package_plugin)
+
+        for rel in [
+            "assets/scaffold/.aletheia/bin/git_trailers.py",
+            "assets/scaffold/.aletheia/bin/commit_msg_hook.py",
+            "assets/scaffold/.aletheia/bin/history_audit.py",
+        ]:
+            self.assertIn(rel, package_plugin.REQUIRED)
 
     def test_package_output_contains_readme_link_targets_and_host_smoke_checklist(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -489,6 +507,7 @@ class PluginManifestTests(unittest.TestCase):
             scaffold = Path(tmp) / "scaffold"
             shutil.copytree(ROOT / "assets" / "scaffold", scaffold)
             (scaffold / ".aletheia" / "claims").mkdir()
+            (scaffold / ".aletheia" / "ledger").mkdir()
             (scaffold / ".aletheia" / "bin" / "tree_record.py").write_text("# extra surface\n", encoding="utf-8")
 
             validate = subprocess.run(
@@ -503,6 +522,7 @@ class PluginManifestTests(unittest.TestCase):
             output = validate.stdout + validate.stderr
             self.assertNotEqual(validate.returncode, 0, output)
             self.assertIn("extra tree-governance surface is not allowed: .aletheia/claims", output)
+            self.assertIn("extra tree-governance surface is not allowed: .aletheia/ledger", output)
             self.assertIn("extra tree-governance surface is not allowed: .aletheia/bin/tree_record.py", output)
             self.assertNotIn("Traceback", output)
 
@@ -515,6 +535,9 @@ class PluginManifestTests(unittest.TestCase):
                 ".aletheia/state/ORPHANS.yaml",
                 ".aletheia/playbooks/tree_governed_truth_growth.md",
                 ".aletheia/playbooks/skeleton_review.md",
+                ".aletheia/bin/git_trailers.py",
+                ".aletheia/bin/commit_msg_hook.py",
+                ".aletheia/bin/history_audit.py",
             ]
             for rel in missing_paths:
                 (scaffold / rel).unlink()
@@ -720,6 +743,14 @@ class PluginManifestTests(unittest.TestCase):
         self.assertIn("Codex 插件启用是宿主 UI 限制", readme)
         self.assertIn("`preflight.py` 是 Codex 等无自动 hook enforcement 宿主的显式检查入口", readme)
         self.assertIn("prompt_native_boundaries.md", readme)
+        self.assertIn("### Git 可追溯性", readme)
+        self.assertIn("Git history 作为 truth-transition log", readme)
+        self.assertIn("AIOS-Node-State: stable", readme)
+        self.assertIn("python3 .aletheia/bin/history_audit.py --json", readme)
+        self.assertIn(
+            "python3 .aletheia/bin/checkpoint.py --node theory_model --node-state stable --evidence .aletheia/evidence/EV-001-factor-baseline.md --decision .aletheia/decisions/DEC-001-modeling-lens-policy.md --review human-confirmed",
+            readme,
+        )
 
         self.assertIn("[简体中文](README.zh-CN.md)", english_readme)
         self.assertIn("repo-native falsifiable truth tree layer", english_readme)
@@ -759,6 +790,14 @@ class PluginManifestTests(unittest.TestCase):
         self.assertIn("Codex plugin enablement is a host UI limitation", english_readme)
         self.assertIn("without automatic hook enforcement", english_readme)
         self.assertIn("prompt_native_boundaries.md", english_readme)
+        self.assertIn("### Git Traceability", english_readme)
+        self.assertIn("Git history as the truth-transition log", english_readme)
+        self.assertIn("AIOS-Node-State: stable", english_readme)
+        self.assertIn("python3 .aletheia/bin/history_audit.py --json", english_readme)
+        self.assertIn(
+            "python3 .aletheia/bin/checkpoint.py --node theory_model --node-state stable --evidence .aletheia/evidence/EV-001-factor-baseline.md --decision .aletheia/decisions/DEC-001-modeling-lens-policy.md --review human-confirmed",
+            english_readme,
+        )
 
         start_here = (ROOT / "assets" / "scaffold" / ".aletheia" / "START_HERE.md").read_text(
             encoding="utf-8"

@@ -319,6 +319,23 @@ python3 .aletheia/bin/checkpoint.py
 
 Claude Code 通过 hooks 自动执行门禁和审计；Codex 当前以 skills、显式命令和可选 subagents 执行同一协议，不宣称拥有等同的自动 hook enforcement。Codex 上的显式闭环是：`orient.py --with-runtime`、`status.py --json` 或 `preflight.py --json`、写入 truth、`validate.py`、`checkpoint.py --dry-run`。
 
+### Git 可追溯性
+
+AletheiaOS 将 `.aletheia/` 视为当前 truth state，将 Git history 作为 truth-transition log。稳定节点的生长只有在 validate 通过、链接支撑 evidence 和 decision、提交 human-confirmed stable marker，并且 `history_audit.py --json` 能重建该 transition 后才算完成。
+
+`AIOS-Node-State: stable` 是稳定节点 claim 的 durable marker。它必须同时带有 evidence、decision、`AIOS-Validation: pass` 和 `AIOS-Review: human-confirmed`。
+
+Codex 上稳定 truth change 的显式闭环是：
+
+```bash
+python3 .aletheia/bin/orient.py --with-runtime
+python3 .aletheia/bin/preflight.py --json
+python3 .aletheia/bin/validate.py
+python3 .aletheia/bin/checkpoint.py --dry-run
+python3 .aletheia/bin/checkpoint.py --node theory_model --node-state stable --evidence .aletheia/evidence/EV-001-factor-baseline.md --decision .aletheia/decisions/DEC-001-modeling-lens-policy.md --review human-confirmed
+python3 .aletheia/bin/history_audit.py --json
+```
+
 truth_record.py 支持 `--json` 输出，便于 agent 稳定组合 list、create、show、update 和 archive 结果。固定 truth files 可用 `current` 作为记录 id，例如 `truth_record.py show capability-map current`、`truth_record.py show charter current`、`truth_record.py update active-state current --section "Active frontier" --content "..."` 和 `truth_record.py archive runtime-policy current --reason "..."`。orphan incubator 的常用生命周期可通过 `truth_record.py create/list/show/update/archive orphan` 完成；少量 review 字段可用 `--candidate-parent`、`--source-ref`、`--next-review`、`--evidence-needed` 和 `--disposition` 更新，复杂 review 仍可直接编辑 `.aletheia/state/ORPHANS.yaml` 后验证。truth record 删除默认采用 archive-only 策略；永久移除属于人工/admin 操作，应先确认没有悬空引用。
 
 `checkpoint.py` 默认只提交 AletheiaOS state/control-plane 路径；只有显式传入 `--include-worktree` 时才 stage 整个工作树。

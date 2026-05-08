@@ -10,6 +10,8 @@ AletheiaOS = Root-based Truth Tree + Scientific Method Loop + Repo-native Memory
 
 AletheiaOS 用 `.aletheia/` 为复杂项目维护唯一可信事实源：根目标、当前状态、系统图、项目骨架、树治理规则、架构约束、研究证据、决策记录、接口契约、风险和 agent 归因。它不只是 repo-native truth layer，也不是普通项目文档系统；它把项目事实组织成一棵可审查、可证伪、可演化的真理树。
 
+可证伪真理树层是 repo-native truth layer（仓库原生事实层）的升级形态：仓库原生事实层保存项目事实，truth tree governance 约束事实如何生长、证伪、晋升和重构。
+
 AletheiaOS 将复杂项目维护为一棵 root-based truth tree：
 
 - 根定义项目的核心目标或研究问题；
@@ -393,7 +395,7 @@ AletheiaOS 维护它们共同依赖的 project-level truth。
 
 AletheiaOS 不争夺流程入口。它提供 `.aletheia/` 事实层，让不同 agent、技能和工作流在同一份当前事实上 orient、执行、验证和 checkpoint。
 
-延伸阅读：[AletheiaOS：面向 AI 辅助研究与工程的仓库原生事实层](docs/articles/aletheia-os-project-introduction.zh-CN.md)。
+延伸阅读：[AletheiaOS：面向 AI 辅助研究与工程的仓库原生可证伪真理树层](docs/articles/aletheia-os-project-introduction.zh-CN.md)。
 
 ## 可选 subagents
 

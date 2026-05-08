@@ -210,6 +210,7 @@ def inspect_bootstrap_finalize(root: Path) -> dict:
         "next_actions": next_actions,
         "would_write": [
             ".aletheia/hooks/pre-commit",
+            ".aletheia/hooks/commit-msg",
             ".aletheia/session_notes/<date>-bootstrap-finalize.md",
             "BOOTSTRAP.md removal unless --keep-bootstrap",
             "checkpoint commit unless --no-checkpoint",
@@ -291,6 +292,9 @@ def configure_hooks(root: Path) -> None:
     pre_commit = hooks / "pre-commit"
     pre_commit.write_text("#!/bin/sh\npython3 .aletheia/bin/validate.py\n", encoding="utf-8")
     pre_commit.chmod(0o755)
+    commit_msg = hooks / "commit-msg"
+    commit_msg.write_text('#!/bin/sh\npython3 .aletheia/bin/commit_msg_hook.py "$1"\n', encoding="utf-8")
+    commit_msg.chmod(0o755)
     run(["git", "config", "core.hooksPath", ".aletheia/hooks"], root)
     print("AletheiaOS Git hooks installed at .aletheia/hooks")
     if previous and previous != ".aletheia/hooks":
@@ -365,7 +369,20 @@ def main() -> int:
 
     if not args.no_checkpoint:
         checkpoint = run(
-            ["python3", ".aletheia/bin/checkpoint.py", "--auto", "--message", "bootstrap: initialize AletheiaOS", "--allow-code-only"],
+            [
+                "python3",
+                ".aletheia/bin/checkpoint.py",
+                "--auto",
+                "--message",
+                "bootstrap: initialize AletheiaOS",
+                "--allow-code-only",
+                "--tree-op",
+                "incubate",
+                "--node",
+                "root",
+                "--review",
+                "not-required",
+            ],
             root,
         )
         return checkpoint.returncode

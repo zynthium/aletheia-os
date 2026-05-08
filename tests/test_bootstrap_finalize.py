@@ -371,8 +371,10 @@ class BootstrapFinalizeTests(unittest.TestCase):
             self.assertEqual(validation["errors"], [])
             self.assertEqual(validation["stderr"], "")
             self.assertIn(".aletheia/hooks/pre-commit", payload["would_write"])
+            self.assertIn(".aletheia/hooks/commit-msg", payload["would_write"])
             self.assertTrue((target / "BOOTSTRAP.md").exists())
             self.assertFalse((target / ".aletheia" / "hooks" / "pre-commit").exists())
+            self.assertFalse((target / ".aletheia" / "hooks" / "commit-msg").exists())
             self.assertFalse(any((target / ".aletheia" / "session_notes").glob("*bootstrap-finalize.md")))
 
     def test_bootstrap_finalize_blocks_when_critical_state_still_has_tbd(self) -> None:
@@ -540,6 +542,9 @@ class BootstrapFinalizeTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(hooks_path.stdout.strip(), ".aletheia/hooks")
+            commit_msg = target / ".aletheia" / "hooks" / "commit-msg"
+            self.assertTrue(commit_msg.exists())
+            self.assertIn("commit_msg_hook.py", commit_msg.read_text(encoding="utf-8"))
             committed = subprocess.run(
                 ["git", "show", "--name-only", "--format=%B", "HEAD"],
                 cwd=target,
@@ -549,6 +554,10 @@ class BootstrapFinalizeTests(unittest.TestCase):
                 check=False,
             )
             self.assertIn("bootstrap: initialize AletheiaOS", committed.stdout)
+            self.assertIn("AIOS-Action: truth.tree.transition", committed.stdout)
+            self.assertIn("AIOS-Tree-Op: incubate", committed.stdout)
+            self.assertIn("AIOS-Node: root", committed.stdout)
+            self.assertIn("AIOS-Review: not-required", committed.stdout)
             self.assertIn("AIOS-Agent-Model: codex-e2e", committed.stdout)
             self.assertIn(".aletheia/governance/CHARTER.md", committed.stdout)
             self.assertNotIn("utility.py", committed.stdout)
@@ -763,6 +772,9 @@ class BootstrapFinalizeTests(unittest.TestCase):
             self.assertIn("bootstrap finalized", output)
             self.assertTrue((target / "BOOTSTRAP.md").exists())
             self.assertTrue((target / ".aletheia" / "hooks" / "pre-commit").exists())
+            commit_msg = target / ".aletheia" / "hooks" / "commit-msg"
+            self.assertTrue(commit_msg.exists())
+            self.assertIn("commit_msg_hook.py", commit_msg.read_text(encoding="utf-8"))
             hooks_path = subprocess.run(
                 ["git", "config", "core.hooksPath"],
                 cwd=target,

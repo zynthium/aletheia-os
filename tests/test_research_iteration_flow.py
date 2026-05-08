@@ -1125,6 +1125,14 @@ class ResearchIterationFlowTests(unittest.TestCase):
                 "--auto",
                 "--message",
                 "research: revise quant modeling thesis",
+                "--tree-op",
+                "insert_parent",
+                "--node",
+                "market_modeling",
+                "--parent",
+                "root",
+                "--review",
+                "agent-reviewed",
             )
             self.assertEqual(checkpoint.returncode, 0, checkpoint.stdout + checkpoint.stderr)
 
@@ -1148,6 +1156,11 @@ class ResearchIterationFlowTests(unittest.TestCase):
 
             committed = run_repo(target, "git", "log", "--format=%s%n%b", "-2")
             self.assertIn("research: revise quant modeling thesis", committed.stdout)
+            self.assertIn("AIOS-Action: truth.tree.transition", committed.stdout)
+            self.assertIn("AIOS-Tree-Op: insert_parent", committed.stdout)
+            self.assertIn("AIOS-Node: market_modeling", committed.stdout)
+            self.assertIn("AIOS-Parent: root", committed.stdout)
+            self.assertIn("AIOS-Review: agent-reviewed", committed.stdout)
             self.assertIn("bootstrap: initialize AletheiaOS", committed.stdout)
             self.assertIn("AIOS-Agent-Model: codex-e2e", committed.stdout)
 

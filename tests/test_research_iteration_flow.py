@@ -1124,17 +1124,40 @@ class ResearchIterationFlowTests(unittest.TestCase):
                 ".aletheia/bin/checkpoint.py",
                 "--auto",
                 "--message",
-                "research: revise quant modeling thesis",
+                "research: stabilize liquidity-gated modeling thesis",
                 "--tree-op",
-                "insert_parent",
+                "promote_node",
                 "--node",
-                "market_modeling",
+                "theory_model",
                 "--parent",
                 "root",
+                "--node-state",
+                "stable",
+                "--evidence",
+                ".aletheia/evidence/EV-002-game-context-break.md",
+                "--decision",
+                ".aletheia/decisions/DEC-001-modeling-lens-policy.md",
                 "--review",
-                "agent-reviewed",
+                "human-confirmed",
             )
             self.assertEqual(checkpoint.returncode, 0, checkpoint.stdout + checkpoint.stderr)
+
+            audit = run_repo(
+                target,
+                sys.executable,
+                ".aletheia/bin/history_audit.py",
+                "--node",
+                "theory_model",
+                "--json",
+            )
+            self.assertEqual(audit.returncode, 0, audit.stdout + audit.stderr)
+            audit_payload = json.loads(audit.stdout)
+            self.assertTrue(audit_payload["ok"])
+            self.assertEqual(audit_payload["nodes"]["theory_model"]["latest_state"], "stable")
+            self.assertIn(
+                ".aletheia/evidence/EV-002-game-context-break.md",
+                audit_payload["nodes"]["theory_model"]["evidence"],
+            )
 
             active_state = (target / ".aletheia" / "state" / "ACTIVE_STATE.md").read_text(encoding="utf-8")
             factor_hypothesis = (target / ".aletheia" / "hypotheses" / "HYP-001-factor-momentum.md").read_text(
@@ -1155,12 +1178,16 @@ class ResearchIterationFlowTests(unittest.TestCase):
             self.assertIn("Factor lens becomes implicit dogma", risk)
 
             committed = run_repo(target, "git", "log", "--format=%s%n%b", "-2")
-            self.assertIn("research: revise quant modeling thesis", committed.stdout)
-            self.assertIn("AIOS-Action: truth.tree.transition", committed.stdout)
-            self.assertIn("AIOS-Tree-Op: insert_parent", committed.stdout)
-            self.assertIn("AIOS-Node: market_modeling", committed.stdout)
+            self.assertIn("research: stabilize liquidity-gated modeling thesis", committed.stdout)
+            self.assertIn("AIOS-Action: truth.node.stabilize", committed.stdout)
+            self.assertIn("AIOS-Tree-Op: promote_node", committed.stdout)
+            self.assertIn("AIOS-Node: theory_model", committed.stdout)
             self.assertIn("AIOS-Parent: root", committed.stdout)
-            self.assertIn("AIOS-Review: agent-reviewed", committed.stdout)
+            self.assertIn("AIOS-Node-State: stable", committed.stdout)
+            self.assertIn("AIOS-Evidence: .aletheia/evidence/EV-002-game-context-break.md", committed.stdout)
+            self.assertIn("AIOS-Decision: .aletheia/decisions/DEC-001-modeling-lens-policy.md", committed.stdout)
+            self.assertIn("AIOS-Validation: pass", committed.stdout)
+            self.assertIn("AIOS-Review: human-confirmed", committed.stdout)
             self.assertIn("bootstrap: initialize AletheiaOS", committed.stdout)
             self.assertIn("AIOS-Agent-Model: codex-e2e", committed.stdout)
 

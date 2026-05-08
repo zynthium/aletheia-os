@@ -1,7 +1,7 @@
 ---
 title: feat: Harden agent-native architecture coverage
 type: feat
-status: active
+status: completed
 date: 2026-05-08
 ---
 

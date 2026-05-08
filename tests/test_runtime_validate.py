@@ -303,6 +303,8 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertIn("truth.validate", action_ids)
             self.assertIn("truth.preflight", action_ids)
             self.assertIn("truth.checkpoint.dry_run", action_ids)
+            self.assertIn("truth.bootstrap.guided.inspect", action_ids)
+            self.assertIn("truth.bootstrap.finalize.inspect", action_ids)
 
             explained = subprocess.run(
                 [sys.executable, ".aletheia/bin/action.py", "explain", "truth.validate", "--json"],
@@ -356,6 +358,21 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(record_payload["action_id"], "truth.record.list")
             self.assertIn("decisions", record_payload["command"])
             self.assertTrue(record_payload["verification"]["passed"])
+
+            bootstrap_inspect = subprocess.run(
+                [sys.executable, ".aletheia/bin/action.py", "run", "truth.bootstrap.guided.inspect", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(bootstrap_inspect.returncode, 0, bootstrap_inspect.stdout + bootstrap_inspect.stderr)
+            inspect_payload = json.loads(bootstrap_inspect.stdout)
+            self.assertEqual(inspect_payload["action_id"], "truth.bootstrap.guided.inspect")
+            self.assertTrue(inspect_payload["verification"]["passed"])
+            self.assertIn('"ready": false', inspect_payload["result"]["stdout"])
 
             blocked_write = subprocess.run(
                 [sys.executable, ".aletheia/bin/action.py", "run", "truth.checkpoint.create"],

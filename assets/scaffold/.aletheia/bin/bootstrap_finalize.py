@@ -22,6 +22,7 @@ POST_BOOTSTRAP_REQUIRED_NO_TBD = [
     ".aletheia/state/ACTIVE_STATE.md",
     ".aletheia/state/DOMAIN_PROFILE.md",
 ]
+BOOTSTRAP_FINALIZE_COMMAND = "python3 .aletheia/bin/bootstrap_finalize.py"
 
 
 def repo_root() -> Path:
@@ -44,6 +45,186 @@ def run(cmd: list[str], root: Path, *, capture: bool = False) -> subprocess.Comp
 
 def validate(root: Path) -> int:
     return subprocess.run([sys.executable, ".aletheia/bin/validate.py"], cwd=root, text=True).returncode
+
+
+def validation_result(root: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, ".aletheia/bin/validate.py"],
+        cwd=root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+
+def inspect_model_gate(root: Path) -> dict:
+    if os.environ.get("AIOS_ALLOW_UNATTRIBUTED_CHECKPOINT") == "1":
+        return {
+            "id": "model_gate",
+            "ok": True,
+            "status": "override",
+            "message": "AIOS_ALLOW_UNATTRIBUTED_CHECKPOINT=1 bypasses bootstrap model gate.",
+        }
+    current_run_path = root / ".aletheia" / "runtime" / "current_agent_run.json"
+    if not current_run_path.exists():
+        return {
+            "id": "model_gate",
+            "ok": False,
+            "status": "missing",
+            "message": "No AI model gate run recorded.",
+            "next_action": BOOTSTRAP_GATE_COMMAND,
+        }
+    try:
+        run_data = json.loads(current_run_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return {
+            "id": "model_gate",
+            "ok": False,
+            "status": "invalid",
+            "message": f"Current AI model gate run is invalid: {exc}",
+            "path": ".aletheia/runtime/current_agent_run.json",
+        }
+    failures = []
+    if run_data.get("gate_status") != "allowed":
+        failures.append(f"gate_status={run_data.get('gate_status', 'unknown')}")
+    if TIER_ORDER.get(str(run_data.get("capability_tier")), -1) < TIER_ORDER["C3"]:
+        failures.append(f"capability_tier={run_data.get('capability_tier', 'unknown')}")
+    if run_data.get("task_class") != "bootstrap_finalize":
+        failures.append(f"task_class={run_data.get('task_class', 'unknown')}")
+    if failures:
+        return {
+            "id": "model_gate",
+            "ok": False,
+            "status": "blocked",
+            "message": "Current AI model gate run is not sufficient for bootstrap finalize: "
+            + ", ".join(failures),
+            "run_id": run_data.get("run_id"),
+            "next_action": BOOTSTRAP_GATE_COMMAND,
+        }
+    return {
+        "id": "model_gate",
+        "ok": True,
+        "status": "ready",
+        "message": "Recorded AI model gate run allows bootstrap finalize.",
+        "run_id": run_data.get("run_id"),
+        "provider": run_data.get("provider"),
+        "model_id": run_data.get("model_id"),
+    }
+
+
+def inspect_validation(root: Path) -> dict:
+    result = validation_result(root)
+    payload = {
+        "id": "validation",
+        "ok": result.returncode == 0,
+        "status": "ready" if result.returncode == 0 else "blocked",
+        "message": "AletheiaOS validation passes." if result.returncode == 0 else "AletheiaOS validation fails.",
+        "returncode": result.returncode,
+        "stdout": result.stdout.strip(),
+        "stderr": result.stderr.strip(),
+    }
+    if result.returncode != 0:
+        payload["next_action"] = "python3 .aletheia/bin/validate.py"
+    return payload
+
+
+def inspect_critical_files(root: Path) -> dict:
+    failures = []
+    for rel in POST_BOOTSTRAP_REQUIRED_NO_TBD:
+        path = root / rel
+        if path.exists() and "TBD" in path.read_text(encoding="utf-8"):
+            failures.append(rel)
+    if failures:
+        return {
+            "id": "critical_truth",
+            "ok": False,
+            "status": "blocked",
+            "message": "Critical files still contain TBD markers.",
+            "paths": failures,
+            "next_action": "Customize critical truth files before finalizing bootstrap.",
+        }
+    return {
+        "id": "critical_truth",
+        "ok": True,
+        "status": "ready",
+        "message": "Critical truth files do not contain bootstrap TBD markers.",
+        "paths": POST_BOOTSTRAP_REQUIRED_NO_TBD,
+    }
+
+
+def inspect_git(root: Path) -> dict:
+    try:
+        check = run(["git", "rev-parse", "--is-inside-work-tree"], root, capture=True)
+    except RuntimeError as exc:
+        return {
+            "id": "git",
+            "ok": False,
+            "status": "blocked",
+            "message": str(exc),
+        }
+    if check.returncode == 0:
+        return {
+            "id": "git",
+            "ok": True,
+            "status": "ready",
+            "message": "Repository is already a git worktree.",
+            "will_initialize": False,
+        }
+    return {
+        "id": "git",
+        "ok": True,
+        "status": "will_initialize",
+        "message": "bootstrap_finalize.py will initialize git before installing hooks.",
+        "will_initialize": True,
+    }
+
+
+def inspect_bootstrap_finalize(root: Path) -> dict:
+    checks = [
+        inspect_model_gate(root),
+        inspect_validation(root),
+        inspect_critical_files(root),
+        inspect_git(root),
+    ]
+    ready = all(check.get("ok") for check in checks)
+    next_actions = [check["next_action"] for check in checks if check.get("next_action")]
+    if ready:
+        next_actions.append(BOOTSTRAP_FINALIZE_COMMAND)
+    return {
+        "schema_version": 1,
+        "action": "truth.bootstrap.finalize.inspect",
+        "ready": ready,
+        "checks": checks,
+        "next_actions": next_actions,
+        "would_write": [
+            ".aletheia/hooks/pre-commit",
+            ".aletheia/session_notes/<date>-bootstrap-finalize.md",
+            "BOOTSTRAP.md removal unless --keep-bootstrap",
+            "checkpoint commit unless --no-checkpoint",
+        ],
+    }
+
+
+def print_inspection(payload: dict) -> None:
+    print("# Bootstrap Finalize Inspection")
+    print()
+    print(f"- ready: {payload['ready']}")
+    print()
+    print("## Checks")
+    print()
+    for check in payload["checks"]:
+        print(f"- {check['id']}: {check['status']} - {check['message']}")
+    print()
+    print("## Next Actions")
+    print()
+    for action in payload["next_actions"]:
+        print(f"- `{action}`")
+    print()
+    print("## Would Write")
+    print()
+    for path in payload["would_write"]:
+        print(f"- {path}")
 
 
 def bootstrap_model_gate_ready(root: Path) -> int:
@@ -127,9 +308,21 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Finalize AletheiaOS bootstrap for a target repository.")
     parser.add_argument("--keep-bootstrap", action="store_true")
     parser.add_argument("--no-checkpoint", action="store_true")
+    parser.add_argument("--inspect", action="store_true", help="inspect bootstrap finalize readiness without writing files")
+    parser.add_argument("--json", action="store_true", help="emit machine-readable output with --inspect")
     args = parser.parse_args()
 
     root = repo_root()
+    if args.inspect:
+        payload = inspect_bootstrap_finalize(root)
+        if args.json:
+            print(json.dumps(payload, indent=2))
+        else:
+            print_inspection(payload)
+        return 0
+    if args.json:
+        parser.error("--json is only supported with --inspect")
+
     rc = bootstrap_model_gate_ready(root)
     if rc != 0:
         return rc

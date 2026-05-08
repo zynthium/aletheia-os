@@ -321,6 +321,26 @@
       "verification": {"returncode": 0}
     },
     {
+      "id": "truth.bootstrap.guided.inspect",
+      "title": "Inspect guided bootstrap readiness",
+      "intent": "Read guided bootstrap prerequisites and planned generated outputs without writing files.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/guided_bootstrap.py", "--inspect", "--json"],
+      "inputs": {},
+      "outputs": {"format": "json"},
+      "verification": {"returncode": 0}
+    },
+    {
+      "id": "truth.bootstrap.finalize.inspect",
+      "title": "Inspect bootstrap finalize readiness",
+      "intent": "Read bootstrap finalize prerequisites and planned durable writes without installing hooks or committing.",
+      "risk": "read-only",
+      "command": ["python3", ".aletheia/bin/bootstrap_finalize.py", "--inspect", "--json"],
+      "inputs": {},
+      "outputs": {"format": "json"},
+      "verification": {"returncode": 0}
+    },
+    {
       "id": "truth.bootstrap.finalize",
       "title": "Finalize bootstrap",
       "intent": "Validate, install hooks, write bootstrap session state, and checkpoint unless skipped.",

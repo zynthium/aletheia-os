@@ -9,7 +9,9 @@ CAPABILITIES = [
         [
             "python3 .aletheia/bin/model_gate.py --task-class bootstrap_finalize --provider <provider> --model-id <model_id> --tier C3 --operator-approved --record --objective \"Initialize AletheiaOS\"",
             "python3 .aletheia/bin/source_inventory.py",
+            "python3 .aletheia/bin/guided_bootstrap.py --inspect --json",
             "python3 .aletheia/bin/guided_bootstrap.py --objective \"Initialize AletheiaOS\"",
+            "python3 .aletheia/bin/bootstrap_finalize.py --inspect --json",
             "python3 .aletheia/bin/bootstrap_finalize.py",
         ],
     ),

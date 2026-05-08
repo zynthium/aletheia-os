@@ -67,6 +67,159 @@ def load_inventory(path: Path) -> dict:
     return data
 
 
+def inspect_bootstrap_gate(root: Path, skip_gate: bool) -> dict:
+    if skip_gate:
+        return {
+            "id": "model_gate",
+            "ok": True,
+            "status": "skipped",
+            "message": "Model gate check skipped by explicit flag.",
+        }
+    path = root / ".aletheia" / "runtime" / "current_agent_run.json"
+    if not path.exists():
+        return {
+            "id": "model_gate",
+            "ok": False,
+            "status": "missing",
+            "message": "No bootstrap model gate run recorded.",
+            "next_action": (
+                "python3 .aletheia/bin/model_gate.py --task-class bootstrap_finalize "
+                "--provider <provider> --model-id <model_id> --tier C3 --operator-approved "
+                '--record --objective "Initialize AletheiaOS"'
+            ),
+        }
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return {
+            "id": "model_gate",
+            "ok": False,
+            "status": "invalid",
+            "message": f"Bootstrap model gate run is invalid: {exc}",
+            "path": ".aletheia/runtime/current_agent_run.json",
+        }
+    failures = []
+    if data.get("gate_status") != "allowed":
+        failures.append(f"gate_status={data.get('gate_status', 'unknown')}")
+    if data.get("task_class") != "bootstrap_finalize":
+        failures.append(f"task_class={data.get('task_class', 'unknown')}")
+    if tier_rank(data.get("capability_tier")) < tier_rank("C3"):
+        failures.append(f"capability_tier={data.get('capability_tier', 'unknown')}")
+    if data.get("write_allowed") is not True:
+        failures.append("write_allowed=false")
+    if failures:
+        return {
+            "id": "model_gate",
+            "ok": False,
+            "status": "blocked",
+            "message": "Current bootstrap model gate run cannot write guided bootstrap output: "
+            + ", ".join(failures),
+            "run_id": data.get("run_id"),
+        }
+    return {
+        "id": "model_gate",
+        "ok": True,
+        "status": "ready",
+        "message": "Recorded bootstrap model gate run allows guided bootstrap output.",
+        "run_id": data.get("run_id"),
+        "provider": data.get("provider"),
+        "model_id": data.get("model_id"),
+    }
+
+
+def inspect_source_inventory(root: Path, skip_inventory: bool) -> dict:
+    path = root / ".aletheia" / "source_inventory" / "inventory.json"
+    if skip_inventory and not path.exists():
+        return {
+            "id": "source_inventory",
+            "ok": False,
+            "status": "missing",
+            "message": "Source inventory is missing and --skip-inventory was requested.",
+            "next_action": "python3 .aletheia/bin/source_inventory.py",
+        }
+    if not path.exists():
+        return {
+            "id": "source_inventory",
+            "ok": True,
+            "status": "will_generate",
+            "message": "guided_bootstrap.py will run source_inventory.py before writing the report.",
+            "will_run": "python3 .aletheia/bin/source_inventory.py",
+        }
+    try:
+        inventory = load_inventory(path)
+    except SystemExit as exc:
+        return {
+            "id": "source_inventory",
+            "ok": False,
+            "status": "invalid",
+            "message": str(exc),
+            "path": ".aletheia/source_inventory/inventory.json",
+        }
+    items = inventory.get("items", [])
+    if not isinstance(items, list):
+        return {
+            "id": "source_inventory",
+            "ok": False,
+            "status": "invalid",
+            "message": "Source inventory items must be a list.",
+            "path": ".aletheia/source_inventory/inventory.json",
+        }
+    return {
+        "id": "source_inventory",
+        "ok": True,
+        "status": "ready",
+        "message": "Source inventory exists and can be summarized.",
+        "path": ".aletheia/source_inventory/inventory.json",
+        "item_count": len(items),
+        "inferred_mode": infer_mode(items),
+    }
+
+
+def inspect_guided_bootstrap(root: Path, objective: str, skip_gate: bool, skip_inventory: bool) -> dict:
+    checks = [
+        inspect_bootstrap_gate(root, skip_gate),
+        inspect_source_inventory(root, skip_inventory),
+    ]
+    ready = all(check.get("ok") for check in checks)
+    next_actions = [check["next_action"] for check in checks if check.get("next_action")]
+    if ready:
+        next_actions.append(f'python3 .aletheia/bin/guided_bootstrap.py --objective "{objective}"')
+    return {
+        "schema_version": 1,
+        "action": "truth.bootstrap.guided.inspect",
+        "ready": ready,
+        "objective": objective,
+        "checks": checks,
+        "next_actions": next_actions,
+        "would_write": [
+            ".aletheia/source_inventory/inventory.json unless --skip-inventory or existing",
+            ".aletheia/source_inventory/TRUTH_INVENTORY_REPORT.md",
+        ],
+    }
+
+
+def print_inspection(payload: dict) -> None:
+    print("# Guided Bootstrap Inspection")
+    print()
+    print(f"- ready: {payload['ready']}")
+    print(f"- objective: {payload['objective']}")
+    print()
+    print("## Checks")
+    print()
+    for check in payload["checks"]:
+        print(f"- {check['id']}: {check['status']} - {check['message']}")
+    print()
+    print("## Next Actions")
+    print()
+    for action in payload["next_actions"]:
+        print(f"- `{action}`")
+    print()
+    print("## Would Write")
+    print()
+    for path in payload["would_write"]:
+        print(f"- {path}")
+
+
 def require_bootstrap_gate(root: Path) -> None:
     run_data = load_current_run(root)
     if run_data.get("gate_status") != "allowed":
@@ -90,9 +243,21 @@ def main() -> int:
     parser.add_argument("--objective", default="Initialize AletheiaOS")
     parser.add_argument("--skip-gate", action="store_true")
     parser.add_argument("--skip-inventory", action="store_true")
+    parser.add_argument("--inspect", action="store_true", help="inspect guided bootstrap readiness without writing files")
+    parser.add_argument("--json", action="store_true", help="emit machine-readable output with --inspect")
     args = parser.parse_args()
 
     root = repo_root()
+    if args.inspect:
+        payload = inspect_guided_bootstrap(root, args.objective, args.skip_gate, args.skip_inventory)
+        if args.json:
+            print(json.dumps(payload, indent=2))
+        else:
+            print_inspection(payload)
+        return 0
+    if args.json:
+        parser.error("--json is only supported with --inspect")
+
     if not args.skip_gate:
         require_bootstrap_gate(root)
     if not args.skip_inventory:

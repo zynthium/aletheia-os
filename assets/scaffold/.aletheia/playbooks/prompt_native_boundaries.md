@@ -27,6 +27,25 @@ These scripts intentionally contain more orchestration and should be reviewed be
 - `source_inventory.py`: classifies source material before truth synthesis using declarative runtime policy rules.
 - `overview.py`: generates and optionally refreshes status JSON and HTML for human review.
 
+## Primitive Wrappers
+
+Workflow-coded scripts may remain as user-facing wrappers when they expose their
+deterministic boundary as a read-only or dry-run primitive:
+
+- `guided_bootstrap.py --inspect --json` reads bootstrap gate and source
+  inventory readiness and reports generated outputs before writing a truth
+  inventory report.
+- `bootstrap_finalize.py --inspect --json` reads model gate, validation,
+  critical bootstrap markers, and Git readiness before installing hooks, writing
+  session notes, removing `BOOTSTRAP.md`, or checkpointing.
+- `checkpoint.py --dry-run` validates, screens protected paths, and reports
+  checkpoint candidates without staging or committing.
+- `preflight.py --json` composes hook-free context, validation, Git status,
+  checkpoint candidates, command hints, and recommended action ids.
+
+The wrapper decides how to run deterministic mechanics. The skill or playbook
+decides whether the wrapper should run at all.
+
 ## Keep in Python
 
 Keep behavior in Python when it must be deterministic, locally verifiable, or hard to express safely in prose:
@@ -71,11 +90,11 @@ Each workflow skill should contain:
 
 | Workflow | Primitive capabilities it should compose |
 |---|---|
-| Bootstrap | `model_gate.py`, `source_inventory.py`, `guided_bootstrap.py`, `truth_record.py`, `validate.py`, `checkpoint.py` |
+| Bootstrap | `model_gate.py`, `source_inventory.py`, `guided_bootstrap.py --inspect`, `guided_bootstrap.py`, `bootstrap_finalize.py --inspect`, `bootstrap_finalize.py`, `truth_record.py`, `validate.py`, `checkpoint.py --dry-run`, `checkpoint.py` |
 | Promotion | `context_pack.py`, `truth_record.py list/show/create/update/archive`, `validate.py`, optional `checkpoint.py` |
 | Architecture evolution | `orient.py`, `truth_record.py`, `system_context.py`, `validate.py`, optional `checkpoint.py` |
-| Tree-governed truth growth | `orient.py`, `context_pack.py`, direct state-file edits, `truth_record.py`, `validate.py`, optional `checkpoint.py` |
-| Checkpoint | `status.py`, `preflight.py`, `validate.py`, `checkpoint.py` |
+| Tree-governed truth growth | `orient.py`, `context_pack.py`, `truth_record.py create/list/show/update/archive orphan`, direct state-file edits, `truth_record.py`, `validate.py`, optional `checkpoint.py` |
+| Checkpoint | `status.py`, `preflight.py --json`, `validate.py`, `checkpoint.py --dry-run`, `checkpoint.py` |
 | Review agents | `orient.py`, `context_pack.py`, `truth_record.py list/show`, source reads, `validate.py` |
 
 ## Review trigger

@@ -61,7 +61,7 @@ CAPABILITIES = [
     ),
     (
         "Create truth records",
-        "Create, read, update, and archive evidence, decisions, contracts, hypotheses, risks, nodes, session notes, and agent runs.",
+        "Create, read, update, and archive records, fixed truth files, and incubating orphan entries.",
         [
             "python3 .aletheia/bin/truth_record.py list evidence",
             "python3 .aletheia/bin/truth_record.py create evidence --id EV-0001 --title \"Claim title\"",
@@ -69,7 +69,15 @@ CAPABILITIES = [
             "python3 .aletheia/bin/truth_record.py update evidence EV-0001 --status active",
             "python3 .aletheia/bin/truth_record.py archive evidence EV-0001 --reason \"Superseded by stronger evidence\"",
             "python3 .aletheia/bin/truth_record.py show capability-map current",
+            "python3 .aletheia/bin/truth_record.py show charter current",
+            "python3 .aletheia/bin/truth_record.py show tree-governance current",
+            "python3 .aletheia/bin/truth_record.py show user-preferences current",
             "python3 .aletheia/bin/truth_record.py update active-state current --section \"Active frontier\" --content \"...\"",
+            "python3 .aletheia/bin/truth_record.py create orphan --id ORPH-0001 --title \"Unmounted claim\"",
+            "python3 .aletheia/bin/truth_record.py list orphan --json",
+            "python3 .aletheia/bin/truth_record.py show orphan ORPH-0001 --json",
+            "python3 .aletheia/bin/truth_record.py update orphan ORPH-0001 --status reviewed",
+            "python3 .aletheia/bin/truth_record.py archive orphan ORPH-0001 --reason \"Disposition resolved\"",
             "python3 .aletheia/bin/truth_record.py archive runtime-policy current --reason \"Superseded policy\"",
         ],
     ),
@@ -124,6 +132,7 @@ def main() -> int:
     print()
     print("- Codex marketplace registration is scripted; enabling the plugin happens in `/plugins`.")
     print("- Truth record removal is archive-only by default; no permanent delete command is provided.")
+    print("- JSON fixed truth files can be shown or archived through `truth_record.py`; structured edits stay with dedicated commands or direct reviewed edits.")
     return 0
 
 

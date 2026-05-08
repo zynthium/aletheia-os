@@ -1258,6 +1258,33 @@ class RuntimeValidateTests(unittest.TestCase):
             show_payload = json.loads(show.stdout)
             self.assertEqual(show_payload["path"], ".aletheia/CAPABILITY_MAP.md")
 
+            fixed_entities = {
+                "charter": ".aletheia/governance/CHARTER.md",
+                "attention-policy": ".aletheia/governance/ATTENTION_POLICY.md",
+                "model-governance": ".aletheia/governance/MODEL_GOVERNANCE.md",
+                "tree-governance": ".aletheia/governance/TREE_GOVERNANCE.md",
+                "git-policy": ".aletheia/governance/GIT_POLICY.md",
+                "source-policy": ".aletheia/governance/SOURCE_POLICY.md",
+                "user-preferences": ".aletheia/state/USER_PREFERENCES.md",
+                "domain-profile": ".aletheia/state/DOMAIN_PROFILE.md",
+                "frontier-board": ".aletheia/state/FRONTIER_BOARD.md",
+                "risk-register": ".aletheia/state/RISK_REGISTER.md",
+                "glossary": ".aletheia/state/GLOSSARY.md",
+                "skeleton": ".aletheia/state/SKELETON.yaml",
+                "actions-registry": ".aletheia/governance/actions.json",
+            }
+            for entity, rel_path in fixed_entities.items():
+                fixed_show = subprocess.run(
+                    [sys.executable, ".aletheia/bin/truth_record.py", "show", entity, "current", "--json"],
+                    cwd=target,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    check=False,
+                )
+                self.assertEqual(fixed_show.returncode, 0, fixed_show.stdout + fixed_show.stderr)
+                self.assertEqual(json.loads(fixed_show.stdout)["path"], rel_path)
+
             update = subprocess.run(
                 [
                     sys.executable,
@@ -1281,6 +1308,49 @@ class RuntimeValidateTests(unittest.TestCase):
             active_text = (target / ".aletheia" / "state" / "ACTIVE_STATE.md").read_text(encoding="utf-8")
             self.assertIn("Policy-driven frontier.", active_text)
 
+            charter_update = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "update",
+                    "charter",
+                    "current",
+                    "--section",
+                    "Mission",
+                    "--content",
+                    "Maintain explicit project truth.",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(charter_update.returncode, 0, charter_update.stdout + charter_update.stderr)
+            charter_text = (target / ".aletheia" / "governance" / "CHARTER.md").read_text(encoding="utf-8")
+            self.assertIn("## Mission\n\nMaintain explicit project truth.", charter_text)
+
+            json_update = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "update",
+                    "runtime-policy",
+                    "current",
+                    "--status",
+                    "active",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertNotEqual(json_update.returncode, 0, json_update.stdout + json_update.stderr)
+            self.assertIn("JSON fixed truth files can be shown or archived", json_update.stdout + json_update.stderr)
+            json.loads((target / ".aletheia" / "governance" / "runtime_policy.json").read_text(encoding="utf-8"))
+
             archive = subprocess.run(
                 [
                     sys.executable,
@@ -1302,6 +1372,165 @@ class RuntimeValidateTests(unittest.TestCase):
             archive_path = target / ".aletheia" / "archive" / "governance" / "runtime_policy.json"
             self.assertTrue(archive_path.exists())
             self.assertFalse((target / ".aletheia" / "governance" / "runtime_policy.json").exists())
+
+    def test_truth_record_script_manages_orphan_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+
+            create = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "create",
+                    "orphan",
+                    "--id",
+                    "ORPH-0001",
+                    "--title",
+                    "Unattached claim",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(create.returncode, 0, create.stdout + create.stderr)
+            self.assertEqual(json.loads(create.stdout)["path"], ".aletheia/state/ORPHANS.yaml#ORPH-0001")
+
+            duplicate = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "create",
+                    "orphan",
+                    "--id",
+                    "ORPH-0001",
+                    "--title",
+                    "Duplicate",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertNotEqual(duplicate.returncode, 0, duplicate.stdout + duplicate.stderr)
+            self.assertIn("orphan already exists", duplicate.stdout + duplicate.stderr)
+
+            listing = subprocess.run(
+                [sys.executable, ".aletheia/bin/truth_record.py", "list", "orphan", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(listing.returncode, 0, listing.stdout + listing.stderr)
+            self.assertIn(".aletheia/state/ORPHANS.yaml#ORPH-0001", json.loads(listing.stdout)["records"])
+
+            show = subprocess.run(
+                [sys.executable, ".aletheia/bin/truth_record.py", "show", "orphan", "ORPH-0001", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(show.returncode, 0, show.stdout + show.stderr)
+            self.assertIn("summary: \"Unattached claim\"", json.loads(show.stdout)["content"])
+
+            update = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "update",
+                    "orphan",
+                    "ORPH-0001",
+                    "--title",
+                    "Reviewed unattached claim",
+                    "--status",
+                    "reviewed",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(update.returncode, 0, update.stdout + update.stderr)
+            self.assertEqual(json.loads(update.stdout)["updated"], ["summary", "status"])
+
+            action_explain = subprocess.run(
+                [sys.executable, ".aletheia/bin/action.py", "explain", "truth.orphan.show", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(action_explain.returncode, 0, action_explain.stdout + action_explain.stderr)
+            self.assertEqual(json.loads(action_explain.stdout)["action"]["id"], "truth.orphan.show")
+
+            archive = subprocess.run(
+                [
+                    sys.executable,
+                    ".aletheia/bin/truth_record.py",
+                    "archive",
+                    "orphan",
+                    "ORPH-0001",
+                    "--reason",
+                    "Disposition resolved.",
+                    "--json",
+                ],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(archive.returncode, 0, archive.stdout + archive.stderr)
+            orphans = (target / ".aletheia" / "state" / "ORPHANS.yaml").read_text(encoding="utf-8")
+            self.assertIn("status: archived", orphans)
+            self.assertIn("archive_reason: \"Disposition resolved.\"", orphans)
+
+            validation = validate_target(target)
+            self.assertEqual(validation.returncode, 0, validation.stdout + validation.stderr)
+
+    def test_orphan_validation_rejects_duplicates_and_missing_candidate_parent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init_target(target)
+            (target / ".aletheia" / "state" / "ORPHANS.yaml").write_text(
+                "version: 0.1\n"
+                "schema: AIOS_ORPHANS\n"
+                "updated: 2026-05-08\n"
+                "\n"
+                "review_policy:\n"
+                "  default_review_days: 30\n"
+                "  max_orphan_age_days: 90\n"
+                "\n"
+                "orphans:\n"
+                "  - id: ORPH-duplicate\n"
+                "    status: incubating\n"
+                "    summary: first\n"
+                "    candidate_parent: missing-node\n"
+                "  - id: ORPH-duplicate\n"
+                "    status: incubating\n"
+                "    summary: second\n",
+                encoding="utf-8",
+            )
+
+            validation = validate_target(target)
+            output = validation.stdout + validation.stderr
+            self.assertNotEqual(validation.returncode, 0, output)
+            self.assertIn("orphan entry duplicate id: ORPH-duplicate", output)
+            self.assertIn("orphan entry candidate parent missing", output)
+            self.assertIn("orphan entry missing field: ORPH-duplicate candidate_parent", output)
 
     def test_truth_record_script_replaces_template_placeholders_for_supported_entities(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

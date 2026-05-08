@@ -25,28 +25,56 @@ ENTITY_CONFIG = {
     "agent_runs": EntityConfig("agent_runs", None, ".json", writable=False),
     "active-state": EntityConfig("", None, ".md", fixed_path=".aletheia/state/ACTIVE_STATE.md"),
     "active_state": EntityConfig("", None, ".md", fixed_path=".aletheia/state/ACTIVE_STATE.md"),
+    "actions-registry": EntityConfig("", None, ".json", fixed_path=".aletheia/governance/actions.json"),
+    "actions_registry": EntityConfig("", None, ".json", fixed_path=".aletheia/governance/actions.json"),
+    "attention-policy": EntityConfig("", None, ".md", fixed_path=".aletheia/governance/ATTENTION_POLICY.md"),
+    "attention_policy": EntityConfig("", None, ".md", fixed_path=".aletheia/governance/ATTENTION_POLICY.md"),
     "capability-map": EntityConfig("", None, ".md", fixed_path=".aletheia/CAPABILITY_MAP.md"),
     "capability_map": EntityConfig("", None, ".md", fixed_path=".aletheia/CAPABILITY_MAP.md"),
+    "charter": EntityConfig("", None, ".md", fixed_path=".aletheia/governance/CHARTER.md"),
     "contract": EntityConfig("contracts", "CONTRACT.md", ".md"),
     "contracts": EntityConfig("contracts", "CONTRACT.md", ".md"),
     "decision": EntityConfig("decisions", "DECISION.md", ".md"),
     "decisions": EntityConfig("decisions", "DECISION.md", ".md"),
+    "domain-profile": EntityConfig("", None, ".md", fixed_path=".aletheia/state/DOMAIN_PROFILE.md"),
+    "domain_profile": EntityConfig("", None, ".md", fixed_path=".aletheia/state/DOMAIN_PROFILE.md"),
     "evidence": EntityConfig("evidence", "EVIDENCE.md", ".md"),
+    "frontier-board": EntityConfig("", None, ".md", fixed_path=".aletheia/state/FRONTIER_BOARD.md"),
+    "frontier_board": EntityConfig("", None, ".md", fixed_path=".aletheia/state/FRONTIER_BOARD.md"),
+    "git-policy": EntityConfig("", None, ".md", fixed_path=".aletheia/governance/GIT_POLICY.md"),
+    "git_policy": EntityConfig("", None, ".md", fixed_path=".aletheia/governance/GIT_POLICY.md"),
+    "glossary": EntityConfig("", None, ".md", fixed_path=".aletheia/state/GLOSSARY.md"),
     "hypothesis": EntityConfig("hypotheses", "HYPOTHESIS.md", ".md"),
     "hypotheses": EntityConfig("hypotheses", "HYPOTHESIS.md", ".md"),
+    "model-governance": EntityConfig("", None, ".md", fixed_path=".aletheia/governance/MODEL_GOVERNANCE.md"),
+    "model_governance": EntityConfig("", None, ".md", fixed_path=".aletheia/governance/MODEL_GOVERNANCE.md"),
+    "model-registry": EntityConfig("", None, ".json", fixed_path=".aletheia/governance/model_registry.json"),
+    "model_registry": EntityConfig("", None, ".json", fixed_path=".aletheia/governance/model_registry.json"),
     "node": EntityConfig("nodes", "NODE.yaml", ".yaml"),
     "nodes": EntityConfig("nodes", "NODE.yaml", ".yaml"),
+    "orphan": EntityConfig("", None, ".yaml", fixed_path=".aletheia/state/ORPHANS.yaml"),
+    "orphans": EntityConfig("", None, ".yaml", fixed_path=".aletheia/state/ORPHANS.yaml"),
     "risk": EntityConfig("risks", "RISK.md", ".md"),
     "risks": EntityConfig("risks", "RISK.md", ".md"),
+    "risk-register": EntityConfig("", None, ".md", fixed_path=".aletheia/state/RISK_REGISTER.md"),
+    "risk_register": EntityConfig("", None, ".md", fixed_path=".aletheia/state/RISK_REGISTER.md"),
     "runtime-policy": EntityConfig("", None, ".json", fixed_path=".aletheia/governance/runtime_policy.json"),
     "runtime_policy": EntityConfig("", None, ".json", fixed_path=".aletheia/governance/runtime_policy.json"),
     "session-note": EntityConfig("session_notes", "SESSION_NOTE.md", ".md"),
     "session-notes": EntityConfig("session_notes", "SESSION_NOTE.md", ".md"),
     "session_notes": EntityConfig("session_notes", "SESSION_NOTE.md", ".md"),
+    "skeleton": EntityConfig("", None, ".yaml", fixed_path=".aletheia/state/SKELETON.yaml"),
+    "source-policy": EntityConfig("", None, ".md", fixed_path=".aletheia/governance/SOURCE_POLICY.md"),
+    "source_policy": EntityConfig("", None, ".md", fixed_path=".aletheia/governance/SOURCE_POLICY.md"),
     "system-graph": EntityConfig("", None, ".yaml", fixed_path=".aletheia/state/SYSTEM_GRAPH.yaml"),
     "system_graph": EntityConfig("", None, ".yaml", fixed_path=".aletheia/state/SYSTEM_GRAPH.yaml"),
+    "tree-governance": EntityConfig("", None, ".md", fixed_path=".aletheia/governance/TREE_GOVERNANCE.md"),
+    "tree_governance": EntityConfig("", None, ".md", fixed_path=".aletheia/governance/TREE_GOVERNANCE.md"),
+    "user-preferences": EntityConfig("", None, ".md", fixed_path=".aletheia/state/USER_PREFERENCES.md"),
+    "user_preferences": EntityConfig("", None, ".md", fixed_path=".aletheia/state/USER_PREFERENCES.md"),
 }
 ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
+ORPHAN_ENTITIES = {"orphan", "orphans"}
 
 
 def repo_root() -> Path:
@@ -129,7 +157,231 @@ def emit_json(payload: dict) -> None:
     print(json.dumps(payload, indent=2))
 
 
+def orphan_path(root: Path) -> Path:
+    return root / ".aletheia" / "state" / "ORPHANS.yaml"
+
+
+def normalize_scalar(value: str) -> str:
+    return re.sub(r"\s+", " ", value.strip())
+
+
+def yaml_quote(value: str) -> str:
+    return json.dumps(normalize_scalar(value), ensure_ascii=False)
+
+
+def yaml_unquote(value: str) -> str:
+    stripped = value.strip()
+    if stripped.startswith('"') and stripped.endswith('"'):
+        try:
+            loaded = json.loads(stripped)
+            return str(loaded)
+        except json.JSONDecodeError:
+            return stripped.strip('"')
+    return stripped.strip("\"'")
+
+
+def ensure_orphans_file(path: Path) -> None:
+    if path.exists():
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "version: 0.1\n"
+        "schema: AIOS_ORPHANS\n"
+        f"updated: {date.today().isoformat()}\n"
+        "\n"
+        "review_policy:\n"
+        "  default_review_days: 30\n"
+        "  max_orphan_age_days: 90\n"
+        "\n"
+        "orphans: []\n",
+        encoding="utf-8",
+    )
+
+
+def orphan_entry_spans(lines: list[str]) -> list[tuple[str, int, int]]:
+    spans: list[tuple[str, int, int]] = []
+    for index, line in enumerate(lines):
+        match = re.match(r"^\s{2}-\s+id:\s*(.+?)\s*$", line)
+        if not match:
+            continue
+        record_id = yaml_unquote(match.group(1))
+        end = len(lines)
+        for next_index in range(index + 1, len(lines)):
+            if re.match(r"^\s{2}-\s+id:\s*", lines[next_index]):
+                end = next_index
+                break
+        spans.append((record_id, index, end))
+    return spans
+
+
+def find_orphan_span(lines: list[str], record_id: str) -> tuple[int, int] | None:
+    for orphan_id, start, end in orphan_entry_spans(lines):
+        if orphan_id == record_id:
+            return start, end
+    return None
+
+
+def update_orphans_timestamp(lines: list[str]) -> None:
+    updated = f"updated: {date.today().isoformat()}"
+    for index, line in enumerate(lines):
+        if line.startswith("updated:"):
+            lines[index] = updated
+            return
+    lines.insert(0, updated)
+
+
+def orphan_fragment(record_id: str) -> str:
+    return f".aletheia/state/ORPHANS.yaml#{record_id}"
+
+
+def list_orphans(root: Path, as_json: bool = False) -> int:
+    path = orphan_path(root)
+    ensure_orphans_file(path)
+    lines = path.read_text(encoding="utf-8").splitlines()
+    records = [orphan_fragment(record_id) for record_id, _start, _end in orphan_entry_spans(lines)]
+    if as_json:
+        emit_json({"action": "list", "entity": "orphan", "records": records})
+        return 0
+    if not records:
+        print("None")
+        return 0
+    for record in records:
+        print(record)
+    return 0
+
+
+def show_orphan(root: Path, record_id: str, as_json: bool = False) -> int:
+    normalized = validate_record_id(record_id)
+    path = orphan_path(root)
+    ensure_orphans_file(path)
+    lines = path.read_text(encoding="utf-8").splitlines()
+    span = find_orphan_span(lines, normalized)
+    if span is None:
+        print(f"orphan not found: {normalized}", file=sys.stderr)
+        return 1
+    start, end = span
+    content = "\n".join(lines[start:end]).rstrip()
+    if as_json:
+        emit_json({"action": "show", "entity": "orphan", "path": orphan_fragment(normalized), "content": content})
+    else:
+        print(content)
+    return 0
+
+
+def create_orphan(root: Path, record_id: str, title: str, as_json: bool = False) -> int:
+    normalized = validate_record_id(record_id)
+    path = orphan_path(root)
+    ensure_orphans_file(path)
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if find_orphan_span(lines, normalized):
+        print(f"orphan already exists: {normalized}", file=sys.stderr)
+        return 1
+    if "orphans: []" in lines:
+        lines[lines.index("orphans: []")] = "orphans:"
+    elif not any(line.startswith("orphans:") for line in lines):
+        if lines and lines[-1].strip():
+            lines.append("")
+        lines.append("orphans:")
+    if lines and lines[-1].strip():
+        lines.append("")
+    lines.extend(
+        [
+            f"  - id: {normalized}",
+            "    status: incubating",
+            f"    summary: {yaml_quote(title)}",
+            "    candidate_parent: unknown",
+            "    source_refs: []",
+            f"    next_review: {date.today().isoformat()}",
+        ]
+    )
+    update_orphans_timestamp(lines)
+    path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+    if as_json:
+        emit_json({"action": "create", "entity": "orphan", "path": orphan_fragment(normalized)})
+    else:
+        print(f"created orphan: {orphan_fragment(normalized)}")
+    return 0
+
+
+def replace_orphan_field(block: list[str], field: str, value: str) -> bool:
+    replacement = f"    {field}: {value}"
+    for index, line in enumerate(block):
+        if re.match(rf"^\s{{4}}{re.escape(field)}:\s*", line):
+            block[index] = replacement
+            return True
+    block.append(replacement)
+    return False
+
+
+def update_orphan(
+    root: Path,
+    record_id: str,
+    title: str | None,
+    status: str | None,
+    section_name: str | None,
+    content: str | None,
+    as_json: bool = False,
+) -> int:
+    normalized = validate_record_id(record_id)
+    if section_name or content:
+        print("orphan updates support --title and --status only", file=sys.stderr)
+        return 1
+    if not any([title, status]):
+        print("update requires at least one of --title or --status for orphan entries", file=sys.stderr)
+        return 1
+    path = orphan_path(root)
+    ensure_orphans_file(path)
+    lines = path.read_text(encoding="utf-8").splitlines()
+    span = find_orphan_span(lines, normalized)
+    if span is None:
+        print(f"orphan not found: {normalized}", file=sys.stderr)
+        return 1
+    start, end = span
+    block = lines[start:end]
+    updated: list[str] = []
+    if title:
+        replace_orphan_field(block, "summary", yaml_quote(title))
+        updated.append("summary")
+    if status:
+        replace_orphan_field(block, "status", status)
+        updated.append("status")
+    lines[start:end] = block
+    update_orphans_timestamp(lines)
+    path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+    if as_json:
+        emit_json({"action": "update", "entity": "orphan", "path": orphan_fragment(normalized), "updated": updated})
+    else:
+        print(f"updated orphan: {orphan_fragment(normalized)}")
+    return 0
+
+
+def archive_orphan(root: Path, record_id: str, reason: str, as_json: bool = False) -> int:
+    normalized = validate_record_id(record_id)
+    path = orphan_path(root)
+    ensure_orphans_file(path)
+    lines = path.read_text(encoding="utf-8").splitlines()
+    span = find_orphan_span(lines, normalized)
+    if span is None:
+        print(f"orphan not found: {normalized}", file=sys.stderr)
+        return 1
+    start, end = span
+    block = lines[start:end]
+    replace_orphan_field(block, "status", "archived")
+    replace_orphan_field(block, "archive_reason", yaml_quote(reason))
+    replace_orphan_field(block, "archived_on", date.today().isoformat())
+    lines[start:end] = block
+    update_orphans_timestamp(lines)
+    path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+    if as_json:
+        emit_json({"action": "archive", "entity": "orphan", "path": orphan_fragment(normalized), "reason": reason})
+    else:
+        print(f"archived orphan: {orphan_fragment(normalized)}")
+    return 0
+
+
 def list_records(root: Path, entity: str, as_json: bool = False) -> int:
+    if entity in ORPHAN_ENTITIES:
+        return list_orphans(root, as_json)
     config = entity_config(entity)
     if config.fixed_path:
         path = root / config.fixed_path
@@ -166,6 +418,8 @@ def list_records(root: Path, entity: str, as_json: bool = False) -> int:
 
 
 def create_record(root: Path, entity: str, record_id: str, title: str, as_json: bool = False) -> int:
+    if entity in ORPHAN_ENTITIES:
+        return create_orphan(root, record_id, title, as_json)
     config = entity_config(entity)
     if config.fixed_path:
         print(f"truth record entity already exists as a fixed file: {entity}", file=sys.stderr)
@@ -189,6 +443,8 @@ def create_record(root: Path, entity: str, record_id: str, title: str, as_json: 
 
 
 def show_record(root: Path, entity: str, record_id: str, as_json: bool = False) -> int:
+    if entity in ORPHAN_ENTITIES and record_id != "current":
+        return show_orphan(root, record_id, as_json)
     path = record_path(root, entity, record_id)
     if not path.exists():
         print(f"truth record not found: {path.relative_to(root).as_posix()}", file=sys.stderr)
@@ -202,6 +458,8 @@ def show_record(root: Path, entity: str, record_id: str, as_json: bool = False) 
 
 
 def archive_record(root: Path, entity: str, record_id: str, reason: str, as_json: bool = False) -> int:
+    if entity in ORPHAN_ENTITIES and record_id != "current":
+        return archive_orphan(root, record_id, reason, as_json)
     config = entity_config(entity)
     if not config.writable:
         print(f"truth record entity is read-only: {entity}", file=sys.stderr)
@@ -321,6 +579,8 @@ def update_record(
     content: str | None,
     as_json: bool = False,
 ) -> int:
+    if entity in ORPHAN_ENTITIES and record_id != "current":
+        return update_orphan(root, record_id, title, status, section_name, content, as_json)
     config = entity_config(entity)
     if not config.writable:
         print(f"truth record entity is read-only: {entity}", file=sys.stderr)
@@ -330,6 +590,9 @@ def update_record(
         return 1
     if not any([title, status, section_name]):
         print("update requires at least one of --title, --status, or --section with --content", file=sys.stderr)
+        return 1
+    if config.suffix == ".json":
+        print("JSON fixed truth files can be shown or archived; edit them directly for structured changes", file=sys.stderr)
         return 1
 
     path = record_path(root, entity, record_id)

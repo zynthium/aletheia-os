@@ -14,9 +14,11 @@ Use these primitives. Do not add orchestration to runtime scripts for bootstrap 
 - `scripts/init_aletheia.py` to copy the scaffold into the target repository.
 - `model_gate.py --record` to record bootstrap attribution.
 - `source_inventory.py` to classify existing source material.
+- `guided_bootstrap.py --inspect --json` to inspect bootstrap report readiness without writing files.
 - `guided_bootstrap.py` to prepare the first truth inventory report.
+- `bootstrap_finalize.py --inspect --json` to inspect finalize readiness before hooks, session notes, bootstrap removal, or checkpointing.
 - `truth_record.py create/update` or direct truth-file edits to write confirmed project truth.
-- `orient.py`, `validate.py`, and `checkpoint.py` to verify and checkpoint the initialized truth layer.
+- `orient.py`, `status.py --json`, `validate.py`, `checkpoint.py --dry-run`, and `checkpoint.py` to verify and checkpoint the initialized truth layer.
 
 ## Prompt Recipe
 

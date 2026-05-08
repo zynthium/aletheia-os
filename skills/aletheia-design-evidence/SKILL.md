@@ -12,8 +12,9 @@ Use these primitives. Do not add orchestration to runtime scripts for evidence j
 - `system_context.py` or `orient.py` to load active node, parent constraints, and relevant risks.
 - `truth_record.py list/show` to inspect existing evidence, hypotheses, decisions, and risks.
 - `truth_record.py create/update` to write evidence, hypothesis, risk, or decision records.
+- `truth_record.py create/list/show/update/archive orphan` when a claim lacks a defensible parent node.
 - `validate.py` to verify required evidence sections and references.
-- `checkpoint.py` only when the user wants the evidence update committed.
+- `checkpoint.py --dry-run` and `checkpoint.py` only when the user wants the evidence update committed.
 
 ## Prompt Recipe
 
@@ -33,7 +34,7 @@ For each important claim, record:
 
 Link the evidence back to affected system graph or skeleton nodes. Do not treat implementation success, benchmark output, or model confidence as self-explanatory evidence.
 If the claim does not yet have a defensible parent node, keep it in
-`.aletheia/state/ORPHANS.yaml` with candidate parents and required evidence
+the orphan incubator with `truth_record.py create orphan`, candidate parents, and required evidence
 instead of forcing it into the main tree.
 When evidence weakens or falsifies a hypothesis, update that hypothesis
 Lifecycle and review whether dependent decisions still stand.

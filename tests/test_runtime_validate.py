@@ -416,6 +416,8 @@ class RuntimeValidateTests(unittest.TestCase):
             self.assertEqual(next_result.returncode, 0, next_result.stdout + next_result.stderr)
             next_payload = json.loads(next_result.stdout)
             self.assertIn("truth.orient.runtime", next_payload["recommended_actions"])
+            self.assertIn("truth.status", next_payload["recommended_actions"])
+            self.assertIn("truth.preflight", next_payload["recommended_actions"])
             self.assertIn("truth.validate", next_payload["recommended_actions"])
             self.assertIn("truth.checkpoint.dry_run", next_payload["recommended_actions"])
 

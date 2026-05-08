@@ -31,7 +31,9 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 | Configure runtime policy | `truth_record.py show/update/archive runtime-policy current` or edit `.aletheia/governance/runtime_policy.json` | Read, update, or archive declarative read-only, checkpoint, source inventory, and protected path rules | Done | Used by model gate, source inventory, preflight, and checkpoint runtime, with code fallbacks if the file is unavailable. |
 | Configure agent actions | edit `.aletheia/governance/actions.json` then run `python3 .aletheia/bin/validate.py` | Maintain action IDs, risks, commands, outputs, and verification contracts | Done | `action.py`, `preflight.py`, validation, and `capability_audit.py` use these contracts as the agent-facing capability layer. |
 | Inventory project sources | `python3 .aletheia/bin/source_inventory.py` | Run source inventory | Done | Writes generated inventory under `.aletheia/source_inventory/`. |
-| Prepare guided bootstrap report | `python3 .aletheia/bin/guided_bootstrap.py` | Run guided bootstrap helper | Done | Requires bootstrap model gate unless explicitly skipped. |
+| Inspect guided bootstrap readiness | `python3 .aletheia/bin/guided_bootstrap.py --inspect --json` or `truth.bootstrap.guided.inspect` | Read bootstrap gate, source inventory readiness, next actions, and planned generated outputs | Done | Read-only primitive for deciding whether to run the guided bootstrap wrapper. |
+| Prepare guided bootstrap report | `python3 .aletheia/bin/guided_bootstrap.py` | Run guided bootstrap helper | Done | Requires bootstrap model gate unless explicitly skipped; use `--inspect` first on hook-free hosts. |
+| Inspect bootstrap finalize readiness | `python3 .aletheia/bin/bootstrap_finalize.py --inspect --json` or `truth.bootstrap.finalize.inspect` | Read model gate, validation, critical truth markers, Git readiness, next actions, and planned writes | Done | Read-only primitive for deciding whether to run the finalize wrapper. |
 | Finalize bootstrap | `python3 .aletheia/bin/bootstrap_finalize.py` | Run finalize script | Done | Validates, installs Git hooks, writes session note, and checkpoints unless skipped. |
 | Validate project truth | `python3 .aletheia/bin/validate.py` | Run validator | Done | Checks scaffold, graph, model registry, refs, and truth record semantics. |
 | Generate overview | `python3 .aletheia/bin/overview.py` | Run overview script | Done | Writes generated status JSON and HTML under `.aletheia/overview/` by default. Use `--watch` for repeated local refreshes. |
@@ -57,7 +59,8 @@ Update it whenever a script, skill, host action, or durable truth record type ch
 ## Agent Primitive Matrix
 
 These are the atomic capabilities that prompt workflows and review agents should compose.
-See `.aletheia/playbooks/prompt_native_boundaries.md` for the Primitive-To-Workflow Map.
+See `.aletheia/playbooks/prompt_native_boundaries.md` for the Primitive-To-Workflow Map
+and Primitive Wrappers guidance.
 Each workflow skill declares its `Primitive Capabilities` and `Prompt Recipe` so the skill remains prose-level judgment over these primitives.
 
 | Primitive | Script or file | Scope |
@@ -69,7 +72,8 @@ Each workflow skill declares its `Primitive Capabilities` and `Prompt Recipe` so
 | Manage incubating truth | `truth_record.py create/list/show/update/archive orphan`, `.aletheia/state/ORPHANS.yaml`, `validate.py` | Hold unmounted candidates outside the main skeleton until review. |
 | Manage model policy | `model_gate.py --registry ...` | List, register, show, enable, disable, deprecate, remove, deny, and undeny model entries. |
 | Validate truth layer | `validate.py`, `capability_audit.py` | Check scaffold, refs, registry, action contracts, capability coverage, and record semantics. |
-| Checkpoint state | `checkpoint.py` | Validate, screen, stage, and commit attributed truth updates. |
+| Inspect workflow wrapper readiness | `guided_bootstrap.py --inspect`, `bootstrap_finalize.py --inspect`, `checkpoint.py --dry-run`, `preflight.py --json` | Read wrapper prerequisites, next actions, candidate files, and planned writes before mutation. |
+| Checkpoint state | `checkpoint.py --dry-run`, `checkpoint.py` | Validate, screen, stage, and commit attributed truth updates. |
 
 ## CRUD Matrix
 

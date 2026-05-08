@@ -89,6 +89,33 @@ class BootstrapFinalizeTests(unittest.TestCase):
             self.assertIn("no bootstrap model gate run recorded", output)
             self.assertFalse((target / ".aletheia" / "source_inventory" / "TRUTH_INVENTORY_REPORT.md").exists())
 
+    def test_guided_bootstrap_inspect_reports_readiness_without_writing_report(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/guided_bootstrap.py", "--inspect", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            payload = json.loads(result.stdout)
+            self.assertFalse(payload["ready"])
+            self.assertEqual(payload["action"], "truth.bootstrap.guided.inspect")
+            self.assertIn(".aletheia/source_inventory/TRUTH_INVENTORY_REPORT.md", payload["would_write"])
+            self.assertEqual(payload["checks"][0]["id"], "model_gate")
+            self.assertEqual(payload["checks"][0]["status"], "missing")
+            self.assertIn("model_gate.py --task-class bootstrap_finalize", payload["next_actions"][0])
+            self.assertFalse((target / ".aletheia" / "source_inventory" / "TRUTH_INVENTORY_REPORT.md").exists())
+
     def test_guided_bootstrap_succeeds_with_recorded_operator_approved_bootstrap_gate(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
@@ -310,6 +337,35 @@ class BootstrapFinalizeTests(unittest.TestCase):
             self.assertIn("--tier C3", output)
             self.assertIn("--operator-approved", output)
             self.assertTrue((target / "BOOTSTRAP.md").exists())
+
+    def test_bootstrap_finalize_inspect_reports_blocked_steps_without_mutating(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+
+            result = subprocess.run(
+                [sys.executable, ".aletheia/bin/bootstrap_finalize.py", "--inspect", "--json"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            payload = json.loads(result.stdout)
+            self.assertFalse(payload["ready"])
+            self.assertEqual(payload["action"], "truth.bootstrap.finalize.inspect")
+            check_statuses = {check["id"]: check["status"] for check in payload["checks"]}
+            self.assertEqual(check_statuses["model_gate"], "missing")
+            self.assertIn("critical_truth", check_statuses)
+            self.assertIn(".aletheia/hooks/pre-commit", payload["would_write"])
+            self.assertTrue((target / "BOOTSTRAP.md").exists())
+            self.assertFalse((target / ".aletheia" / "hooks" / "pre-commit").exists())
+            self.assertFalse(any((target / ".aletheia" / "session_notes").glob("*bootstrap-finalize.md")))
 
     def test_bootstrap_finalize_blocks_when_critical_state_still_has_tbd(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

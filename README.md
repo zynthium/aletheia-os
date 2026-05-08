@@ -1,6 +1,6 @@
 # AletheiaOS
 
-[Simplified Chinese](README.zh-CN.md)
+[简体中文](README.zh-CN.md)
 
 ![AletheiaOS hero](docs/assets/readme-hero.jpg)
 

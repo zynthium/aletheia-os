@@ -101,6 +101,27 @@ def check_commit_message(root: Path, message: str) -> list[str]:
     return errors
 
 
+def remediation_hints(errors: list[str]) -> list[str]:
+    if not any(error.startswith("tree-sensitive changes require") for error in errors):
+        return []
+    return [
+        "For bootstrap initialization, run bootstrap_finalize.py or use:",
+        "python3 .aletheia/bin/checkpoint.py --auto --message \"bootstrap: initialize AletheiaOS\" --allow-code-only --tree-op bootstrap --node root --review not-required",
+        "Use checkpoint.py for tree-sensitive commits, for example:",
+        "python3 .aletheia/bin/checkpoint.py --auto --tree-op <operation> --node <node> --review agent-reviewed",
+        "or add equivalent trailers manually:",
+        "AIOS-Action: truth.bootstrap.initialize",
+        "AIOS-Tree-Op: bootstrap",
+        "AIOS-Node: root",
+        "AIOS-Review: not-required",
+        "or for non-bootstrap tree transitions:",
+        "AIOS-Action: truth.tree.transition",
+        "AIOS-Tree-Op: <operation>",
+        "AIOS-Node: <node>",
+        "AIOS-Review: agent-reviewed",
+    ]
+
+
 def main(argv: list[str]) -> int:
     if len(argv) != 2:
         print("usage: commit_msg_hook.py <commit-message-file>")
@@ -118,6 +139,11 @@ def main(argv: list[str]) -> int:
     print("AletheiaOS commit message blocked:")
     for error in errors:
         print(f"  - {error}")
+    hints = remediation_hints(errors)
+    if hints:
+        print("AletheiaOS commit message remediation:")
+        for hint in hints:
+            print(f"  - {hint}")
     return 1
 
 

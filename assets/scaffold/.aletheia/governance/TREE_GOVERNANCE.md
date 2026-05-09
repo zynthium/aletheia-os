@@ -94,6 +94,7 @@ how the truth tree changed.
 
 | Tree lifecycle | Required Git marker |
 |---|---|
+| creating the initial truth baseline | `AIOS-Tree-Op: bootstrap` |
 | incubating unmounted material | `AIOS-Tree-Op: incubate` |
 | attaching an orphan | `AIOS-Tree-Op: attach_orphan` |
 | inserting a parent | `AIOS-Tree-Op: insert_parent` |

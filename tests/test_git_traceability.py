@@ -162,6 +162,32 @@ class GitTraceabilityTests(unittest.TestCase):
             self.assertIn("AIOS-Validation has unsupported value: skip", errors)
             self.assertIn("AIOS-Review has unsupported value: rubber-stamped", errors)
 
+    def test_bootstrap_initialize_trailers_are_valid_for_initial_truth_baseline(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            init = run_script("scripts/init_aletheia.py", str(target))
+            self.assertEqual(init.returncode, 0, init.stderr)
+            git_trailers = import_scaffold_module(target, "git_trailers")
+
+            trailers = git_trailers.build_aios_trailers(
+                action="truth.bootstrap.initialize",
+                tree_op="bootstrap",
+                node="root",
+                parent=None,
+                node_state=None,
+                evidence=[],
+                decision=[],
+                implements=[],
+                supersedes=[],
+                validation=None,
+                review="not-required",
+            )
+
+            self.assertEqual(git_trailers.validate_trailer_values(git_trailers.parse_trailers(trailers)), [])
+            self.assertIn("AIOS-Action: truth.bootstrap.initialize", trailers)
+            self.assertIn("AIOS-Tree-Op: bootstrap", trailers)
+
     def test_commit_msg_hook_allows_normal_readme_commit_without_aios_trailers(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"
@@ -192,6 +218,32 @@ class GitTraceabilityTests(unittest.TestCase):
             self.assertIn("AletheiaOS commit message blocked:", output)
             self.assertIn("tree-sensitive changes require AIOS-Action", output)
             self.assertIn("tree-sensitive changes require AIOS-Tree-Op or AIOS-Node-State", output)
+            self.assertIn("Use checkpoint.py for tree-sensitive commits", output)
+            self.assertIn("For bootstrap initialization, run bootstrap_finalize.py", output)
+            self.assertIn("AIOS-Action: truth.bootstrap.initialize", output)
+            self.assertIn("AIOS-Tree-Op: bootstrap", output)
+
+    def test_commit_msg_hook_accepts_bootstrap_initialize_marker_for_initial_tree_baseline(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            target.mkdir()
+            scaffold_git_repo(target)
+            skeleton = target / ".aletheia" / "state" / "SKELETON.yaml"
+            skeleton.write_text(skeleton.read_text(encoding="utf-8") + "\n# staged bootstrap baseline\n", encoding="utf-8")
+            subprocess.run(["git", "add", ".aletheia/state/SKELETON.yaml"], cwd=target, check=False)
+
+            result = run_commit_msg_hook(
+                target,
+                "bootstrap: initialize AletheiaOS\n\n"
+                "AIOS-Action: truth.bootstrap.initialize\n"
+                "AIOS-Tree-Op: bootstrap\n"
+                "AIOS-Node: root\n"
+                "AIOS-Review: not-required\n",
+            )
+
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertNotIn("AletheiaOS commit message blocked:", output)
 
     def test_commit_msg_hook_rejects_stable_marker_without_required_support(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

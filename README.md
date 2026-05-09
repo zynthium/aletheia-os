@@ -218,7 +218,7 @@ BOOTSTRAP.md
 
 `.claude/settings.json` configures SessionStart, PreToolUse, PostToolUse, and Stop hooks that run gates and audits through `.aletheia/bin/model_gate.py`, `change_hook.py`, and `stop_hook.py`.
 
-`bootstrap_finalize.py` installs AletheiaOS Git hooks and points the target repository's `core.hooksPath` at `.aletheia/hooks`. In other words, bootstrap finalize installs AletheiaOS Git hooks by default; this is the local hard constraint that keeps later commits passing `.aletheia/bin/validate.py`.
+`bootstrap_finalize.py` installs AletheiaOS Git hooks and points the target repository's `core.hooksPath` at `.aletheia/hooks`. It also creates the initial bootstrap checkpoint by default, marked with `AIOS-Action: truth.bootstrap.initialize` and `AIOS-Tree-Op: bootstrap`. In other words, bootstrap finalize installs AletheiaOS Git hooks by default; this is the local hard constraint that keeps later commits passing `.aletheia/bin/validate.py`.
 
 ### Validate the Bundled Scaffold
 

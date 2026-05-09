@@ -554,8 +554,8 @@ class BootstrapFinalizeTests(unittest.TestCase):
                 check=False,
             )
             self.assertIn("bootstrap: initialize AletheiaOS", committed.stdout)
-            self.assertIn("AIOS-Action: truth.tree.transition", committed.stdout)
-            self.assertIn("AIOS-Tree-Op: incubate", committed.stdout)
+            self.assertIn("AIOS-Action: truth.bootstrap.initialize", committed.stdout)
+            self.assertIn("AIOS-Tree-Op: bootstrap", committed.stdout)
             self.assertIn("AIOS-Node: root", committed.stdout)
             self.assertIn("AIOS-Review: not-required", committed.stdout)
             self.assertIn("AIOS-Agent-Model: codex-e2e", committed.stdout)

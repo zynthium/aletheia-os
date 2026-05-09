@@ -3,6 +3,7 @@ from __future__ import annotations
 
 
 ALLOWED_ACTIONS = {
+    "truth.bootstrap.initialize",
     "truth.tree.transition",
     "truth.node.stabilize",
     "truth.node.weaken",
@@ -11,6 +12,7 @@ ALLOWED_ACTIONS = {
     "engineering.implements_truth",
 }
 ALLOWED_TREE_OPS = {
+    "bootstrap",
     "incubate",
     "attach_orphan",
     "insert_parent",

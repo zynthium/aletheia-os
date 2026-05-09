@@ -377,7 +377,7 @@ def main() -> int:
                 "bootstrap: initialize AletheiaOS",
                 "--allow-code-only",
                 "--tree-op",
-                "incubate",
+                "bootstrap",
                 "--node",
                 "root",
                 "--review",

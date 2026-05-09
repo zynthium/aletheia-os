@@ -218,7 +218,7 @@ BOOTSTRAP.md
 
 `.claude/settings.json` 会配置 SessionStart、PreToolUse、PostToolUse 和 Stop hooks，用 `.aletheia/bin/model_gate.py`、`change_hook.py` 和 `stop_hook.py` 执行强制门禁与审计。
 
-`bootstrap_finalize.py` 会安装 AletheiaOS Git hooks，并把目标仓库的 `core.hooksPath` 指向 `.aletheia/hooks`。也就是说，bootstrap finalize 会安装 AletheiaOS Git hooks；这是默认强约束，用于让后续提交继续经过 `.aletheia/bin/validate.py`。
+`bootstrap_finalize.py` 会安装 AletheiaOS Git hooks，并把目标仓库的 `core.hooksPath` 指向 `.aletheia/hooks`。它也会默认创建第一笔 bootstrap checkpoint，提交中带有 `AIOS-Action: truth.bootstrap.initialize` 和 `AIOS-Tree-Op: bootstrap`。也就是说，bootstrap finalize 会安装 AletheiaOS Git hooks；这是默认强约束，用于让后续提交继续经过 `.aletheia/bin/validate.py`。
 
 ### 验证插件自带 scaffold
 
@@ -414,7 +414,10 @@ AletheiaOS 维护它们共同依赖的 project-level truth。
 
 AletheiaOS 不争夺流程入口。它提供 `.aletheia/` 事实层，让不同 agent、技能和工作流在同一份当前事实上 orient、执行、验证和 checkpoint。
 
-延伸阅读：[AletheiaOS：面向 AI 辅助研究与工程的仓库原生可证伪真理树层](docs/articles/aletheia-os-project-introduction.zh-CN.md)。
+延伸阅读：
+
+- [AletheiaOS：面向 AI 辅助研究与工程的仓库原生可证伪真理树层](docs/articles/aletheia-os-project-introduction.zh-CN.md)
+- [AletheiaOS 工作原理与使用过程](docs/articles/aletheia-os-working-principles-and-usage.zh-CN.md)
 
 ## 可选 subagents
 

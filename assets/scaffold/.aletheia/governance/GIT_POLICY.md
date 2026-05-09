@@ -8,6 +8,24 @@ Git commits are AletheiaOS truth-transition records. `.aletheia/` stores the cur
 
 Use AletheiaOS trailers when a commit changes the truth tree, stabilizes a node, weakens or falsifies a claim, archives a branch, or implements an accepted decision.
 
+## Bootstrap Baseline
+
+The first AletheiaOS checkpoint is a bootstrap baseline, not ordinary node
+growth and not a stable-node claim. `bootstrap_finalize.py` creates this
+checkpoint by default after validation and hook installation.
+
+Bootstrap baseline commits use:
+
+```text
+AIOS-Action: truth.bootstrap.initialize
+AIOS-Tree-Op: bootstrap
+AIOS-Node: root
+AIOS-Review: not-required
+```
+
+Do not replace the bootstrap baseline with an unmarked manual `git commit`.
+If you skip the automatic checkpoint, add equivalent trailers manually.
+
 ## Stable Node Marker
 
 `AIOS-Node-State: stable` is a strong traceability claim. It requires:

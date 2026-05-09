@@ -235,6 +235,8 @@ def attribution_trailers(run_data: dict) -> str:
 
 
 def inferred_traceability_action(args: argparse.Namespace) -> str | None:
+    if args.tree_op == "bootstrap":
+        return "truth.bootstrap.initialize"
     if args.node_state == "stable":
         return "truth.node.stabilize"
     if args.implements and not args.node_state:
